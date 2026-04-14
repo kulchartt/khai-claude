@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>มือสองmarket — ซื้อขายของมือสองออนไลน์</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>"/>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="logo" onclick="goPage('home')">มือสอง<span>market</span></div>
+  <div class="search-wrap">
+    <input type="text" id="searchQ" placeholder="ค้นหาสินค้า..." oninput="applyFilter()"/>
+    <button onclick="applyFilter()">ค้นหา</button>
+  </div>
+  <nav class="nav-r">
+    <button class="icon-btn" onclick="goPage('home')" title="หน้าหลัก">🏠</button>
+    <button class="icon-btn" onclick="openWishlist()" title="รายการโปรด">❤️<span class="badge" id="wlBadge">0</span></button>
+    <button class="icon-btn" onclick="openCart()" title="ตะกร้าสินค้า">🛒<span class="badge" id="cartBadge">0</span></button>
+    <div id="navUser"></div>
+  </nav>
+</header>
+
+<div id="toast" class="toast"></div>
+
+<main>
+  <div id="page-home" class="page active">
+    <section class="hero">
+      <h1>ของดี ราคาคุ้ม ทุกวัน</h1>
+      <p>ซื้อ-ขายของมือสองคุณภาพดี ส่งทั่วประเทศ</p>
+      <div class="hero-btns">
+        <button class="btn btn-g" onclick="openSell()">+ ลงขายของฉัน</button>
+        <button class="btn" onclick="document.getElementById('products-section').scrollIntoView({behavior:'smooth'})">ดูสินค้าทั้งหมด</button>
+      </div>
+    </section>
+
+    <section class="stats-row">
+      <div class="stat"><div class="stat-n" id="statCount">—</div><div class="stat-l">สินค้าทั้งหมด</div></div>
+      <div class="stat"><div class="stat-n">1,240+</div><div class="stat-l">ผู้ใช้งาน</div></div>
+      <div class="stat"><div class="stat-n">4.8★</div><div class="stat-l">คะแนนเฉลี่ย</div></div>
+    </section>
+
+    <section class="filter-bar">
+      <div class="chips" id="catChips">
+        <div class="chip on" onclick="setCat('ทั้งหมด',this)">ทั้งหมด</div>
+        <div class="chip" onclick="setCat('มือถือ',this)">📱 มือถือ</div>
+        <div class="chip" onclick="setCat('เสื้อผ้า',this)">👗 เสื้อผ้า</div>
+        <div class="chip" onclick="setCat('หนังสือ',this)">📚 หนังสือ</div>
+        <div class="chip" onclick="setCat('กีฬา',this)">⚽ กีฬา</div>
+        <div class="chip" onclick="setCat('ของแต่งบ้าน',this)">🏠 ของแต่งบ้าน</div>
+        <div class="chip" onclick="setCat('กล้อง',this)">📷 กล้อง</div>
+      </div>
+      <div class="filter-controls">
+        <input type="number" id="minP" placeholder="ราคาต่ำสุด" oninput="applyFilter()"/>
+        <span>-</span>
+        <input type="number" id="maxP" placeholder="ราคาสูงสุด" oninput="applyFilter()"/>
+        <select id="sortSel" onchange="applyFilter()">
+          <option value="">เรียงตาม</option>
+          <option value="price-asc">ราคา ถูก→แพง</option>
+          <option value="price-desc">ราคา แพง→ถูก</option>
+          <option value="newest">ใหม่สุด</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="products-section" id="products-section">
+      <div class="product-grid" id="productGrid">
+        <div class="loading">กำลังโหลดสินค้า...</div>
+      </div>
+    </section>
+  </div>
+
+  <div id="page-detail" class="page">
+    <div class="back-btn" onclick="goPage('home')">← กลับ</div>
+    <div id="detailContent"></div>
+  </div>
+
+  <div id="page-cart" class="page">
+    <div class="back-btn" onclick="goPage('home')">← กลับ</div>
+    <div class="page-inner">
+      <h2>ตะกร้าสินค้า 🛒</h2>
+      <div id="cartContent"></div>
+    </div>
+  </div>
+
+  <div id="page-wishlist" class="page">
+    <div class="back-btn" onclick="goPage('home')">← กลับ</div>
+    <div class="page-inner">
+      <h2>รายการโปรด ❤️</h2>
+      <div class="product-grid" id="wishlistGrid"></div>
+    </div>
+  </div>
+
+  <div id="page-profile" class="page">
+    <div class="back-btn" onclick="goPage('home')">← กลับ</div>
+    <div class="page-inner" id="profileContent"></div>
+  </div>
+</main>
+
+<div class="overlay" id="loginOverlay">
+  <div class="modal">
+    <button class="mclose" onclick="closeOverlay('loginOverlay')">×</button>
+    <div class="tabs">
+      <div class="tab on" id="tabLogin" onclick="switchTab('login')">เข้าสู่ระบบ</div>
+      <div class="tab" id="tabReg" onclick="switchTab('reg')">สมัครสมาชิก</div>
+    </div>
+    <div id="loginForm">
+      <div class="field"><label>อีเมล</label><input type="email" id="loginEmail" placeholder="email@example.com"/></div>
+      <div class="field"><label>รหัสผ่าน</label><input type="password" id="loginPass" placeholder="••••••"/></div>
+      <button class="btn btn-g full" onclick="doLogin()">เข้าสู่ระบบ</button>
+      <p class="hint">ยังไม่มีบัญชี? <a onclick="switchTab('reg')">สมัครสมาชิก</a></p>
+    </div>
+    <div id="regForm" class="hidden">
+      <div class="field"><label>ชื่อผู้ใช้</label><input type="text" id="regName" placeholder="ชื่อของคุณ"/></div>
+      <div class="field"><label>อีเมล</label><input type="email" id="regEmail" placeholder="email@example.com"/></div>
+      <div class="field"><label>รหัสผ่าน</label><input type="password" id="regPass" placeholder="อย่างน้อย 6 ตัว"/></div>
+      <button class="btn btn-g full" onclick="doRegister()">สมัครสมาชิก</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="sellOverlay">
+  <div class="modal">
+    <button class="mclose" onclick="closeOverlay('sellOverlay')">×</button>
+    <h2>ลงขายสินค้า</h2>
+    <div class="field"><label>ชื่อสินค้า *</label><input type="text" id="sTitle" placeholder="เช่น iPhone 14 Pro Max"/></div>
+    <div class="field"><label>ราคา (บาท) *</label><input type="number" id="sPrice" placeholder="0"/></div>
+    <div class="field"><label>หมวดหมู่</label>
+      <select id="sCat"><option>มือถือ</option><option>เสื้อผ้า</option><option>หนังสือ</option><option>กีฬา</option><option>ของแต่งบ้าน</option><option>กล้อง</option></select>
+    </div>
+    <div class="field"><label>สภาพสินค้า</label>
+      <select id="sCond"><option>มือสองใหม่</option><option>สภาพดี</option><option>สภาพพอใช้</option></select>
+    </div>
+    <div class="field"><label>รายละเอียด</label><textarea id="sDesc" placeholder="อธิบายสินค้า สภาพ ประวัติการใช้..."></textarea></div>
+    <div class="field"><label>จังหวัด</label><input type="text" id="sLoc" placeholder="เช่น กรุงเทพฯ"/></div>
+    <div class="field"><label>รูปภาพ</label><input type="file" id="sImg" accept="image/*"/></div>
+    <div class="row-btns">
+      <button class="btn btn-g" style="flex:1" onclick="doSell()">ลงขายเลย</button>
+      <button class="btn" onclick="closeOverlay('sellOverlay')">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
