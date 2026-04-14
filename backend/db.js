@@ -6,7 +6,10 @@ const DB_PATH = path.join(__dirname, 'data.db');
 let db;
 
 function getDB() {
-  if (!db) db = new Database(DB_PATH);
+  if (!db) {
+    db = new Database(DB_PATH);
+    db.pragma('foreign_keys = ON');
+  }
   return db;
 }
 
