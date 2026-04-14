@@ -31,8 +31,6 @@ app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-initDB();
-
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
@@ -62,20 +60,23 @@ io.on('connection', (socket) => {
 
   socket.on('join_room', (roomId) => socket.join(roomId));
 
-  socket.on('send_message', (data) => {
-    const db = getDB();
-    const { room_id, content } = data;
-    const msg = db.prepare('INSERT INTO messages (room_id, sender_id, content) VALUES (?, ?, ?)').run(room_id, userId, content);
-    const fullMsg = db.prepare('SELECT m.*, u.name as sender_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.id = ?').get(msg.lastInsertRowid);
-    io.to(room_id).emit('new_message', fullMsg);
-
-    const room = db.prepare('SELECT * FROM chat_rooms WHERE id = ?').get(room_id);
-    if (room) {
-      const otherId = room.buyer_id === userId ? room.seller_id : room.buyer_id;
-      db.prepare("INSERT INTO notifications (user_id, type, title, body, link) VALUES (?, 'chat', 'ข้อความใหม่', ?, ?)").run(otherId, `${socket.user.name}: ${content.slice(0,40)}`, `/chat/${room_id}`);
-      const otherSocket = onlineUsers.get(otherId);
-      if (otherSocket) io.to(otherSocket).emit('notification', { type: 'chat' });
-    }
+  socket.on('send_message', async (data) => {
+    try {
+      const db = getDB();
+      const { room_id, content } = data;
+      const { rows: mr } = await db.query('INSERT INTO messages (room_id, sender_id, content) VALUES ($1,$2,$3) RETURNING id', [room_id, userId, content]);
+      const { rows: fm } = await db.query('SELECT m.*, u.name as sender_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.id = $1', [mr[0].id]);
+      const fullMsg = fm[0];
+      io.to(room_id).emit('new_message', fullMsg);
+      const { rows: rr } = await db.query('SELECT * FROM chat_rooms WHERE id = $1', [room_id]);
+      const room = rr[0];
+      if (room) {
+        const otherId = room.buyer_id === userId ? room.seller_id : room.buyer_id;
+        await db.query("INSERT INTO notifications (user_id, type, title, body, link) VALUES ($1,'chat','ข้อความใหม่',$2,$3)", [otherId, `${socket.user.name}: ${content.slice(0,40)}`, `/chat/${room_id}`]);
+        const otherSocket = onlineUsers.get(otherId);
+        if (otherSocket) io.to(otherSocket).emit('notification', { type: 'chat' });
+      }
+    } catch (e) { console.error('send_message error:', e); }
   });
 
   socket.on('disconnect', () => onlineUsers.delete(userId));
@@ -84,4 +85,9 @@ io.on('connection', (socket) => {
 app.set('io', io);
 app.set('onlineUsers', onlineUsers);
 
-server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+initDB().then(() => {
+  server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+}).catch(err => {
+  console.error('Failed to initialize DB:', err);
+  process.exit(1);
+});
