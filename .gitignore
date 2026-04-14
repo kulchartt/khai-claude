@@ -4,3 +4,4 @@ node_modules/
 uploads/
 .DS_Store
 *.log
+frontend/js/config.js
