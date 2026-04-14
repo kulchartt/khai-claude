@@ -185,6 +185,32 @@
   </div>
 </div>
 
+<!-- Edit Modal -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <button class="mclose" onclick="closeOverlay('editOverlay')">×</button>
+    <h2>แก้ไขสินค้า ✏️</h2>
+    <input type="hidden" id="eId"/>
+    <div class="field"><label>ชื่อสินค้า *</label><input type="text" id="eTitle" placeholder="เช่น iPhone 14 Pro Max"/></div>
+    <div class="field"><label>ราคา (บาท) *</label><input type="number" id="ePrice" placeholder="0"/></div>
+    <div class="field"><label>หมวดหมู่</label>
+      <select id="eCat"><option>มือถือ</option><option>เสื้อผ้า</option><option>หนังสือ</option><option>กีฬา</option><option>ของแต่งบ้าน</option><option>กล้อง</option></select>
+    </div>
+    <div class="field"><label>สภาพสินค้า</label>
+      <select id="eCond"><option>มือสองใหม่</option><option>สภาพดี</option><option>สภาพพอใช้</option></select>
+    </div>
+    <div class="field"><label>รายละเอียด</label><textarea id="eDesc" placeholder="อธิบายสินค้า..."></textarea></div>
+    <div class="field"><label>จังหวัด</label><input type="text" id="eLoc" placeholder="เช่น กรุงเทพฯ"/></div>
+    <div class="field"><label>สถานะ</label>
+      <select id="eStatus"><option value="available">วางขาย</option><option value="sold">ขายแล้ว</option></select>
+    </div>
+    <div class="row-btns">
+      <button class="btn btn-g" style="flex:1" onclick="doEditProduct()">บันทึก</button>
+      <button class="btn" onclick="closeOverlay('editOverlay')">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
