@@ -157,7 +157,7 @@
     </div>
     <div class="field"><label>รายละเอียด</label><textarea id="sDesc" placeholder="อธิบายสินค้า..."></textarea></div>
     <div class="field"><label>จังหวัด</label><input type="text" id="sLoc" placeholder="เช่น กรุงเทพฯ"/></div>
-    <div class="field"><label>รูปภาพ</label><input type="file" id="sImg" accept="image/*"/></div>
+    <div class="field"><label>รูปภาพ (เลือกได้สูงสุด 10 รูป)</label><div class="img-upload-wrap" id="imgUploadWrap" onclick="document.getElementById('sImg').click()"><div class="img-upload-placeholder">📷 กดเพื่อเลือกรูปภาพ<br><span style="font-size:12px;color:var(--text-hint)">JPG, PNG ขนาดไม่เกิน 5MB ต่อรูป</span></div></div><input type="file" id="sImg" accept="image/*" multiple style="display:none" onchange="previewImages(this)"/><div class="img-preview-grid" id="imgPreviewGrid"></div></div>
     <div class="row-btns">
       <button class="btn btn-g" style="flex:1" onclick="doSell()">ลงขายเลย</button>
       <button class="btn" onclick="closeOverlay('sellOverlay')">ยกเลิก</button>

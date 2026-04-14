@@ -213,3 +213,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   .chat-rooms{height:200px}
   .stat-cards{grid-template-columns:repeat(2,1fr)}
 }
+
+.img-upload-wrap{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:24px;text-align:center;cursor:pointer;transition:.15s;background:var(--bg-sec)}
+.img-upload-wrap:hover{border-color:var(--green);background:var(--green-light)}
+.img-upload-placeholder{font-size:14px;color:var(--text-sec);line-height:1.8}
+.img-preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-top:10px}
+.img-preview-item{position:relative;aspect-ratio:1;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.img-preview-item img{width:100%;height:100%;object-fit:cover}
+.img-preview-item .remove-img{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:99px;width:20px;height:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.img-preview-item.main-img::after{content:'หลัก';position:absolute;bottom:0;left:0;right:0;background:rgba(29,158,117,.85);color:#fff;font-size:10px;text-align:center;padding:2px 0}
+.detail-gallery{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:16px}
+.detail-main-img{width:100%;height:280px;border-radius:var(--radius-lg);overflow:hidden;background:var(--bg-sec);display:flex;align-items:center;justify-content:center}
+.detail-main-img img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.detail-main-img .emoji{font-size:80px}
+.detail-thumbs{display:flex;gap:8px;flex-wrap:wrap}
+.detail-thumb{width:64px;height:64px;border-radius:var(--radius);overflow:hidden;border:2px solid transparent;cursor:pointer;flex-shrink:0;background:var(--bg-sec)}
+.detail-thumb:hover,.detail-thumb.active{border-color:var(--green)}
+.detail-thumb img{width:100%;height:100%;object-fit:cover}

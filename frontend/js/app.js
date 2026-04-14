@@ -37,7 +37,7 @@ async function openDetail(id){
     const inWl=state.wlIds.includes(id),isOwner=state.user&&state.user.id===p.seller_id;
     document.getElementById('detailContent').innerHTML=`
       <div class="detail-hero">
-        <div class="detail-img">${productImg(p)}</div>
+        <div>${buildGallery(p)}</div>
         <div class="detail-info">
           <h1 class="detail-title">${p.title}</h1>
           <div class="detail-price">฿${Number(p.price).toLocaleString()}</div>
@@ -89,7 +89,7 @@ async function doLogin(){const email=document.getElementById('loginEmail').value
 async function doRegister(){const name=document.getElementById('regName').value.trim(),email=document.getElementById('regEmail').value.trim(),pass=document.getElementById('regPass').value;if(!name||!email||!pass){toast('กรุณากรอกข้อมูลให้ครบ');return;}try{const res=await api.register(name,email,pass);localStorage.setItem('token',res.token);localStorage.setItem('user',JSON.stringify(res.user));state.user=res.user;state.token=res.token;closeOverlay('loginOverlay');updateNav();toast('สมัครสำเร็จ! ยินดีต้อนรับ 🎉','#1D9E75');connectSocket();}catch(e){toast(e.message);}}
 function doLogout(){if(socket){socket.disconnect();socket=null;}localStorage.removeItem('token');localStorage.removeItem('user');state.user=null;state.token=null;state.cartCount=0;state.wlCount=0;state.notifCount=0;state.chatCount=0;state.wlIds=[];['cartBadge','wlBadge','notifBadge','chatBadge'].forEach(id=>updateBadge(id,0));updateNav();goPage('home');toast('ออกจากระบบแล้ว');}
 function openSell(){if(!state.user){toast('กรุณาเข้าสู่ระบบก่อน');openOverlay('loginOverlay');return;}openOverlay('sellOverlay');}
-async function doSell(){const title=document.getElementById('sTitle').value.trim(),price=document.getElementById('sPrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}const fd=new FormData();fd.append('title',title);fd.append('price',price);fd.append('category',document.getElementById('sCat').value);fd.append('condition',document.getElementById('sCond').value);fd.append('description',document.getElementById('sDesc').value);fd.append('location',document.getElementById('sLoc').value);const img=document.getElementById('sImg').files[0];if(img)fd.append('image',img);try{await api.createProduct(fd);closeOverlay('sellOverlay');['sTitle','sPrice','sDesc','sLoc'].forEach(i=>document.getElementById(i).value='');document.getElementById('sImg').value='';toast('ลงขายสินค้าสำเร็จ! 🎉','#1D9E75');loadProducts();}catch(e){toast(e.message);}}
+async function doSell(){const title=document.getElementById('sTitle').value.trim(),price=document.getElementById('sPrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}const fd=new FormData();fd.append('title',title);fd.append('price',price);fd.append('category',document.getElementById('sCat').value);fd.append('condition',document.getElementById('sCond').value);fd.append('description',document.getElementById('sDesc').value);fd.append('location',document.getElementById('sLoc').value);const imgs=document.getElementById('sImg').files;for(const img of imgs)fd.append('images',img);try{await api.createProduct(fd);closeOverlay('sellOverlay');['sTitle','sPrice','sDesc','sLoc'].forEach(i=>document.getElementById(i).value='');document.getElementById('sImg').value='';document.getElementById('imgPreviewGrid').innerHTML='';toast('ลงขายสินค้าสำเร็จ! 🎉','#1D9E75');loadProducts();}catch(e){toast(e.message);}}
 
 function openReviewModal(pid){if(!state.user){openOverlay('loginOverlay');return;}document.getElementById('reviewProductId').value=pid;document.getElementById('reviewComment').value='';state.starRating=0;setStar(0);openOverlay('reviewOverlay');}
 function setStar(n){state.starRating=n;document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('on',i<n));}
@@ -119,3 +119,50 @@ async function syncBadges(){if(!state.user)return;try{const[cart,wl,notifs]=awai
 
 async function init(){updateNav();await loadProducts();if(state.user){await syncBadges();connectSocket();}}
 init();
+
+function previewImages(input) {
+  const grid = document.getElementById('imgPreviewGrid');
+  const wrap = document.getElementById('imgUploadWrap');
+  grid.innerHTML = '';
+  if (!input.files.length) return;
+  Array.from(input.files).forEach((file, i) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const div = document.createElement('div');
+      div.className = 'img-preview-item' + (i === 0 ? ' main-img' : '');
+      div.innerHTML = `<img src="${e.target.result}" alt="preview"/><button class="remove-img" onclick="removePreviewImg(${i})">×</button>`;
+      grid.appendChild(div);
+    };
+    reader.readAsDataURL(file);
+  });
+  wrap.querySelector('.img-upload-placeholder').innerHTML = `📷 เลือกแล้ว ${input.files.length} รูป <span style="font-size:12px;color:var(--green)">กดเพื่อเพิ่ม</span>`;
+}
+
+function removePreviewImg(index) {
+  const input = document.getElementById('sImg');
+  const dt = new DataTransfer();
+  Array.from(input.files).forEach((f, i) => { if (i !== index) dt.items.add(f); });
+  input.files = dt.files;
+  previewImages(input);
+}
+
+function buildGallery(product) {
+  const images = product.images && product.images.length > 0 ? product.images : (product.image_url ? [{url: product.image_url}] : []);
+  if (!images.length) return `<div class="detail-main-img"><span class="emoji">${EMOJIS[product.category]||'📦'}</span></div>`;
+  return `
+    <div class="detail-gallery">
+      <div class="detail-main-img" id="mainImgWrap">
+        <img src="${CONFIG.API_URL}${images[0].url}" id="mainImg" alt="${product.title}"/>
+      </div>
+      ${images.length > 1 ? `<div class="detail-thumbs">${images.map((img, i) => `
+        <div class="detail-thumb ${i===0?'active':''}" onclick="switchImg('${CONFIG.API_URL}${img.url}', this)">
+          <img src="${CONFIG.API_URL}${img.url}" alt="thumb"/>
+        </div>`).join('')}</div>` : ''}
+    </div>`;
+}
+
+function switchImg(url, el) {
+  document.getElementById('mainImg').src = url;
+  document.querySelectorAll('.detail-thumb').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}

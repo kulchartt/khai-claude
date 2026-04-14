@@ -98,6 +98,13 @@ function initDB() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(product_id, reviewer_id)
     );
+    CREATE TABLE IF NOT EXISTS product_images (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      url TEXT NOT NULL,
+      sort_order INTEGER DEFAULT 0,
+      FOREIGN KEY (product_id) REFERENCES products(id)
+    );
     CREATE TABLE IF NOT EXISTS notifications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
