@@ -1,23 +1,33 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
+const jwt = require('jsonwebtoken');
+const { SECRET } = require('./middleware/auth');
 
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const userRoutes = require('./routes/users');
 const cartRoutes = require('./routes/cart');
 const wishlistRoutes = require('./routes/wishlist');
+const chatRoutes = require('./routes/chat');
+const reviewRoutes = require('./routes/reviews');
+const notificationRoutes = require('./routes/notifications');
+const adminRoutes = require('./routes/admin');
 
-const { initDB } = require('./db');
+const { initDB, getDB } = require('./db');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: process.env.FRONTEND_URL || '*', credentials: true }
+});
+
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  credentials: true
-}));
+app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -28,11 +38,50 @@ app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'มือสองmarket API running' });
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+const onlineUsers = new Map();
+
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) return next(new Error('No token'));
+  try {
+    socket.user = jwt.verify(token, SECRET);
+    next();
+  } catch { next(new Error('Invalid token')); }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+io.on('connection', (socket) => {
+  const userId = socket.user.id;
+  onlineUsers.set(userId, socket.id);
+
+  socket.on('join_room', (roomId) => socket.join(roomId));
+
+  socket.on('send_message', (data) => {
+    const db = getDB();
+    const { room_id, content } = data;
+    const msg = db.prepare('INSERT INTO messages (room_id, sender_id, content) VALUES (?, ?, ?)').run(room_id, userId, content);
+    const fullMsg = db.prepare('SELECT m.*, u.name as sender_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.id = ?').get(msg.lastInsertRowid);
+    io.to(room_id).emit('new_message', fullMsg);
+
+    const room = db.prepare('SELECT * FROM chat_rooms WHERE id = ?').get(room_id);
+    if (room) {
+      const otherId = room.buyer_id === userId ? room.seller_id : room.buyer_id;
+      db.prepare("INSERT INTO notifications (user_id, type, title, body, link) VALUES (?, 'chat', 'ข้อความใหม่', ?, ?)").run(otherId, `${socket.user.name}: ${content.slice(0,40)}`, `/chat/${room_id}`);
+      const otherSocket = onlineUsers.get(otherId);
+      if (otherSocket) io.to(otherSocket).emit('notification', { type: 'chat' });
+    }
+  });
+
+  socket.on('disconnect', () => onlineUsers.delete(userId));
 });
+
+app.set('io', io);
+app.set('onlineUsers', onlineUsers);
+
+server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

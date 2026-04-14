@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>มือสองmarket — ซื้อขายของมือสองออนไลน์</title>
+  <title>มือสองmarket</title>
   <link rel="stylesheet" href="css/style.css"/>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>"/>
 </head>
 <body>
 
@@ -13,12 +12,14 @@
   <div class="logo" onclick="goPage('home')">มือสอง<span>market</span></div>
   <div class="search-wrap">
     <input type="text" id="searchQ" placeholder="ค้นหาสินค้า..." oninput="applyFilter()"/>
-    <button onclick="applyFilter()">ค้นหา</button>
+    <button onclick="openAdvSearch()">🔍</button>
   </div>
   <nav class="nav-r">
-    <button class="icon-btn" onclick="goPage('home')" title="หน้าหลัก">🏠</button>
-    <button class="icon-btn" onclick="openWishlist()" title="รายการโปรด">❤️<span class="badge" id="wlBadge">0</span></button>
-    <button class="icon-btn" onclick="openCart()" title="ตะกร้าสินค้า">🛒<span class="badge" id="cartBadge">0</span></button>
+    <button class="icon-btn" onclick="goPage('home')">🏠</button>
+    <button class="icon-btn" onclick="openNotifications()" id="notifBtn">🔔<span class="badge hidden" id="notifBadge">0</span></button>
+    <button class="icon-btn" onclick="openChatList()">💬<span class="badge hidden" id="chatBadge">0</span></button>
+    <button class="icon-btn" onclick="openWishlist()">❤️<span class="badge hidden" id="wlBadge">0</span></button>
+    <button class="icon-btn" onclick="openCart()">🛒<span class="badge hidden" id="cartBadge">0</span></button>
     <div id="navUser"></div>
   </nav>
 </header>
@@ -35,13 +36,11 @@
         <button class="btn" onclick="document.getElementById('products-section').scrollIntoView({behavior:'smooth'})">ดูสินค้าทั้งหมด</button>
       </div>
     </section>
-
     <section class="stats-row">
       <div class="stat"><div class="stat-n" id="statCount">—</div><div class="stat-l">สินค้าทั้งหมด</div></div>
       <div class="stat"><div class="stat-n">1,240+</div><div class="stat-l">ผู้ใช้งาน</div></div>
       <div class="stat"><div class="stat-n">4.8★</div><div class="stat-l">คะแนนเฉลี่ย</div></div>
     </section>
-
     <section class="filter-bar">
       <div class="chips" id="catChips">
         <div class="chip on" onclick="setCat('ทั้งหมด',this)">ทั้งหมด</div>
@@ -62,13 +61,16 @@
           <option value="price-desc">ราคา แพง→ถูก</option>
           <option value="newest">ใหม่สุด</option>
         </select>
+        <select id="condSel" onchange="applyFilter()">
+          <option value="">สภาพทั้งหมด</option>
+          <option value="มือสองใหม่">มือสองใหม่</option>
+          <option value="สภาพดี">สภาพดี</option>
+          <option value="สภาพพอใช้">สภาพพอใช้</option>
+        </select>
       </div>
     </section>
-
     <section class="products-section" id="products-section">
-      <div class="product-grid" id="productGrid">
-        <div class="loading">กำลังโหลดสินค้า...</div>
-      </div>
+      <div class="product-grid" id="productGrid"><div class="loading">กำลังโหลดสินค้า...</div></div>
     </section>
   </div>
 
@@ -79,26 +81,45 @@
 
   <div id="page-cart" class="page">
     <div class="back-btn" onclick="goPage('home')">← กลับ</div>
-    <div class="page-inner">
-      <h2>ตะกร้าสินค้า 🛒</h2>
-      <div id="cartContent"></div>
-    </div>
+    <div class="page-inner"><h2>ตะกร้าสินค้า 🛒</h2><div id="cartContent"></div></div>
   </div>
 
   <div id="page-wishlist" class="page">
     <div class="back-btn" onclick="goPage('home')">← กลับ</div>
-    <div class="page-inner">
-      <h2>รายการโปรด ❤️</h2>
-      <div class="product-grid" id="wishlistGrid"></div>
-    </div>
+    <div class="page-inner"><h2>รายการโปรด ❤️</h2><div class="product-grid" id="wishlistGrid"></div></div>
   </div>
 
   <div id="page-profile" class="page">
     <div class="back-btn" onclick="goPage('home')">← กลับ</div>
     <div class="page-inner" id="profileContent"></div>
   </div>
+
+  <div id="page-chat" class="page">
+    <div class="back-btn" onclick="goPage('home')">← กลับ</div>
+    <div class="chat-layout">
+      <div class="chat-rooms" id="chatRoomsList"></div>
+      <div class="chat-main" id="chatMain"><div class="chat-placeholder">เลือกการสนทนา</div></div>
+    </div>
+  </div>
+
+  <div id="page-admin" class="page">
+    <div class="back-btn" onclick="goPage('home')">← กลับ</div>
+    <div class="admin-wrap" id="adminContent"></div>
+  </div>
+
+  <div id="page-notifications" class="page">
+    <div class="back-btn" onclick="goPage('home')">← กลับ</div>
+    <div class="page-inner">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2>การแจ้งเตือน 🔔</h2>
+        <button class="btn btn-sm" onclick="readAllNotifs()">อ่านทั้งหมด</button>
+      </div>
+      <div id="notifList"></div>
+    </div>
+  </div>
 </main>
 
+<!-- Login Modal -->
 <div class="overlay" id="loginOverlay">
   <div class="modal">
     <button class="mclose" onclick="closeOverlay('loginOverlay')">×</button>
@@ -121,6 +142,7 @@
   </div>
 </div>
 
+<!-- Sell Modal -->
 <div class="overlay" id="sellOverlay">
   <div class="modal">
     <button class="mclose" onclick="closeOverlay('sellOverlay')">×</button>
@@ -133,7 +155,7 @@
     <div class="field"><label>สภาพสินค้า</label>
       <select id="sCond"><option>มือสองใหม่</option><option>สภาพดี</option><option>สภาพพอใช้</option></select>
     </div>
-    <div class="field"><label>รายละเอียด</label><textarea id="sDesc" placeholder="อธิบายสินค้า สภาพ ประวัติการใช้..."></textarea></div>
+    <div class="field"><label>รายละเอียด</label><textarea id="sDesc" placeholder="อธิบายสินค้า..."></textarea></div>
     <div class="field"><label>จังหวัด</label><input type="text" id="sLoc" placeholder="เช่น กรุงเทพฯ"/></div>
     <div class="field"><label>รูปภาพ</label><input type="file" id="sImg" accept="image/*"/></div>
     <div class="row-btns">
@@ -143,6 +165,27 @@
   </div>
 </div>
 
+<!-- Review Modal -->
+<div class="overlay" id="reviewOverlay">
+  <div class="modal">
+    <button class="mclose" onclick="closeOverlay('reviewOverlay')">×</button>
+    <h2>รีวิวสินค้า ⭐</h2>
+    <input type="hidden" id="reviewProductId"/>
+    <div class="field"><label>คะแนน</label>
+      <div class="star-picker" id="starPicker">
+        <span class="star" data-v="1" onclick="setStar(1)">★</span>
+        <span class="star" data-v="2" onclick="setStar(2)">★</span>
+        <span class="star" data-v="3" onclick="setStar(3)">★</span>
+        <span class="star" data-v="4" onclick="setStar(4)">★</span>
+        <span class="star" data-v="5" onclick="setStar(5)">★</span>
+      </div>
+    </div>
+    <div class="field"><label>ความคิดเห็น</label><textarea id="reviewComment" placeholder="เล่าประสบการณ์ของคุณ..."></textarea></div>
+    <button class="btn btn-g full" onclick="doReview()">ส่งรีวิว</button>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script src="js/app.js"></script>
