@@ -63,8 +63,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .products-section{padding:20px 24px}
 .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
 .loading,.empty-msg{padding:40px;text-align:center;color:var(--text-sec);font-size:14px;grid-column:1/-1}
-.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:.15s}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:.15s;display:flex;flex-direction:column}
 .card:hover{border-color:var(--border-hover);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.card-actions{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--border);background:var(--bg-sec)}
+.card-actions .btn{flex:1;padding:5px 8px;font-size:12px;text-align:center}
 .card-img{height:150px;display:flex;align-items:center;justify-content:center;background:var(--bg-sec);overflow:hidden}
 .card-img img{width:100%;height:100%;object-fit:cover}
 .card-img .emoji{font-size:52px}

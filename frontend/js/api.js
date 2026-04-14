@@ -9,6 +9,12 @@ const api = {
     try {
       const res = await fetch(CONFIG.API_URL + path, opts);
       const data = await res.json();
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        document.getElementById('loginOverlay')?.classList.add('open');
+        throw new Error(data.error || 'กรุณาเข้าสู่ระบบใหม่');
+      }
       if (!res.ok) throw new Error(data.error || 'เกิดข้อผิดพลาด');
       return data;
     } catch (e) { throw e; }
@@ -24,6 +30,7 @@ const api = {
   },
   getProduct(id) { return this.get('/api/products/'+id); },
   createProduct(fd) { return this.req('POST','/api/products',fd,true); },
+  updateProduct(id, data) { return this.put('/api/products/'+id, data); },
   deleteProduct(id) { return this.delete('/api/products/'+id); },
   login(e,p) { return this.post('/api/auth/login',{email:e,password:p}); },
   register(n,e,p) { return this.post('/api/auth/register',{name:n,email:e,password:p}); },
