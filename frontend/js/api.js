@@ -118,4 +118,8 @@ const api = {
   adminToggleAdmin(id) { return this.patch('/api/admin/users/'+id+'/toggle-admin', {}); },
   adminGetDisputes() { return this.get('/api/admin/disputes'); },
   adminUpdateDispute(id, status, admin_note) { return this.patch('/api/admin/disputes/'+id, {status, admin_note}); },
+  submitVerifyRequest(fd) { return this.req('POST', '/api/users/me/verify-request', fd, true); },
+  getMyVerifyRequest() { return this.get('/api/users/me/verify-request'); },
+  adminGetVerifyRequests() { return this.get('/api/admin/verify-requests'); },
+  adminHandleVerifyRequest(id, action, admin_note) { return this.patch('/api/admin/verify-requests/'+id, {action, admin_note}); },
 };
