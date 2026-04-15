@@ -1,22 +1,14 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const { getDB } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
+const { uploadToCloudinary } = require('../cloudinary');
 
 const router = express.Router();
 
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + Math.random().toString(36).slice(2) + path.extname(file.originalname))
-});
-
+// Use memory storage — files go straight to Cloudinary, not disk
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);
@@ -76,17 +68,28 @@ router.post('/', authMiddleware, uploadMiddleware, async (req, res) => {
     const { title, price, category, condition, description, location } = req.body;
     if (!title || !price || !category) return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     const db = getDB();
-    const firstImage = req.files && req.files.length > 0 ? `/uploads/${req.files[0].filename}` : '';
+
+    // Upload all images to Cloudinary
+    let firstImageUrl = '';
+    const uploadedUrls = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const result = await uploadToCloudinary(file.buffer);
+        uploadedUrls.push(result.secure_url);
+      }
+      firstImageUrl = uploadedUrls[0];
+    }
+
     const { rows } = await db.query(
       'INSERT INTO products (title,price,category,condition,description,location,image_url,seller_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id',
-      [title, Number(price), category, condition || 'สภาพดี', description || '', location || '', firstImage, req.user.id]
+      [title, Number(price), category, condition || 'สภาพดี', description || '', location || '', firstImageUrl, req.user.id]
     );
     const productId = rows[0].id;
-    if (req.files && req.files.length > 0) {
-      for (let i = 0; i < req.files.length; i++) {
-        await db.query('INSERT INTO product_images (product_id, url, sort_order) VALUES ($1,$2,$3)', [productId, `/uploads/${req.files[i].filename}`, i]);
-      }
+
+    for (let i = 0; i < uploadedUrls.length; i++) {
+      await db.query('INSERT INTO product_images (product_id, url, sort_order) VALUES ($1,$2,$3)', [productId, uploadedUrls[i], i]);
     }
+
     res.json({ id: productId, message: 'ลงขายสินค้าสำเร็จ!' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -98,16 +101,22 @@ router.put('/:id', authMiddleware, uploadMiddleware, async (req, res) => {
     const product = pr[0];
     if (!product) return res.status(404).json({ error: 'ไม่พบสินค้า' });
     if (product.seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์แก้ไข' });
+
     const { title, price, category, condition, description, location, status } = req.body;
     let firstImage = product.image_url;
+
     if (req.files && req.files.length > 0) {
-      firstImage = `/uploads/${req.files[0].filename}`;
       const { rows: mo } = await db.query('SELECT MAX(sort_order) as m FROM product_images WHERE product_id = $1', [req.params.id]);
       const maxOrder = mo[0].m || 0;
       for (let i = 0; i < req.files.length; i++) {
-        await db.query('INSERT INTO product_images (product_id, url, sort_order) VALUES ($1,$2,$3)', [req.params.id, `/uploads/${req.files[i].filename}`, maxOrder + i + 1]);
+        const result = await uploadToCloudinary(req.files[i].buffer);
+        const url = result.secure_url;
+        if (i === 0 && !product.image_url) firstImage = url;
+        if (i === 0) firstImage = url;
+        await db.query('INSERT INTO product_images (product_id, url, sort_order) VALUES ($1,$2,$3)', [req.params.id, url, maxOrder + i + 1]);
       }
     }
+
     await db.query(
       'UPDATE products SET title=$1,price=$2,category=$3,condition=$4,description=$5,location=$6,image_url=$7,status=$8 WHERE id=$9',
       [title||product.title, price?Number(price):product.price, category||product.category, condition||product.condition,
@@ -127,8 +136,12 @@ router.delete('/:id/images/:imageId', authMiddleware, async (req, res) => {
     const { rows: ir } = await db.query('SELECT * FROM product_images WHERE id = $1 AND product_id = $2', [req.params.imageId, req.params.id]);
     const img = ir[0];
     if (!img) return res.status(404).json({ error: 'ไม่พบรูปภาพ' });
-    const filePath = path.join(__dirname, '..', img.url);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    // Delete from Cloudinary if it's a Cloudinary URL
+    if (img.url && img.url.includes('cloudinary.com')) {
+      const publicId = img.url.split('/').slice(-1)[0].split('.')[0];
+      const { cloudinary } = require('../cloudinary');
+      await cloudinary.uploader.destroy(`mueasong/${publicId}`).catch(() => {});
+    }
     await db.query('DELETE FROM product_images WHERE id = $1', [req.params.imageId]);
     res.json({ message: 'ลบรูปแล้ว' });
   } catch (e) { res.status(500).json({ error: e.message }); }
