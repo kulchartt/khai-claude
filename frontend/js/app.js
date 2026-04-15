@@ -145,7 +145,22 @@ async function doLogin(){const email=document.getElementById('loginEmail').value
 async function doRegister(){const name=document.getElementById('regName').value.trim(),email=document.getElementById('regEmail').value.trim(),pass=document.getElementById('regPass').value;if(!name||!email||!pass){toast('กรุณากรอกข้อมูลให้ครบ');return;}try{const res=await api.register(name,email,pass);localStorage.setItem('token',res.token);localStorage.setItem('user',JSON.stringify(res.user));state.user=res.user;state.token=res.token;closeOverlay('loginOverlay');updateNav();toast('สมัครสำเร็จ! ยินดีต้อนรับ 🎉','#1D9E75');connectSocket();}catch(e){toast(e.message);}}
 function doLogout(){if(socket){socket.disconnect();socket=null;}localStorage.removeItem('token');localStorage.removeItem('user');state.user=null;state.token=null;state.cartCount=0;state.wlCount=0;state.notifCount=0;state.chatCount=0;state.wlIds=[];['cartBadge','wlBadge','notifBadge','chatBadge'].forEach(id=>updateBadge(id,0));updateNav();goPage('home');toast('ออกจากระบบแล้ว');}
 function openSell(){if(!state.user){toast('กรุณาเข้าสู่ระบบก่อน');openOverlay('loginOverlay');return;}openOverlay('sellOverlay');}
-async function doSell(){const title=document.getElementById('sTitle').value.trim(),price=document.getElementById('sPrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}const fd=new FormData();fd.append('title',title);fd.append('price',price);fd.append('category',document.getElementById('sCat').value);fd.append('condition',document.getElementById('sCond').value);fd.append('description',document.getElementById('sDesc').value);fd.append('location',document.getElementById('sLoc').value);const imgs=document.getElementById('sImg').files;for(const img of imgs)fd.append('images',img);try{await api.createProduct(fd);closeOverlay('sellOverlay');['sTitle','sPrice','sDesc','sLoc'].forEach(i=>document.getElementById(i).value='');document.getElementById('sImg').value='';document.getElementById('imgPreviewGrid').innerHTML='';toast('ลงขายสินค้าสำเร็จ! 🎉','#1D9E75');loadProducts();}catch(e){toast(e.message);}}
+async function doSell(){const title=document.getElementById('sTitle').value.trim(),price=document.getElementById('sPrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}const fd=new FormData();fd.append('title',title);fd.append('price',price);fd.append('category',document.getElementById('sCat').value);fd.append('condition',document.getElementById('sCond').value);fd.append('description',document.getElementById('sDesc').value);fd.append('location',document.getElementById('sLoc').value);const imgs=document.getElementById('sImg').files;for(const img of imgs)fd.append('images',img);try{
+    await api.createProduct(fd);
+    closeOverlay('sellOverlay');
+    ['sTitle','sPrice','sDesc','sLoc'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('sImg').value='';
+    document.getElementById('imgPreviewGrid').innerHTML='';
+    toast('ลงขายสินค้าสำเร็จ! 🎉','#1D9E75');
+    loadProducts();
+    // refresh profile product list ทันที
+    const myItems=await api.getMyProducts();
+    window._myItems=myItems;
+    const grid=document.getElementById('myProductsGrid');
+    if(grid)renderMyCards(myItems,'myProductsGrid');
+    const ptab=document.getElementById('ptab-products');
+    if(ptab)ptab.textContent=`สินค้าของฉัน (${myItems.length})`;
+  }catch(e){toast(e.message);}}
 
 function openReviewModal(pid){if(!state.user){openOverlay('loginOverlay');return;}document.getElementById('reviewProductId').value=pid;document.getElementById('reviewComment').value='';state.starRating=0;setStar(0);openOverlay('reviewOverlay');}
 function setStar(n){state.starRating=n;document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('on',i<n));}
