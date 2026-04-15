@@ -224,6 +224,7 @@ function profileTab(tab){
               ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-g" onclick="showPaymentQR(${o.id},${o.total},'${o.seller_promptpay||''}','${(o.seller_name||'').replace(/'/g,"\\'")}')">💳 ดู QR ชำระเงิน</button>`:''}
               ${o.seller_id&&o.status!=='cancelled'?`<button class="btn btn-sm" onclick="startChat(${o.seller_id},${o.product_id||'null'})">💬 คุยกับผู้ขาย</button>`:''}
               ${o.status==='confirmed'&&o.shipping_status==='shipped'?`<button class="btn btn-sm btn-g" onclick="markOrderReceived(${o.id})">✅ ยืนยันรับสินค้า</button>`:''}
+              ${o.status==='completed'&&o.product_id?`<button class="btn btn-sm" style="background:var(--accent);color:#fff" onclick="openReviewModal(${o.product_id})">⭐ รีวิวผู้ขาย</button>`:''}
               ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-danger" onclick="doCancelOrder(${o.id})">❌ ยกเลิก</button>`:''}
               ${o.status==='awaiting_confirmation'?`<span style="font-size:11px;color:#d97706;font-weight:500">⚠️ ส่ง slip แล้ว — ติดต่อผู้ขายหากต้องการยกเลิก</span>`:''}
             </div>
@@ -600,10 +601,14 @@ function selectSuggestion(val){
 function hideSuggestions(){setTimeout(()=>document.getElementById('searchSuggestions')?.classList.add('hidden'),150);}
 
 // ===== Order Status =====
-async function markOrderReceived(id){
-  if(!confirm('ยืนยันว่าได้รับสินค้าแล้ว?'))return;
+function markOrderReceived(id){
+  window._confirmReceiveId=id;
+  openOverlay('confirmReceivedOverlay');
+}
+async function confirmReceived(){
+  closeOverlay('confirmReceivedOverlay');
   try{
-    const res=await api.markOrderReceived(id);
+    const res=await api.markOrderReceived(window._confirmReceiveId);
     toast(res.message,'#1D9E75');
     profileTab('orders');
   }catch(e){toast(e.message);}

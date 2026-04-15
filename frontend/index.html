@@ -301,7 +301,8 @@
 <div class="overlay" id="reviewOverlay">
   <div class="modal">
     <button class="mclose" onclick="closeOverlay('reviewOverlay')">×</button>
-    <h2>รีวิวสินค้า ⭐</h2>
+    <h2>รีวิวผู้ขาย ⭐</h2>
+    <p style="font-size:13px;color:var(--text-sec);margin:-8px 0 16px">รีวิวนี้จะแสดงในโปรไฟล์ผู้ขายและหน้าสินค้า</p>
     <input type="hidden" id="reviewProductId"/>
     <div class="field"><label>คะแนน</label>
       <div class="star-picker" id="starPicker">
@@ -312,8 +313,20 @@
         <span class="star" data-v="5" onclick="setStar(5)">★</span>
       </div>
     </div>
-    <div class="field"><label>ความคิดเห็น</label><textarea id="reviewComment" placeholder="เล่าประสบการณ์ของคุณ..."></textarea></div>
+    <div class="field"><label>ความคิดเห็น</label><textarea id="reviewComment" placeholder="เช่น ของดีตรงปก ผู้ขายใจดี ส่งเร็ว..."></textarea></div>
     <button class="btn btn-g full" onclick="doReview()">ส่งรีวิว</button>
+  </div>
+</div>
+
+<!-- Confirm Received Modal -->
+<div class="overlay" id="confirmReceivedOverlay">
+  <div class="modal">
+    <h2>✅ ยืนยันรับสินค้า</h2>
+    <p style="color:var(--text-sec);font-size:14px;margin:8px 0 20px">กดยืนยันเมื่อได้รับสินค้าแล้ว ออเดอร์จะปิดและคุณสามารถรีวิวผู้ขายได้</p>
+    <div class="row-btns">
+      <button class="btn btn-g" style="flex:1" onclick="confirmReceived()">✅ ได้รับแล้ว</button>
+      <button class="btn" onclick="closeOverlay('confirmReceivedOverlay')">ยกเลิก</button>
+    </div>
   </div>
 </div>
 
@@ -443,8 +456,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260416c"></script>
-<script src="js/app.js?v=20260416c"></script>
+<script src="js/api.js?v=20260416d"></script>
+<script src="js/app.js?v=20260416d"></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
 </body>
 </html>
