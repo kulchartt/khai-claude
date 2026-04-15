@@ -54,14 +54,14 @@ router.post('/checkout', authMiddleware, async (req, res) => {
   try {
     await client.query('BEGIN');
     const { rows: items } = await client.query(`
-      SELECT c.qty, p.id as product_id, p.price, p.status
+      SELECT c.qty, p.id as product_id, p.price, p.status, p.seller_id
       FROM cart_items c JOIN products p ON c.product_id = p.id WHERE c.user_id = $1
     `, [req.user.id]);
     if (!items.length) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'ตะกร้าว่างเปล่า' }); }
     const unavailable = items.filter(i => i.status !== 'available');
     if (unavailable.length) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'สินค้าบางรายการถูกขายไปแล้ว' }); }
     const total = items.reduce((s, i) => s + i.price * i.qty, 0);
-    const { rows: or } = await client.query('INSERT INTO orders (user_id, total) VALUES ($1,$2) RETURNING id', [req.user.id, total]);
+    const { rows: or } = await client.query("INSERT INTO orders (user_id, total, status) VALUES ($1,$2,'awaiting_payment') RETURNING id", [req.user.id, total]);
     const orderId = or[0].id;
     for (const item of items) {
       await client.query('INSERT INTO order_items (order_id, product_id, price, qty) VALUES ($1,$2,$3,$4)', [orderId, item.product_id, item.price, item.qty]);
@@ -69,7 +69,14 @@ router.post('/checkout', authMiddleware, async (req, res) => {
     }
     await client.query('DELETE FROM cart_items WHERE user_id = $1', [req.user.id]);
     await client.query('COMMIT');
-    res.json({ message: 'ชำระเงินสำเร็จ!', order_id: orderId, total });
+
+    // ดึง PromptPay ของผู้ขาย (ใช้ seller แรกในออเดอร์)
+    const sellerId = items[0].seller_id;
+    const { rows: sr } = await db.query('SELECT promptpay, name FROM users WHERE id = $1', [sellerId]);
+    const sellerPromptpay = sr[0]?.promptpay || null;
+    const sellerName = sr[0]?.name || '';
+
+    res.json({ message: 'สร้างคำสั่งซื้อแล้ว', order_id: orderId, total, seller_promptpay: sellerPromptpay, seller_name: sellerName });
   } catch (e) {
     await client.query('ROLLBACK');
     res.status(500).json({ error: e.message });

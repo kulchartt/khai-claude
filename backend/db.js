@@ -90,6 +90,8 @@ async function initDB() {
   await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS original_price REAL DEFAULT NULL`);
   await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS delivery_method TEXT DEFAULT 'both'`);
   await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_status TEXT DEFAULT 'pending'`);
+  await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS slip_url TEXT DEFAULT NULL`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS promptpay TEXT DEFAULT NULL`);
 
   await db.query(`CREATE TABLE IF NOT EXISTS offers (
     id SERIAL PRIMARY KEY,
