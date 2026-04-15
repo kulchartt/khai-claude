@@ -218,6 +218,7 @@ function profileTab(tab){
               ${o.status==='confirmed'&&o.shipping_status&&o.shipping_status!=='pending'?`<div style="font-size:12px;color:#2563eb;font-weight:500">${shipLabel[o.shipping_status]||''}</div>`:''}
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-g" onclick="showPaymentQR(${o.id},${o.total},'${o.seller_promptpay||''}','${(o.seller_name||'').replace(/'/g,"\\'")}')">💳 ดู QR ชำระเงิน</button>`:''}
               ${o.seller_id&&o.status!=='cancelled'?`<button class="btn btn-sm" onclick="startChat(${o.seller_id},${o.product_id||'null'})">💬 คุยกับผู้ขาย</button>`:''}
               ${o.status==='confirmed'&&o.shipping_status==='shipped'?`<button class="btn btn-sm btn-g" onclick="markOrderReceived(${o.id})">✅ ยืนยันรับสินค้า</button>`:''}
               ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-danger" onclick="doCancelOrder(${o.id})">❌ ยกเลิก</button>`:''}
