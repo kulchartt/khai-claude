@@ -115,6 +115,7 @@ const api = {
   getTransactions() { return this.get('/api/users/me/transactions'); },
   getTrending() { return this.get('/api/products/trending'); },
   adminVerifySeller(id) { return this.patch('/api/admin/users/'+id+'/verify', {}); },
+  adminToggleAdmin(id) { return this.patch('/api/admin/users/'+id+'/toggle-admin', {}); },
   adminGetDisputes() { return this.get('/api/admin/disputes'); },
   adminUpdateDispute(id, status, admin_note) { return this.patch('/api/admin/disputes/'+id, {status, admin_note}); },
 };

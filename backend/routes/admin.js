@@ -45,6 +45,19 @@ router.get('/users', adminOnly, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.patch('/users/:id/toggle-admin', adminOnly, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows: ur } = await db.query('SELECT * FROM users WHERE id = $1', [req.params.id]);
+    const user = ur[0];
+    if (!user) return res.status(404).json({ error: 'ไม่พบผู้ใช้' });
+    if (user.id === req.user.id) return res.status(400).json({ error: 'ไม่สามารถเปลี่ยนสิทธิ์ตัวเองได้' });
+    const newVal = user.is_admin ? 0 : 1;
+    await db.query('UPDATE users SET is_admin = $1 WHERE id = $2', [newVal, req.params.id]);
+    res.json({ message: newVal ? `ให้สิทธิ์ Admin แก่ ${user.name} แล้ว 🛡️` : `ถอดสิทธิ์ Admin ของ ${user.name} แล้ว`, is_admin: newVal });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.patch('/users/:id/ban', adminOnly, async (req, res) => {
   try {
     const db = getDB();
