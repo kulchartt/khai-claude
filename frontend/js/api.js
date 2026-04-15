@@ -76,4 +76,9 @@ const api = {
   getAnalytics() { return this.get('/api/users/me/analytics'); },
   getChatUnread() { return this.get('/api/chat/unread'); },
   markOrderReceived(id) { return this.patch('/api/users/me/orders/'+id+'/received', {}); },
+  getPromptpay() { return this.get('/api/users/me/promptpay'); },
+  savePromptpay(promptpay) { return this.patch('/api/users/me/promptpay', { promptpay }); },
+  getSellerOrders() { return this.get('/api/users/me/seller-orders'); },
+  submitSlip(orderId, fd) { return this.req('POST', '/api/orders/'+orderId+'/slip', fd, true); },
+  confirmPayment(orderId) { return this.patch('/api/orders/'+orderId+'/confirm-payment', {}); },
 };

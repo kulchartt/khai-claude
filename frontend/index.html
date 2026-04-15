@@ -359,6 +359,35 @@
   </div>
 </div>
 
+<!-- Payment QR Modal -->
+<div class="overlay" id="paymentOverlay">
+  <div class="modal">
+    <button class="mclose" onclick="closePaymentModal()">×</button>
+    <h2>💳 ชำระเงินผ่าน PromptPay</h2>
+    <input type="hidden" id="paymentOrderId"/>
+    <div id="paymentInfo" style="text-align:center;margin-bottom:16px">
+      <div style="font-size:13px;color:var(--text-sec);margin-bottom:4px">โอนเงินให้</div>
+      <div id="paymentSellerName" style="font-weight:600;font-size:16px;margin-bottom:8px"></div>
+      <div id="paymentPromptpay" style="font-size:13px;color:var(--text-sec);margin-bottom:12px"></div>
+      <div id="qrContainer" style="display:flex;justify-content:center;margin-bottom:12px"></div>
+      <div id="paymentAmount" style="font-size:22px;font-weight:700;color:var(--green)"></div>
+      <div style="font-size:12px;color:var(--text-hint);margin-top:4px">กรุณาโอนให้ตรงจำนวน</div>
+    </div>
+    <div class="field">
+      <label>แนบ slip การโอนเงิน *</label>
+      <div class="img-upload-wrap" id="slipUploadWrap" onclick="document.getElementById('slipImg').click()" style="height:80px">
+        <div class="img-upload-placeholder" id="slipPlaceholder">📎 กดเพื่อแนบ slip</div>
+        <img id="slipPreview" style="display:none;max-height:70px;border-radius:8px;object-fit:contain"/>
+      </div>
+      <input type="file" id="slipImg" accept="image/*" style="display:none" onchange="previewSlip(this)"/>
+    </div>
+    <div class="row-btns">
+      <button class="btn btn-g" style="flex:1" onclick="doSubmitSlip()">📤 ส่ง slip ยืนยัน</button>
+      <button class="btn" onclick="closePaymentModal()">จ่ายทีหลัง</button>
+    </div>
+  </div>
+</div>
+
 <!-- Report Modal -->
 <div class="overlay" id="reportOverlay">
   <div class="modal">
@@ -382,6 +411,7 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>

@@ -40,6 +40,39 @@ router.patch('/me/orders/:id/received', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.get('/me/promptpay', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await getDB().query('SELECT promptpay FROM users WHERE id = $1', [req.user.id]);
+    res.json({ promptpay: rows[0]?.promptpay || null });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.patch('/me/promptpay', authMiddleware, async (req, res) => {
+  try {
+    const { promptpay } = req.body;
+    await getDB().query('UPDATE users SET promptpay = $1 WHERE id = $2', [promptpay || null, req.user.id]);
+    res.json({ message: 'บันทึก PromptPay แล้ว ✅' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/me/seller-orders', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await getDB().query(`
+      SELECT o.id, o.total, o.status, o.slip_url, o.created_at,
+        u.name as buyer_name, u.email as buyer_email,
+        STRING_AGG(p.title, ', ') as items
+      FROM orders o
+      JOIN order_items oi ON o.id = oi.order_id
+      JOIN products p ON oi.product_id = p.id
+      JOIN users u ON o.user_id = u.id
+      WHERE p.seller_id = $1
+      GROUP BY o.id, u.name, u.email
+      ORDER BY o.created_at DESC
+    `, [req.user.id]);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/me/analytics', authMiddleware, async (req, res) => {
   try {
     const { rows } = await getDB().query(`
