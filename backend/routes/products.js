@@ -141,6 +141,19 @@ router.put('/:id', authMiddleware, uploadMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.patch('/:id/close', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows: pr } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
+    const product = pr[0];
+    if (!product) return res.status(404).json({ error: 'ไม่พบสินค้า' });
+    if (product.seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+    if (product.status === 'sold') return res.status(400).json({ error: 'สินค้านี้ขายไปแล้ว' });
+    await db.query("UPDATE products SET status = 'sold' WHERE id = $1", [req.params.id]);
+    res.json({ message: 'ปิดการขายแล้ว 🏷️ สินค้าถูกทำเครื่องหมายว่าขายแล้ว' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.post('/:id/bump', authMiddleware, async (req, res) => {
   try {
     const db = getDB();
