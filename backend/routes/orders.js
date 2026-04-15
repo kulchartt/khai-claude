@@ -119,6 +119,41 @@ router.patch('/:id/confirm-payment', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// PATCH /api/orders/:id/seller-cancel — ผู้ขายยกเลิกออเดอร์ (ตกลงคืนเงินกันเอง)
+router.patch('/:id/seller-cancel', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows: sellers } = await db.query(`
+      SELECT DISTINCT p.seller_id FROM orders o
+      JOIN order_items oi ON o.id = oi.order_id
+      JOIN products p ON oi.product_id = p.id WHERE o.id = $1
+    `, [req.params.id]);
+    if (!sellers.find(r => r.seller_id === req.user.id)) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+
+    const { rows: or } = await db.query('SELECT * FROM orders WHERE id = $1', [req.params.id]);
+    const order = or[0];
+    if (!order) return res.status(404).json({ error: 'ไม่พบออเดอร์' });
+    if (order.status === 'completed') return res.status(400).json({ error: 'ออเดอร์เสร็จสิ้นแล้ว ไม่สามารถยกเลิกได้' });
+
+    // คืนสินค้ากลับมา available
+    const { rows: items } = await db.query('SELECT product_id FROM order_items WHERE order_id = $1', [req.params.id]);
+    for (const { product_id } of items) {
+      await db.query("UPDATE products SET status = 'available' WHERE id = $1", [product_id]);
+    }
+    await db.query("UPDATE orders SET status = 'cancelled' WHERE id = $1", [req.params.id]);
+
+    // แจ้งผู้ซื้อ
+    const io = req.app.get('io');
+    const onlineUsers = req.app.get('onlineUsers');
+    await db.query("INSERT INTO notifications (user_id, type, title, body) VALUES ($1,'order','ผู้ขายยกเลิกออเดอร์ ❌',$2)",
+      [order.user_id, `ออเดอร์ #${String(req.params.id).padStart(4,'0')} ถูกยกเลิกโดยผู้ขาย — กรุณาติดต่อผู้ขายเพื่อรับเงินคืน`]);
+    const sock = onlineUsers?.get(order.user_id);
+    if (sock) io?.to(sock).emit('notification', { type: 'order' });
+
+    res.json({ message: 'ยกเลิกออเดอร์แล้ว สินค้ากลับมาวางขายแล้ว' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // PATCH /api/orders/:id/ship — ผู้ขายอัพเดทสถานะการจัดส่ง
 router.patch('/:id/ship', authMiddleware, async (req, res) => {
   try {

@@ -84,4 +84,5 @@ const api = {
   confirmPayment(orderId) { return this.patch('/api/orders/'+orderId+'/confirm-payment', {}); },
   cancelOrder(orderId) { return this.patch('/api/orders/'+orderId+'/cancel', {}); },
   shipOrder(orderId, shipping_status) { return this.patch('/api/orders/'+orderId+'/ship', { shipping_status }); },
+  sellerCancelOrder(orderId) { return this.patch('/api/orders/'+orderId+'/seller-cancel', {}); },
 };

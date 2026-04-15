@@ -191,6 +191,7 @@ function profileTab(tab){
               ${o.status==='confirmed'&&(!o.shipping_status||o.shipping_status==='pending')?`<button class="btn btn-sm" onclick="doShipOrder(${o.id},'preparing')">📦 กำลังเตรียมของ</button>`:''}
               ${o.status==='confirmed'&&o.shipping_status==='preparing'?`<button class="btn btn-sm btn-g" onclick="doShipOrder(${o.id},'shipped')">🚚 ส่งพัสดุแล้ว</button>`:''}
               ${o.status==='confirmed'&&o.shipping_status==='shipped'?`<span style="font-size:12px;color:#16a34a;font-weight:600">🚚 รอผู้ซื้อยืนยันรับ</span>`:''}
+              ${o.status!=='completed'&&o.status!=='cancelled'?`<button class="btn btn-sm btn-danger" onclick="doSellerCancel(${o.id})">❌ ยกเลิก (คืนเงิน)</button>`:''}
             </div>
           </div>
         </div>`).join('')+'</div>';
@@ -609,6 +610,15 @@ async function doCancelOrder(id){
     const res=await api.cancelOrder(id);
     toast(res.message,'#1D9E75');
     profileTab('orders');
+  }catch(e){toast(e.message);}
+}
+
+async function doSellerCancel(id){
+  if(!confirm('ยืนยันยกเลิกออเดอร์นี้?\n\n⚠️ ถ้าผู้ซื้อโอนเงินมาแล้ว คุณต้องโอนเงินคืนให้ผู้ซื้อเองนอกระบบ\nสินค้าจะกลับมาวางขายอีกครั้ง'))return;
+  try{
+    const res=await api.sellerCancelOrder(id);
+    toast(res.message,'#1D9E75');
+    profileTab('selling');
   }catch(e){toast(e.message);}
 }
 
