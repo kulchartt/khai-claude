@@ -93,6 +93,27 @@ router.post('/', authMiddleware, uploadMiddleware, async (req, res) => {
       await db.query('INSERT INTO product_images (product_id, url, sort_order) VALUES ($1,$2,$3)', [productId, uploadedUrls[i], i]);
     }
 
+    // แจ้งเตือนผู้ติดตาม
+    try {
+      const { rows: followers } = await db.query(
+        'SELECT follower_id FROM follows WHERE seller_id = $1', [req.user.id]
+      );
+      if (followers.length > 0) {
+        const { rows: sellerRow } = await db.query('SELECT name FROM users WHERE id = $1', [req.user.id]);
+        const sellerName = sellerRow[0]?.name || 'ผู้ขาย';
+        const io = req.app.get('io');
+        const onlineUsers = req.app.get('onlineUsers');
+        for (const { follower_id } of followers) {
+          await db.query(
+            "INSERT INTO notifications (user_id, type, title, body) VALUES ($1,'system','สินค้าใหม่จากคนที่คุณติดตาม 🛍️',$2)",
+            [follower_id, `${sellerName} ลงขาย "${title}" ราคา ฿${Number(price).toLocaleString()}`]
+          );
+          const sock = onlineUsers?.get(follower_id);
+          if (sock) io?.to(sock).emit('notification', { type: 'system' });
+        }
+      }
+    } catch (notifErr) { console.error('follower notify error:', notifErr); }
+
     res.json({ id: productId, message: 'ลงขายสินค้าสำเร็จ!' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

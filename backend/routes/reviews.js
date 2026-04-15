@@ -25,6 +25,14 @@ router.post('/', authMiddleware, async (req, res) => {
     const product = pr[0];
     if (!product) return res.status(404).json({ error: 'ไม่พบสินค้า' });
     if (product.seller_id === req.user.id) return res.status(400).json({ error: 'ไม่สามารถรีวิวสินค้าตัวเองได้' });
+    // ตรวจสอบว่ามีออเดอร์ที่ completed สำหรับสินค้านี้
+    const { rows: completedOrders } = await db.query(`
+      SELECT o.id FROM orders o
+      JOIN order_items oi ON o.id = oi.order_id
+      WHERE oi.product_id = $1 AND o.user_id = $2 AND o.status = 'completed'
+      LIMIT 1
+    `, [product_id, req.user.id]);
+    if (!completedOrders.length) return res.status(403).json({ error: 'รีวิวได้เฉพาะสินค้าที่รับแล้วเท่านั้น' });
     await db.query(
       'INSERT INTO reviews (product_id, reviewer_id, seller_id, rating, comment) VALUES ($1,$2,$3,$4,$5)',
       [product_id, req.user.id, product.seller_id, rating, comment || '']

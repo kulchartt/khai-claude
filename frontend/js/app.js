@@ -1,4 +1,4 @@
-console.log('%c app.js v20260415-reserved ', 'background:#16a34a;color:#fff;padding:2px 6px;border-radius:4px');
+console.log('%c app.js v20260416 ', 'background:#16a34a;color:#fff;padding:2px 6px;border-radius:4px');
 const EMOJIS={มือถือ:'📱',เสื้อผ้า:'👗',หนังสือ:'📚',กีฬา:'⚽',ของแต่งบ้าน:'🏠',กล้อง:'📷'};
 const CMAP={'มือสองใหม่':'cond-new','สภาพดี':'cond-good','สภาพพอใช้':'cond-fair'};
 const NICONS={chat:'💬',review:'⭐',order:'📦',system:'📢'};
@@ -184,6 +184,7 @@ function profileTab(tab){
             <div style="display:flex;flex-direction:column;gap:4px">
               <div class="order-status ${['awaiting_payment','awaiting_confirmation','pending'].includes(o.status)?'status-pending':'status-done'}">${statusLabel[o.status]||o.status}</div>
               ${o.status==='confirmed'||o.status==='completed'?`<div style="font-size:12px;color:var(--text-sec)">${shipLabel[o.shipping_status]||'ยังไม่จัดส่ง'}</div>`:''}
+              ${o.tracking_number?`<div style="font-size:12px;color:var(--text-sec)">📮 Tracking: <b>${o.tracking_number}</b></div>`:''}
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
               ${o.slip_url?`<a href="${o.slip_url}" target="_blank" class="btn btn-sm">🖼️ slip</a>`:''}
@@ -217,6 +218,7 @@ function profileTab(tab){
             <div style="display:flex;flex-direction:column;gap:4px">
               <div class="order-status ${o.status==='completed'?'status-done':o.status==='cancelled'?'status-cancel':'status-pending'}">${statusLabel[o.status]||o.status}</div>
               ${o.status==='confirmed'&&o.shipping_status&&o.shipping_status!=='pending'?`<div style="font-size:12px;color:#2563eb;font-weight:500">${shipLabel[o.shipping_status]||''}</div>`:''}
+              ${o.tracking_number?`<div style="font-size:12px;color:var(--text-sec)">📮 Tracking: <b>${o.tracking_number}</b></div>`:''}
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
               ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-g" onclick="showPaymentQR(${o.id},${o.total},'${o.seller_promptpay||''}','${(o.seller_name||'').replace(/'/g,"\\'")}')">💳 ดู QR ชำระเงิน</button>`:''}
@@ -280,8 +282,9 @@ function profileTab(tab){
 
 async function doUploadAvatar(input){if(!input.files[0])return;const fd=new FormData();fd.append('avatar',input.files[0]);try{const res=await api.uploadAvatar(fd);toast('อัปเดตรูปโปรไฟล์แล้ว ✅','#1D9E75');openProfile();}catch(e){toast(e.message);}}
 
-async function openSellerProfile(userId){try{const[seller,products]=await Promise.all([api.getSeller(userId),api.getSellerProducts(userId)]);document.getElementById('sellerBackBtn').onclick=()=>history.back();const avatarHtml=seller.avatar?`<img src="${imgSrc(seller.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${(seller.name||'?').slice(0,2).toUpperCase()}`;const isOwnProfile = state.user && state.user.id === seller.id;
-document.getElementById('sellerContent').innerHTML=`<div class="profile-header"><div class="p-avatar" style="overflow:hidden">${avatarHtml}</div><div style="flex:1"><div class="p-name">${seller.name}</div><div class="p-email">สมาชิกตั้งแต่ ${new Date(seller.created_at).toLocaleDateString('th',{year:'numeric',month:'long'})}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${products.length}</div><div class="stat-l">สินค้า</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${seller.rating||5.0}★</div><div class="stat-l">คะแนน</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${seller.review_count||0}</div><div class="stat-l">รีวิว</div></div></div>${!isOwnProfile?`<button class="btn btn-g" style="margin-top:10px;width:100%" onclick="startChat(${seller.id},null)">💬 แชทกับผู้ขาย</button>`:''}</div></div><div class="section-title" style="margin-top:20px"><span>สินค้าทั้งหมด (${products.length})</span></div><div class="product-grid" id="sellerProductGrid"></div>`;renderCards(products,'sellerProductGrid');goPage('seller');}catch(e){toast(e.message);}}
+async function toggleFollow(sellerId){if(!state.user){openOverlay('loginOverlay');return;}try{const res=await api.toggleFollow(sellerId);toast(res.message,res.following?'#1D9E75':undefined);openSellerProfile(sellerId);}catch(e){toast(e.message);}}
+async function openSellerProfile(userId){try{const reqs=[api.getSeller(userId),api.getSellerProducts(userId),api.getFollowerCount(userId)];if(state.user)reqs.push(api.getFollowStatus(userId));const[seller,products,followerData,...rest]=await Promise.all(reqs);const followStatus=rest[0];document.getElementById('sellerBackBtn').onclick=()=>history.back();const avatarHtml=seller.avatar?`<img src="${imgSrc(seller.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${(seller.name||'?').slice(0,2).toUpperCase()}`;const isOwnProfile=state.user&&state.user.id===seller.id;const isFollowing=followStatus?.following||false;const followerCount=followerData?.count||0;
+document.getElementById('sellerContent').innerHTML=`<div class="profile-header"><div class="p-avatar" style="overflow:hidden">${avatarHtml}</div><div style="flex:1"><div class="p-name">${seller.name}</div><div class="p-email">สมาชิกตั้งแต่ ${new Date(seller.created_at).toLocaleDateString('th',{year:'numeric',month:'long'})}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${products.length}</div><div class="stat-l">สินค้า</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${seller.rating||5.0}★</div><div class="stat-l">คะแนน</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${seller.review_count||0}</div><div class="stat-l">รีวิว</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${followerCount}</div><div class="stat-l">ผู้ติดตาม</div></div></div>${!isOwnProfile?`<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="flex:1" onclick="startChat(${seller.id},null)">💬 แชทกับผู้ขาย</button><button class="btn ${isFollowing?'btn-danger':''}" style="flex:1" onclick="toggleFollow(${seller.id})">${isFollowing?'💔 เลิกติดตาม':'❤️ ติดตาม'}</button></div>`:''}</div></div><div class="section-title" style="margin-top:20px"><span>สินค้าทั้งหมด (${products.length})</span></div><div class="product-grid" id="sellerProductGrid"></div>`;renderCards(products,'sellerProductGrid');goPage('seller');}catch(e){toast(e.message);}}
 
 function canBump(bumpedAt){
   if(!bumpedAt)return true;
@@ -396,8 +399,8 @@ async function openRoom(roomId){
       :'';
     document.getElementById('chatMain').innerHTML=`
       <div class="chat-header" style="display:flex;align-items:center;gap:8px">${headerInfo}${closeSaleBtn}</div>
-      <div class="chat-messages" id="msgList">${msgs.map(m=>{const out=m.sender_id===state.user.id;return `<div>${!out?`<div class="msg-name">${m.sender_name}</div>`:''}<div class="msg ${out?'msg-out':'msg-in'}">${m.content}<div class="msg-time">${new Date(m.created_at).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div></div></div>`;}).join('')}</div>
-      <div class="chat-input"><input type="text" id="msgInput" placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter')sendMsg()" autocomplete="off"/><button onclick="sendMsg()">ส่ง</button></div>`;
+      <div class="chat-messages" id="msgList">${msgs.map(m=>{const out=m.sender_id===state.user.id;const isImg=m.content&&m.content.startsWith('__img__:');const msgBody=isImg?`<img src="${m.content.slice(8)}" style="max-width:200px;border-radius:8px;cursor:pointer;display:block" onclick="window.open(this.src)" loading="lazy"/>`:m.content;return `<div>${!out?`<div class="msg-name">${m.sender_name}</div>`:''}<div class="msg ${out?'msg-out':'msg-in'}">${msgBody}<div class="msg-time">${new Date(m.created_at).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div></div></div>`;}).join('')}</div>
+      <div class="chat-input"><input type="text" id="msgInput" placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter')sendMsg()" autocomplete="off"/><button class="btn btn-sm" onclick="document.getElementById('chatImgInput').click()" title="ส่งรูป">📷</button><input type="file" id="chatImgInput" accept="image/*" style="display:none" onchange="sendChatImage(this)"/><button onclick="sendMsg()">ส่ง</button></div>`;
     const ml=document.getElementById('msgList');
     if(ml)ml.scrollTop=ml.scrollHeight;
     if(socket)socket.emit('join_room',roomId);
@@ -421,6 +424,7 @@ async function doCloseSale(productId){
   }catch(e){toast(e.message);}
 }
 function sendMsg(){const input=document.getElementById('msgInput');if(!input||!input.value.trim()||!socket)return;socket.emit('send_message',{room_id:currentRoomId,content:input.value.trim()});input.value='';}
+async function sendChatImage(input){if(!input.files[0]||!currentRoomId)return;const fd=new FormData();fd.append('image',input.files[0]);try{toast('กำลังส่งรูป...');await api.sendChatImage(currentRoomId,fd);const msgs=await api.getMessages(currentRoomId);const ml=document.getElementById('msgList');if(!ml)return;ml.innerHTML=msgs.map(m=>{const out=m.sender_id===state.user.id;const isImg=m.content&&m.content.startsWith('__img__:');const msgBody=isImg?`<img src="${m.content.slice(8)}" style="max-width:200px;border-radius:8px;cursor:pointer;display:block" onclick="window.open(this.src)" loading="lazy"/>`:m.content;return `<div>${!out?`<div class="msg-name">${m.sender_name}</div>`:''}<div class="msg ${out?'msg-out':'msg-in'}">${msgBody}<div class="msg-time">${new Date(m.created_at).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div></div></div>`;}).join('');ml.scrollTop=ml.scrollHeight;input.value='';}catch(e){toast(e.message);}}
 
 async function openNotifications(){if(!state.user){openOverlay('loginOverlay');return;}try{const res=await api.getNotifications();const list=document.getElementById('notifList');if(!res.notifications.length){list.innerHTML='<div class="empty-msg">ไม่มีการแจ้งเตือน</div>';goPage('notifications');return;}list.innerHTML=res.notifications.map(n=>`<div class="notif-item ${n.is_read?'':'unread'}" onclick="clickNotif(${n.id},'${n.link}')"><div class="notif-icon">${NICONS[n.type]||'📢'}</div><div style="flex:1"><div class="notif-title">${n.title}</div><div class="notif-body">${n.body}</div><div class="notif-time">${new Date(n.created_at).toLocaleString('th')}</div></div><button onclick="event.stopPropagation();delNotif(${n.id})" style="background:none;border:none;color:var(--text-hint);cursor:pointer;font-size:16px">×</button></div>`).join('');
   // mark all as read ทั้ง backend และ frontend
@@ -438,7 +442,7 @@ async function adminBan(id){try{const r=await api.adminBanUser(id);toast(r.messa
 async function adminDelProduct(id){if(!confirm('ลบสินค้านี้?'))return;try{await api.adminDeleteProduct(id);toast('ลบแล้ว');adminTab('products');}catch(e){toast(e.message);}}
 async function adminToggleProduct(id,status){try{await api.adminUpdateProductStatus(id,status);adminTab('products');}catch(e){toast(e.message);}}
 
-function connectSocket(){if(!state.token||socket)return;socket=window.io(CONFIG.API_URL,{auth:{token:state.token}});socket.on('new_message',msg=>{if(msg.room_id!==currentRoomId)return;const ml=document.getElementById('msgList');if(!ml)return;const out=msg.sender_id===state.user.id;const div=document.createElement('div');div.innerHTML=`${!out?`<div class="msg-name">${msg.sender_name}</div>`:''}<div class="msg ${out?'msg-out':'msg-in'}">${msg.content}<div class="msg-time">${new Date(msg.created_at).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div></div>`;ml.appendChild(div);ml.scrollTop=ml.scrollHeight;});socket.on('notification',()=>{state.notifCount++;updateBadge('notifBadge',state.notifCount);state.chatCount++;updateBadge('chatBadge',state.chatCount);});}
+function connectSocket(){if(!state.token||socket)return;socket=window.io(CONFIG.API_URL,{auth:{token:state.token}});socket.on('new_message',msg=>{if(msg.room_id!==currentRoomId)return;const ml=document.getElementById('msgList');if(!ml)return;const out=msg.sender_id===state.user.id;const isImg=msg.content&&msg.content.startsWith('__img__:');const msgBody=isImg?`<img src="${msg.content.slice(8)}" style="max-width:200px;border-radius:8px;cursor:pointer;display:block" onclick="window.open(this.src)" loading="lazy"/>`:msg.content;const div=document.createElement('div');div.innerHTML=`${!out?`<div class="msg-name">${msg.sender_name}</div>`:''}<div class="msg ${out?'msg-out':'msg-in'}">${msgBody}<div class="msg-time">${new Date(msg.created_at).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div></div>`;ml.appendChild(div);ml.scrollTop=ml.scrollHeight;});socket.on('notification',()=>{state.notifCount++;updateBadge('notifBadge',state.notifCount);state.chatCount++;updateBadge('chatBadge',state.chatCount);});}
 
 async function syncBadges(){if(!state.user)return;try{const[cart,wl,notifs,chatUnread]=await Promise.all([api.getCart(),api.getWishlist(),api.getNotifications(),api.getChatUnread().catch(()=>({unread:0}))]);state.cartCount=cart.reduce((s,x)=>s+x.qty,0);state.wlCount=wl.length;state.wlIds=wl.map(x=>x.product_id);state.notifCount=notifs.unread;state.chatCount=chatUnread.unread||0;updateBadge('cartBadge',state.cartCount);updateBadge('wlBadge',state.wlCount);updateBadge('notifBadge',state.notifCount);updateBadge('chatBadge',state.chatCount);}catch{}}
 
@@ -626,8 +630,10 @@ async function doSellerCancel(id){
 async function doShipOrder(id, shipping_status){
   const labels={preparing:'ยืนยันว่ากำลังเตรียมของ?',shipped:'ยืนยันว่าส่งพัสดุแล้ว? ผู้ซื้อจะได้รับการแจ้งเตือน'};
   if(!confirm(labels[shipping_status]))return;
+  let tracking=null;
+  if(shipping_status==='shipped'){tracking=prompt('กรอกเลข Tracking (ไปรษณีย์/Kerry/Flash ฯลฯ)\nหรือกด Cancel เพื่อข้าม');}
   try{
-    const res=await api.shipOrder(id,shipping_status);
+    const res=await api.shipOrder(id,shipping_status,tracking||null);
     toast(res.message,'#1D9E75');
     profileTab('selling');
   }catch(e){toast(e.message);}
@@ -679,3 +685,54 @@ function switchImg(url, el) {
   document.querySelectorAll('.detail-thumb').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
 }
+
+// ===== Feature 4: Categories Page =====
+const CATEGORIES=[{name:'ทั้งหมด',emoji:'🛍️'},{name:'มือถือ',emoji:'📱'},{name:'เสื้อผ้า',emoji:'👗'},{name:'หนังสือ',emoji:'📚'},{name:'กีฬา',emoji:'⚽'},{name:'ของแต่งบ้าน',emoji:'🏠'},{name:'กล้อง',emoji:'📷'},{name:'อื่นๆ',emoji:'📦'}];
+function openCategories(){
+  const pg=document.getElementById('page-categories');
+  if(!pg)return;
+  pg.querySelector('#catPageGrid').innerHTML=CATEGORIES.map(c=>`<div class="cat-card" onclick="selectCategory('${c.name}')"><div class="cat-card-emoji">${c.emoji}</div><div class="cat-card-name">${c.name}</div></div>`).join('');
+  goPage('categories');
+}
+function selectCategory(cat){
+  state.cat=cat;
+  const chips=document.querySelectorAll('.chip');
+  chips.forEach(c=>{const onclick=c.getAttribute('onclick')||'';c.classList.toggle('on',onclick.includes("setCat('"+cat+"'"));});
+  goPage('home');
+}
+
+// ===== Feature 5: Pull-to-Refresh =====
+let _touchStartY=0;
+document.addEventListener('touchstart',e=>{_touchStartY=e.touches[0].clientY;},{passive:true});
+document.addEventListener('touchend',e=>{
+  const diff=e.changedTouches[0].clientY-_touchStartY;
+  const page=document.querySelector('.page.active');
+  if(diff>80&&page?.id==='page-home'&&window.scrollY===0){loadProducts();toast('🔄 รีเฟรชแล้ว','#1D9E75');}
+},{passive:true});
+
+// ===== Feature 6: Infinite Scroll =====
+let _productPage=1;
+const _productLimit=20;
+let _productLoading=false;
+let _productDone=false;
+
+const _origLoadProducts=loadProducts;
+async function loadProducts(){
+  _productPage=1;_productDone=false;
+  const q=document.getElementById('searchQ').value,minPrice=document.getElementById('minP').value,maxPrice=document.getElementById('maxP').value,sort=document.getElementById('sortSel').value,condition=document.getElementById('condSel').value,location=document.getElementById('locationSel').value;
+  document.getElementById('productGrid').innerHTML=Array(8).fill('<div class="skeleton-card"><div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div></div>').join('');
+  try{const params={page:1,limit:_productLimit};if(state.cat!=='ทั้งหมด')params.cat=state.cat;if(q)params.q=q;if(minPrice)params.minPrice=minPrice;if(maxPrice)params.maxPrice=maxPrice;if(sort)params.sort=sort;if(condition)params.condition=condition;if(location)params.location=location;const products=await api.getProducts(params);window._allProducts=(window._allProducts||[]);if(!q&&!minPrice&&!maxPrice&&!condition&&!location&&state.cat==='ทั้งหมด')window._allProducts=products;document.getElementById('statCount').textContent=products.length+'+';renderCards(products,'productGrid');renderRecentlyViewed();if(products.length<_productLimit)_productDone=true;}
+  catch(e){document.getElementById('productGrid').innerHTML='<div class="empty-msg">โหลดไม่สำเร็จ</div>';}
+}
+
+async function _loadMoreProducts(){
+  if(_productLoading||_productDone)return;
+  _productLoading=true;
+  _productPage++;
+  const q=document.getElementById('searchQ').value,minPrice=document.getElementById('minP').value,maxPrice=document.getElementById('maxP').value,sort=document.getElementById('sortSel').value,condition=document.getElementById('condSel').value,location=document.getElementById('locationSel').value;
+  try{const params={page:_productPage,limit:_productLimit};if(state.cat!=='ทั้งหมด')params.cat=state.cat;if(q)params.q=q;if(minPrice)params.minPrice=minPrice;if(maxPrice)params.maxPrice=maxPrice;if(sort)params.sort=sort;if(condition)params.condition=condition;if(location)params.location=location;const products=await api.getProducts(params);if(!products.length){_productDone=true;}else{const g=document.getElementById('productGrid');const sentinel=document.getElementById('scrollSentinel');const frag=document.createDocumentFragment();products.forEach(p=>{const div=document.createElement('div');div.className='card';div.onclick=()=>openDetail(p.id);const priceHtml=p.original_price?`<div class="card-price">฿${Number(p.price).toLocaleString()} <span class="original-price">฿${Number(p.original_price).toLocaleString()}</span></div>`:`<div class="card-price">฿${Number(p.price).toLocaleString()}</div>`;div.innerHTML=`<div class="card-img">${productImg(p)}${p.original_price?'<span class="price-drop-badge">ลดราคา</span>':''}${p.status==='reserved'?'<span class="reserved-badge">รอยืนยัน</span>':''}</div><div class="card-body"><div class="card-title">${p.title}</div>${priceHtml}<div class="card-foot"><span class="cond ${CMAP[p.condition||p.cond]||''}">${p.condition||p.cond}</span><span class="seller-nm">${p.seller_name||p.location||''}</span></div></div>`;frag.appendChild(div);});if(sentinel)g.insertBefore(frag,sentinel);else g.appendChild(frag);if(products.length<_productLimit)_productDone=true;}}
+  catch{}finally{_productLoading=false;}
+}
+
+// Set up IntersectionObserver for sentinel
+(function(){const sentinel=document.getElementById('scrollSentinel');if(!sentinel)return;const obs=new IntersectionObserver(entries=>{if(entries[0].isIntersecting)_loadMoreProducts();},{rootMargin:'200px'});obs.observe(sentinel);})();

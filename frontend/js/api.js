@@ -83,6 +83,11 @@ const api = {
   submitSlip(orderId, fd) { return this.req('POST', '/api/orders/'+orderId+'/slip', fd, true); },
   confirmPayment(orderId) { return this.patch('/api/orders/'+orderId+'/confirm-payment', {}); },
   cancelOrder(orderId) { return this.patch('/api/orders/'+orderId+'/cancel', {}); },
-  shipOrder(orderId, shipping_status) { return this.patch('/api/orders/'+orderId+'/ship', { shipping_status }); },
+  shipOrder(orderId, shipping_status, tracking_number) { return this.patch('/api/orders/'+orderId+'/ship', { shipping_status, tracking_number }); },
   sellerCancelOrder(orderId) { return this.patch('/api/orders/'+orderId+'/seller-cancel', {}); },
+  sendChatImage(roomId, fd) { return this.req('POST', '/api/chat/rooms/'+roomId+'/image', fd, true); },
+  toggleFollow(sellerId) { return this.post('/api/follows/toggle', { seller_id: sellerId }); },
+  getFollows() { return this.get('/api/follows'); },
+  getFollowerCount(sellerId) { return this.get('/api/follows/count/'+sellerId); },
+  getFollowStatus(sellerId) { return this.get('/api/follows/status/'+sellerId); },
 };

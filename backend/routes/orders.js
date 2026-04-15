@@ -158,7 +158,7 @@ router.patch('/:id/seller-cancel', authMiddleware, async (req, res) => {
 router.patch('/:id/ship', authMiddleware, async (req, res) => {
   try {
     const db = getDB();
-    const { shipping_status } = req.body; // 'preparing' | 'shipped'
+    const { shipping_status, tracking_number } = req.body; // 'preparing' | 'shipped'
     if (!['preparing', 'shipped'].includes(shipping_status)) {
       return res.status(400).json({ error: 'สถานะไม่ถูกต้อง' });
     }
@@ -175,14 +175,19 @@ router.patch('/:id/ship', authMiddleware, async (req, res) => {
     if (!or[0]) return res.status(404).json({ error: 'ไม่พบออเดอร์' });
     if (or[0].status !== 'confirmed') return res.status(400).json({ error: 'ยังไม่ได้ยืนยันการชำระเงิน' });
 
-    await db.query('UPDATE orders SET shipping_status = $1 WHERE id = $2', [shipping_status, req.params.id]);
+    if (tracking_number !== undefined) {
+      await db.query('UPDATE orders SET shipping_status = $1, tracking_number = $2 WHERE id = $3', [shipping_status, tracking_number || null, req.params.id]);
+    } else {
+      await db.query('UPDATE orders SET shipping_status = $1 WHERE id = $2', [shipping_status, req.params.id]);
+    }
 
     // แจ้งเตือนผู้ซื้อ
     const io = req.app.get('io');
     const onlineUsers = req.app.get('onlineUsers');
     const label = shipping_status === 'shipped' ? 'ผู้ขายส่งพัสดุแล้ว 🚚' : 'ผู้ขายกำลังเตรียมของ 📦';
+    const trackingNote = (shipping_status === 'shipped' && tracking_number) ? ` เลข Tracking: ${tracking_number}` : '';
     const body = shipping_status === 'shipped'
-      ? `ออเดอร์ #${String(req.params.id).padStart(4,'0')} — พัสดุถูกส่งแล้ว กรุณารอรับสินค้า`
+      ? `ออเดอร์ #${String(req.params.id).padStart(4,'0')} — พัสดุถูกส่งแล้ว${trackingNote} กรุณารอรับสินค้า`
       : `ออเดอร์ #${String(req.params.id).padStart(4,'0')} — ผู้ขายกำลังเตรียมของ`;
     await db.query("INSERT INTO notifications (user_id, type, title, body) VALUES ($1,'order',$2,$3)",
       [or[0].user_id, label, body]);
