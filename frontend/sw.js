@@ -1,18 +1,11 @@
-const CACHE_NAME = 'mueasong-v5';
-const STATIC_ASSETS = [
-  './',
-  './index.html',
-  './manifest.json'
-];
+const CACHE_NAME = 'mueasong-v6';
 
-// Install: cache only HTML and manifest (not JS/CSS — they change often)
+// Install: skip waiting immediately — no pre-caching of HTML
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting())
-  );
+  e.waitUntil(self.skipWaiting());
 });
 
-// Activate: clean old caches
+// Activate: clean old caches and claim all clients
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then(keys =>
@@ -22,26 +15,42 @@ self.addEventListener('activate', (e) => {
 });
 
 // Fetch strategy:
-// - JS / CSS → always network-first (never stale)
-// - API / uploads → skip SW entirely
-// - everything else → cache-first with network fallback
+// - HTML (index.html, /) → network-first, fallback to cache (for offline)
+// - JS / CSS           → network-first, fallback to cache
+// - API / uploads      → skip SW entirely (pass through)
+// - images / fonts     → cache-first with network update (safe to cache long-term)
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
 
   const url = new URL(e.request.url);
 
-  // Skip API and uploaded files
+  // Skip API calls and uploaded files — never intercept
   if (url.pathname.includes('/api/') || url.pathname.includes('/uploads/')) return;
+  // Skip external CDN resources (socket.io, qrcode, etc.)
+  if (url.origin !== self.location.origin) return;
 
-  // JS and CSS: always fetch from network so code updates appear immediately
-  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+  const path = url.pathname;
+  const isHTML = path.endsWith('.html') || path === '/' || path.endsWith('/');
+  const isAsset = path.endsWith('.js') || path.endsWith('.css');
+
+  if (isHTML || isAsset) {
+    // Network-first: always try network, fall back to cache only if offline
     e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request))
+      fetch(e.request, { cache: 'no-store' })
+        .then(res => {
+          // Cache successful response for offline fallback
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+          }
+          return res;
+        })
+        .catch(() => caches.match(e.request))
     );
     return;
   }
 
-  // Everything else: cache-first with network fallback
+  // Images & other static assets: cache-first (they rarely change)
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
@@ -51,7 +60,7 @@ self.addEventListener('fetch', (e) => {
           caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
         }
         return res;
-      }).catch(() => caches.match('./index.html'));
+      });
     })
   );
 });
