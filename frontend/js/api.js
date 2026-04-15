@@ -54,6 +54,7 @@ const api = {
   openChatRoom(seller_id,product_id) { return this.post('/api/chat/room',{seller_id,product_id}); },
   getMessages(roomId) { return this.get('/api/chat/rooms/'+roomId+'/messages'); },
   getReviews(pid) { return this.get('/api/reviews/product/'+pid); },
+  getSellerReviews(sid) { return this.get('/api/reviews/seller/'+sid); },
   submitReview(pid,rating,comment) { return this.post('/api/reviews',{product_id:pid,rating,comment}); },
   getNotifications() { return this.get('/api/notifications'); },
   readAllNotifications() { return this.post('/api/notifications/read-all',{}); },

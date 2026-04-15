@@ -15,6 +15,20 @@ router.get('/product/:productId', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.get('/seller/:sellerId', async (req, res) => {
+  try {
+    const { rows } = await getDB().query(`
+      SELECT r.*, u.name as reviewer_name, p.title as product_title
+      FROM reviews r
+      JOIN users u ON r.reviewer_id = u.id
+      JOIN products p ON r.product_id = p.id
+      WHERE r.seller_id = $1 ORDER BY r.created_at DESC
+    `, [req.params.sellerId]);
+    const avg = rows.length ? (rows.reduce((s, r) => s + r.rating, 0) / rows.length).toFixed(1) : 0;
+    res.json({ reviews: rows, average: parseFloat(avg), count: rows.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const { product_id, rating, comment } = req.body;
