@@ -119,10 +119,42 @@ router.get('/:id/products', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.patch('/me/bank', authMiddleware, async (req, res) => {
+  try {
+    const { bank_name, bank_account, bank_account_name } = req.body;
+    await getDB().query(
+      'UPDATE users SET bank_name = $1, bank_account = $2, bank_account_name = $3 WHERE id = $4',
+      [bank_name || null, bank_account || null, bank_account_name || null, req.user.id]
+    );
+    res.json({ message: 'บันทึกข้อมูลบัญชีธนาคารแล้ว' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/me/transactions', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await getDB().query(
+      `SELECT o.id, o.total, o.created_at, u.name as buyer_name,
+         STRING_AGG(p.title, ', ') as items
+       FROM orders o
+       JOIN order_items oi ON o.id = oi.order_id
+       JOIN products p ON oi.product_id = p.id
+       JOIN users u ON o.user_id = u.id
+       WHERE p.seller_id = $1 AND o.status = 'completed'
+       GROUP BY o.id, u.name
+       ORDER BY o.created_at DESC`,
+      [req.user.id]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { rows } = await getDB().query(
-      'SELECT id, name, avatar, rating, review_count, created_at FROM users WHERE id = $1',
+      `SELECT id, name, avatar, rating, review_count, created_at,
+              shop_name, shop_bio, shop_banner, buyer_rating, buyer_review_count,
+              is_verified, bank_name, bank_account, bank_account_name
+       FROM users WHERE id = $1`,
       [req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'ไม่พบผู้ใช้' });

@@ -125,6 +125,67 @@ async function initDB() {
     UNIQUE(follower_id, seller_id)
   )`);
 
+  // Users new columns
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS shop_name TEXT DEFAULT NULL`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS shop_bio TEXT DEFAULT NULL`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS shop_banner TEXT DEFAULT NULL`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS buyer_rating REAL DEFAULT 5.0`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS buyer_review_count INTEGER DEFAULT 0`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified INTEGER DEFAULT 0`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_name TEXT DEFAULT NULL`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_account TEXT DEFAULT NULL`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_account_name TEXT DEFAULT NULL`);
+
+  // Address book
+  await db.query(`CREATE TABLE IF NOT EXISTS addresses (
+    id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    label TEXT NOT NULL DEFAULT 'บ้าน', recipient_name TEXT NOT NULL,
+    phone TEXT NOT NULL, address TEXT NOT NULL, province TEXT NOT NULL,
+    is_default INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT NOW()
+  )`);
+
+  // Buyer reviews (seller reviews buyer after completed order)
+  await db.query(`CREATE TABLE IF NOT EXISTS buyer_reviews (
+    id SERIAL PRIMARY KEY, order_id INTEGER NOT NULL REFERENCES orders(id),
+    reviewer_id INTEGER NOT NULL REFERENCES users(id),
+    buyer_id INTEGER NOT NULL REFERENCES users(id),
+    rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+    comment TEXT DEFAULT '', created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(order_id, reviewer_id)
+  )`);
+
+  // Saved searches
+  await db.query(`CREATE TABLE IF NOT EXISTS saved_searches (
+    id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    keyword TEXT DEFAULT '', category TEXT DEFAULT 'ทั้งหมด',
+    max_price REAL DEFAULT NULL, created_at TIMESTAMP DEFAULT NOW()
+  )`);
+
+  // Disputes
+  await db.query(`CREATE TABLE IF NOT EXISTS disputes (
+    id SERIAL PRIMARY KEY, order_id INTEGER NOT NULL REFERENCES orders(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    reason TEXT NOT NULL, detail TEXT DEFAULT '',
+    evidence_url TEXT DEFAULT NULL,
+    status TEXT DEFAULT 'open',
+    admin_note TEXT DEFAULT NULL, created_at TIMESTAMP DEFAULT NOW()
+  )`);
+
+  // Promo codes
+  await db.query(`CREATE TABLE IF NOT EXISTS promo_codes (
+    id SERIAL PRIMARY KEY, code TEXT NOT NULL,
+    seller_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    discount_type TEXT NOT NULL DEFAULT 'percent',
+    discount_value REAL NOT NULL,
+    min_order REAL DEFAULT 0,
+    uses_limit INTEGER DEFAULT NULL,
+    uses_count INTEGER DEFAULT 0,
+    expires_at TIMESTAMP DEFAULT NULL,
+    is_active INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(seller_id, code)
+  )`);
+
   await db.query(`CREATE TABLE IF NOT EXISTS reports (
     id SERIAL PRIMARY KEY, product_id INTEGER NOT NULL, reporter_id INTEGER NOT NULL,
     reason TEXT NOT NULL, detail TEXT DEFAULT '', status TEXT DEFAULT 'pending',

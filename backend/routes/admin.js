@@ -88,4 +88,42 @@ router.patch('/products/:id/status', adminOnly, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.patch('/users/:id/verify', adminOnly, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows: ur } = await db.query('SELECT * FROM users WHERE id = $1', [req.params.id]);
+    if (!ur[0]) return res.status(404).json({ error: 'ไม่พบผู้ใช้' });
+    await db.query('UPDATE users SET is_verified = $1 WHERE id = $2', [ur[0].is_verified ? 0 : 1, req.params.id]);
+    res.json({ message: ur[0].is_verified ? 'ยกเลิกการยืนยันแล้ว' : 'ยืนยันผู้ใช้แล้ว', is_verified: !ur[0].is_verified });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/disputes', adminOnly, async (req, res) => {
+  try {
+    const { rows } = await getDB().query(
+      `SELECT d.*, u.name as reporter_name, u.email as reporter_email,
+              o.total as order_total, o.status as order_status
+       FROM disputes d
+       JOIN users u ON d.user_id = u.id
+       JOIN orders o ON d.order_id = o.id
+       ORDER BY d.created_at DESC`
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.patch('/disputes/:id', adminOnly, async (req, res) => {
+  try {
+    const { status, admin_note } = req.body;
+    const db = getDB();
+    const { rows: dr } = await db.query('SELECT * FROM disputes WHERE id = $1', [req.params.id]);
+    if (!dr[0]) return res.status(404).json({ error: 'ไม่พบเรื่องร้องเรียน' });
+    await db.query(
+      'UPDATE disputes SET status = COALESCE($1, status), admin_note = COALESCE($2, admin_note) WHERE id = $3',
+      [status || null, admin_note || null, req.params.id]
+    );
+    res.json({ message: 'อัปเดตเรื่องร้องเรียนแล้ว' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;

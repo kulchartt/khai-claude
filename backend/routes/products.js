@@ -48,6 +48,23 @@ router.get('/', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.get('/trending', async (req, res) => {
+  try {
+    const { rows } = await getDB().query(`
+      SELECT p.*, u.name as seller_name, u.rating as seller_rating,
+        COUNT(DISTINCT w.id)::int as wishlist_count
+      FROM products p
+      JOIN users u ON p.seller_id = u.id
+      LEFT JOIN wishlist_items w ON w.product_id = p.id
+      WHERE p.status = 'available'
+      GROUP BY p.id, u.name, u.rating
+      ORDER BY (p.view_count + COUNT(DISTINCT w.id) * 3) DESC
+      LIMIT 10
+    `);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const db = getDB();

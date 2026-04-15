@@ -21,6 +21,12 @@ const reportRoutes = require('./routes/reports');
 const offerRoutes = require('./routes/offers');
 const orderRoutes = require('./routes/orders');
 const followRoutes = require('./routes/follows');
+const shopRoutes = require('./routes/shop');
+const addressRoutes = require('./routes/addresses');
+const buyerReviewRoutes = require('./routes/buyer-reviews');
+const savedSearchRoutes = require('./routes/saved-searches');
+const disputeRoutes = require('./routes/disputes');
+const promoRoutes = require('./routes/promo');
 
 const { initDB, getDB } = require('./db');
 
@@ -49,6 +55,12 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/follows', followRoutes);
+app.use('/api/shop', shopRoutes);
+app.use('/api/addresses', addressRoutes);
+app.use('/api/buyer-reviews', buyerReviewRoutes);
+app.use('/api/saved-searches', savedSearchRoutes);
+app.use('/api/disputes', disputeRoutes);
+app.use('/api/promo', promoRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/health/cloudinary', async (req, res) => {
