@@ -188,7 +188,7 @@ function profileTab(tab){
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
     api.getOrders().then(orders=>{
       if(!orders.length){c.innerHTML='<div class="empty-msg">ยังไม่มีประวัติการสั่งซื้อ</div>';return;}
-      const statusLabel={'awaiting_payment':'⏳ รอชำระเงิน','awaiting_confirmation':'🔍 รอผู้ขายยืนยัน','confirmed':'📦 ผู้ขายยืนยันแล้ว — รอรับสินค้า','completed':'✅ รับสินค้าแล้ว','pending':'⏳ รอดำเนินการ'};
+      const statusLabel={'awaiting_payment':'⏳ รอชำระเงิน','awaiting_confirmation':'🔍 รอผู้ขายยืนยัน','confirmed':'📦 ผู้ขายยืนยันแล้ว — รอรับสินค้า','completed':'✅ รับสินค้าแล้ว','cancelled':'❌ ยกเลิกแล้ว','pending':'⏳ รอดำเนินการ'};
       c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`
         <div class="order-item">
           <div class="order-top">
@@ -203,8 +203,9 @@ function profileTab(tab){
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px;flex-wrap:wrap">
             <div class="order-status ${o.status==='completed'?'status-done':'status-pending'}">${statusLabel[o.status]||o.status}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
-              ${o.seller_id?`<button class="btn btn-sm" onclick="startChat(${o.seller_id},${o.product_id||'null'})">💬 คุยกับผู้ขาย</button>`:''}
+              ${o.seller_id&&o.status!=='cancelled'?`<button class="btn btn-sm" onclick="startChat(${o.seller_id},${o.product_id||'null'})">💬 คุยกับผู้ขาย</button>`:''}
               ${o.status==='confirmed'?`<button class="btn btn-sm btn-g" onclick="markOrderReceived(${o.id})">✅ ยืนยันรับสินค้า</button>`:''}
+              ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-danger" onclick="doCancelOrder(${o.id})">❌ ยกเลิก</button>`:''}
             </div>
           </div>
         </div>`).join('')+'</div>';
@@ -578,6 +579,15 @@ async function markOrderReceived(id){
   if(!confirm('ยืนยันว่าได้รับสินค้าแล้ว?'))return;
   try{
     const res=await api.markOrderReceived(id);
+    toast(res.message,'#1D9E75');
+    profileTab('orders');
+  }catch(e){toast(e.message);}
+}
+
+async function doCancelOrder(id){
+  if(!confirm('ยืนยันยกเลิกคำสั่งซื้อ?\nสินค้าจะกลับมาวางขายอีกครั้ง'))return;
+  try{
+    const res=await api.cancelOrder(id);
     toast(res.message,'#1D9E75');
     profileTab('orders');
   }catch(e){toast(e.message);}
