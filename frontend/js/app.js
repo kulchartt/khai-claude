@@ -188,7 +188,26 @@ function profileTab(tab){
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
     api.getOrders().then(orders=>{
       if(!orders.length){c.innerHTML='<div class="empty-msg">ยังไม่มีประวัติการสั่งซื้อ</div>';return;}
-      c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`<div class="order-item"><div class="order-top"><div><div class="order-id">คำสั่งซื้อ #${String(o.id).padStart(4,'0')}</div><div class="order-date">${new Date(o.created_at).toLocaleDateString('th',{year:'numeric',month:'long',day:'numeric'})}</div></div><div class="order-total">฿${Number(o.total).toLocaleString()}</div></div><div class="order-items-list">${o.items}</div><div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px"><div class="order-status ${o.status==='pending'?'status-pending':'status-done'}">${o.status==='pending'?'⏳ รอส่งสินค้า':o.shipping_status==='received'?'✅ รับสินค้าแล้ว':'✅ สำเร็จ'}</div>${(o.status==='pending'||(!o.shipping_status||o.shipping_status==='pending'))&&o.status!=='completed'?`<button class="btn btn-sm btn-g" onclick="markOrderReceived(${o.id})">✅ ยืนยันรับสินค้า</button>`:''}</div></div>`).join('')+'</div>';
+      const statusLabel={'awaiting_payment':'⏳ รอชำระเงิน','awaiting_confirmation':'🔍 รอผู้ขายยืนยัน','confirmed':'📦 ผู้ขายยืนยันแล้ว — รอรับสินค้า','completed':'✅ รับสินค้าแล้ว','pending':'⏳ รอดำเนินการ'};
+      c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`
+        <div class="order-item">
+          <div class="order-top">
+            <div>
+              <div class="order-id">คำสั่งซื้อ #${String(o.id).padStart(4,'0')}</div>
+              <div class="order-date">${new Date(o.created_at).toLocaleDateString('th',{year:'numeric',month:'long',day:'numeric'})}</div>
+              <div class="order-date" style="color:var(--text-sec)">ผู้ขาย: ${o.seller_name||'—'}</div>
+            </div>
+            <div class="order-total">฿${Number(o.total).toLocaleString()}</div>
+          </div>
+          <div class="order-items-list">${o.items}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px;flex-wrap:wrap">
+            <div class="order-status ${o.status==='completed'?'status-done':'status-pending'}">${statusLabel[o.status]||o.status}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${o.seller_id?`<button class="btn btn-sm" onclick="startChat(${o.seller_id},${o.product_id||'null'})">💬 คุยกับผู้ขาย</button>`:''}
+              ${o.status==='confirmed'?`<button class="btn btn-sm btn-g" onclick="markOrderReceived(${o.id})">✅ ยืนยันรับสินค้า</button>`:''}
+            </div>
+          </div>
+        </div>`).join('')+'</div>';
     }).catch(e=>toast(e.message));
   } else if(tab==='offers'){
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
