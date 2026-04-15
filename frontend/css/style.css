@@ -186,6 +186,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .review-name{font-size:14px;font-weight:500}
 .review-stars{color:#f59e0b;font-size:13px}
 .review-comment{font-size:13px;color:var(--text-sec);line-height:1.6}
+.profile-tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:20px}
+.profile-tab{padding:10px 20px;font-size:14px;font-weight:500;cursor:pointer;color:var(--text-sec);border-bottom:2px solid transparent;margin-bottom:-2px;transition:.15s}
+.profile-tab.on{color:var(--green);border-bottom-color:var(--green)}
+.order-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:10px}
+.order-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.order-id{font-size:14px;font-weight:600;margin-bottom:2px}
+.order-date{font-size:12px;color:var(--text-sec)}
+.order-total{font-size:16px;font-weight:700;color:var(--green)}
+.order-items-list{font-size:13px;color:var(--text-sec);margin-bottom:8px;line-height:1.5}
+.order-status{display:inline-block;font-size:12px;padding:3px 10px;border-radius:99px;font-weight:500}
+.status-pending{background:#fef9c3;color:#854d0e}
+.status-done{background:#dcfce7;color:#166534}
 .notif-item{display:flex;align-items:flex-start;gap:12px;padding:14px;border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:8px;cursor:pointer;transition:.15s}
 .notif-item:hover{background:var(--bg-sec)}
 .notif-item.unread{border-left:3px solid var(--green)}

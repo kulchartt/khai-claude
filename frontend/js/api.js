@@ -46,6 +46,10 @@ const api = {
     const me = JSON.parse(localStorage.getItem('user')||'null');
     return me ? this.get('/api/users/'+me.id+'/products') : Promise.resolve([]);
   },
+  getSeller(id) { return this.get('/api/users/'+id); },
+  getSellerProducts(id) { return this.get('/api/users/'+id+'/products'); },
+  getOrders() { return this.get('/api/users/me/orders'); },
+  uploadAvatar(fd) { return this.req('PATCH','/api/users/me/avatar',fd,true); },
   getChatRooms() { return this.get('/api/chat/rooms'); },
   openChatRoom(seller_id,product_id) { return this.post('/api/chat/room',{seller_id,product_id}); },
   getMessages(roomId) { return this.get('/api/chat/rooms/'+roomId+'/messages'); },

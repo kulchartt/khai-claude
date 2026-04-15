@@ -60,7 +60,7 @@ router.get('/:id', async (req, res) => {
     const db = getDB();
     const { rows: pr } = await db.query(`
       SELECT p.*, u.name as seller_name, u.email as seller_email,
-             u.rating as seller_rating, u.review_count as seller_reviews
+             u.rating as seller_rating, u.review_count as seller_reviews, u.avatar as seller_avatar
       FROM products p JOIN users u ON p.seller_id = u.id WHERE p.id = $1
     `, [req.params.id]);
     const product = pr[0];
