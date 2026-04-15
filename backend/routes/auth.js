@@ -40,7 +40,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const { rows } = await getDB().query(
-      'SELECT id, name, email, avatar, rating, review_count, created_at FROM users WHERE id = $1',
+      'SELECT id, name, email, avatar, rating, review_count, created_at, is_verified, is_admin FROM users WHERE id = $1',
       [req.user.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'ไม่พบผู้ใช้' });
