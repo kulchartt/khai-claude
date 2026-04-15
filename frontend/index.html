@@ -131,6 +131,21 @@
   </div>
 </main>
 
+<!-- Deep link: switch page before app.js loads to prevent home flash -->
+<script>
+(function(){
+  var h=window.location.hash;
+  if(h&&h.startsWith('#product-')){
+    document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+    var dp=document.getElementById('page-detail');
+    if(dp){
+      dp.classList.add('active');
+      document.getElementById('detailContent').innerHTML='<div style="padding:80px 0;text-align:center;color:#999;font-size:15px">กำลังโหลดสินค้า...</div>';
+    }
+  }
+})();
+</script>
+
 <!-- Login Modal -->
 <div class="overlay" id="loginOverlay">
   <div class="modal">
