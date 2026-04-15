@@ -116,4 +116,44 @@ router.patch('/:id/confirm-payment', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// PATCH /api/orders/:id/ship — ผู้ขายอัพเดทสถานะการจัดส่ง
+router.patch('/:id/ship', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { shipping_status } = req.body; // 'preparing' | 'shipped'
+    if (!['preparing', 'shipped'].includes(shipping_status)) {
+      return res.status(400).json({ error: 'สถานะไม่ถูกต้อง' });
+    }
+    // ตรวจสิทธิ์ — ต้องเป็นผู้ขายในออเดอร์นี้
+    const { rows } = await db.query(`
+      SELECT DISTINCT p.seller_id FROM orders o
+      JOIN order_items oi ON o.id = oi.order_id
+      JOIN products p ON oi.product_id = p.id
+      WHERE o.id = $1
+    `, [req.params.id]);
+    if (!rows.find(r => r.seller_id === req.user.id)) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+
+    const { rows: or } = await db.query('SELECT * FROM orders WHERE id = $1', [req.params.id]);
+    if (!or[0]) return res.status(404).json({ error: 'ไม่พบออเดอร์' });
+    if (or[0].status !== 'confirmed') return res.status(400).json({ error: 'ยังไม่ได้ยืนยันการชำระเงิน' });
+
+    await db.query('UPDATE orders SET shipping_status = $1 WHERE id = $2', [shipping_status, req.params.id]);
+
+    // แจ้งเตือนผู้ซื้อ
+    const io = req.app.get('io');
+    const onlineUsers = req.app.get('onlineUsers');
+    const label = shipping_status === 'shipped' ? 'ผู้ขายส่งพัสดุแล้ว 🚚' : 'ผู้ขายกำลังเตรียมของ 📦';
+    const body = shipping_status === 'shipped'
+      ? `ออเดอร์ #${String(req.params.id).padStart(4,'0')} — พัสดุถูกส่งแล้ว กรุณารอรับสินค้า`
+      : `ออเดอร์ #${String(req.params.id).padStart(4,'0')} — ผู้ขายกำลังเตรียมของ`;
+    await db.query("INSERT INTO notifications (user_id, type, title, body) VALUES ($1,'order',$2,$3)",
+      [or[0].user_id, label, body]);
+    const sock = onlineUsers?.get(or[0].user_id);
+    if (sock) io?.to(sock).emit('notification', { type: 'order' });
+
+    const msg = shipping_status === 'shipped' ? 'อัพเดทแล้ว: ส่งพัสดุแล้ว 🚚' : 'อัพเดทแล้ว: กำลังเตรียมของ 📦';
+    res.json({ message: msg });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;

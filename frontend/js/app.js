@@ -167,7 +167,8 @@ function profileTab(tab){
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
     api.getSellerOrders().then(orders=>{
       if(!orders.length){c.innerHTML='<div class="empty-msg">ยังไม่มีออเดอร์</div>';return;}
-      const statusLabel={awaiting_payment:'⏳ รอ slip',awaiting_confirmation:'🔍 รอยืนยัน',confirmed:'✅ ยืนยันแล้ว',completed:'📦 เสร็จสิ้น',pending:'⏳ รอ slip'};
+      const statusLabel={awaiting_payment:'⏳ รอ slip',awaiting_confirmation:'🔍 รอยืนยัน',confirmed:'✅ ยืนยันรับเงินแล้ว',completed:'🎉 เสร็จสิ้น',cancelled:'❌ ยกเลิกแล้ว',pending:'⏳ รอ slip'};
+      const shipLabel={pending:'ยังไม่จัดส่ง',preparing:'📦 กำลังเตรียมของ',shipped:'🚚 ส่งพัสดุแล้ว',received:'✅ ผู้ซื้อรับแล้ว'};
       c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`
         <div class="order-item">
           <div class="order-top">
@@ -180,9 +181,17 @@ function profileTab(tab){
           </div>
           <div class="order-items-list">${o.items}</div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:8px;flex-wrap:wrap">
-            <div class="order-status ${o.status==='awaiting_confirmation'?'status-pending':'status-done'}">${statusLabel[o.status]||o.status}</div>
-            ${o.slip_url?`<a href="${o.slip_url}" target="_blank" class="btn btn-sm">🖼️ ดู slip</a>`:'<span style="font-size:12px;color:var(--text-hint)">ยังไม่มี slip</span>'}
-            ${o.status==='awaiting_confirmation'?`<button class="btn btn-sm btn-g" onclick="doConfirmPayment(${o.id})">✅ ยืนยันรับเงิน</button>`:''}
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div class="order-status ${['awaiting_payment','awaiting_confirmation','pending'].includes(o.status)?'status-pending':'status-done'}">${statusLabel[o.status]||o.status}</div>
+              ${o.status==='confirmed'||o.status==='completed'?`<div style="font-size:12px;color:var(--text-sec)">${shipLabel[o.shipping_status]||'ยังไม่จัดส่ง'}</div>`:''}
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              ${o.slip_url?`<a href="${o.slip_url}" target="_blank" class="btn btn-sm">🖼️ slip</a>`:''}
+              ${o.status==='awaiting_confirmation'?`<button class="btn btn-sm btn-g" onclick="doConfirmPayment(${o.id})">✅ ยืนยันรับเงิน</button>`:''}
+              ${o.status==='confirmed'&&(!o.shipping_status||o.shipping_status==='pending')?`<button class="btn btn-sm" onclick="doShipOrder(${o.id},'preparing')">📦 กำลังเตรียมของ</button>`:''}
+              ${o.status==='confirmed'&&o.shipping_status==='preparing'?`<button class="btn btn-sm btn-g" onclick="doShipOrder(${o.id},'shipped')">🚚 ส่งพัสดุแล้ว</button>`:''}
+              ${o.status==='confirmed'&&o.shipping_status==='shipped'?`<span style="font-size:12px;color:#16a34a;font-weight:600">🚚 รอผู้ซื้อยืนยันรับ</span>`:''}
+            </div>
           </div>
         </div>`).join('')+'</div>';
     }).catch(e=>toast(e.message));
@@ -190,7 +199,8 @@ function profileTab(tab){
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
     api.getOrders().then(orders=>{
       if(!orders.length){c.innerHTML='<div class="empty-msg">ยังไม่มีประวัติการสั่งซื้อ</div>';return;}
-      const statusLabel={'awaiting_payment':'⏳ รอชำระเงิน','awaiting_confirmation':'🔍 รอผู้ขายยืนยัน','confirmed':'📦 ผู้ขายยืนยันแล้ว — รอรับสินค้า','completed':'✅ รับสินค้าแล้ว','cancelled':'❌ ยกเลิกแล้ว','pending':'⏳ รอดำเนินการ'};
+      const statusLabel={'awaiting_payment':'⏳ รอชำระเงิน','awaiting_confirmation':'🔍 รอผู้ขายยืนยัน','confirmed':'✅ ผู้ขายยืนยันแล้ว','completed':'🎉 รับสินค้าแล้ว','cancelled':'❌ ยกเลิกแล้ว','pending':'⏳ รอดำเนินการ'};
+      const shipLabel={preparing:'📦 กำลังเตรียมของ',shipped:'🚚 ส่งพัสดุแล้ว — รอรับสินค้า',received:'✅ รับสินค้าแล้ว'};
       c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`
         <div class="order-item">
           <div class="order-top">
@@ -203,10 +213,13 @@ function profileTab(tab){
           </div>
           <div class="order-items-list">${o.items}</div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px;flex-wrap:wrap">
-            <div class="order-status ${o.status==='completed'?'status-done':'status-pending'}">${statusLabel[o.status]||o.status}</div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div class="order-status ${o.status==='completed'?'status-done':o.status==='cancelled'?'status-cancel':'status-pending'}">${statusLabel[o.status]||o.status}</div>
+              ${o.status==='confirmed'&&o.shipping_status&&o.shipping_status!=='pending'?`<div style="font-size:12px;color:#2563eb;font-weight:500">${shipLabel[o.shipping_status]||''}</div>`:''}
+            </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
               ${o.seller_id&&o.status!=='cancelled'?`<button class="btn btn-sm" onclick="startChat(${o.seller_id},${o.product_id||'null'})">💬 คุยกับผู้ขาย</button>`:''}
-              ${o.status==='confirmed'?`<button class="btn btn-sm btn-g" onclick="markOrderReceived(${o.id})">✅ ยืนยันรับสินค้า</button>`:''}
+              ${o.status==='confirmed'&&o.shipping_status==='shipped'?`<button class="btn btn-sm btn-g" onclick="markOrderReceived(${o.id})">✅ ยืนยันรับสินค้า</button>`:''}
               ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-danger" onclick="doCancelOrder(${o.id})">❌ ยกเลิก</button>`:''}
             </div>
           </div>
@@ -592,6 +605,16 @@ async function doCancelOrder(id){
     const res=await api.cancelOrder(id);
     toast(res.message,'#1D9E75');
     profileTab('orders');
+  }catch(e){toast(e.message);}
+}
+
+async function doShipOrder(id, shipping_status){
+  const labels={preparing:'ยืนยันว่ากำลังเตรียมของ?',shipped:'ยืนยันว่าส่งพัสดุแล้ว? ผู้ซื้อจะได้รับการแจ้งเตือน'};
+  if(!confirm(labels[shipping_status]))return;
+  try{
+    const res=await api.shipOrder(id,shipping_status);
+    toast(res.message,'#1D9E75');
+    profileTab('selling');
   }catch(e){toast(e.message);}
 }
 

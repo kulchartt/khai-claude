@@ -83,4 +83,5 @@ const api = {
   submitSlip(orderId, fd) { return this.req('POST', '/api/orders/'+orderId+'/slip', fd, true); },
   confirmPayment(orderId) { return this.patch('/api/orders/'+orderId+'/confirm-payment', {}); },
   cancelOrder(orderId) { return this.patch('/api/orders/'+orderId+'/cancel', {}); },
+  shipOrder(orderId, shipping_status) { return this.patch('/api/orders/'+orderId+'/ship', { shipping_status }); },
 };
