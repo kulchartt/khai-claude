@@ -346,8 +346,46 @@ async function askAvailable(sellerId,productId,title){
 }
 
 async function startChat(sellerId,productId){if(!state.user){openOverlay('loginOverlay');return;}try{const room=await api.openChatRoom(sellerId,productId);await openChatList();openRoom(room.id);}catch(e){toast(e.message);}}
-async function openChatList(){if(!state.user){openOverlay('loginOverlay');return;}try{const rooms=await api.getChatRooms();const list=document.getElementById('chatRoomsList');if(!rooms.length){list.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-sec);font-size:13px">ยังไม่มีการสนทนา</div>';goPage('chat');return;}list.innerHTML=rooms.map(r=>{const other=r.buyer_id===state.user.id?r.seller_name:r.buyer_name;return `<div class="chat-room-item ${r.unread>0?'unread':''}" onclick="openRoom(${r.id})"><div style="display:flex;justify-content:space-between"><div class="cr-name">${other}</div><div class="cr-time">${r.last_at?new Date(r.last_at).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'}):''}</div></div><div class="cr-last">${r.product_title?'['+r.product_title+'] ':''} ${r.last_message||'เริ่มการสนทนา'}</div></div>`;}).join('');goPage('chat');}catch(e){toast(e.message);}}
-async function openRoom(roomId){currentRoomId=roomId;try{const msgs=await api.getMessages(roomId);document.getElementById('chatMain').innerHTML=`<div class="chat-header">การสนทนา</div><div class="chat-messages" id="msgList">${msgs.map(m=>{const out=m.sender_id===state.user.id;return `<div>${!out?`<div class="msg-name">${m.sender_name}</div>`:''}<div class="msg ${out?'msg-out':'msg-in'}">${m.content}<div class="msg-time">${new Date(m.created_at).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div></div></div>`;}).join('')}</div><div class="chat-input"><input type="text" id="msgInput" placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter')sendMsg()"/><button onclick="sendMsg()">ส่ง</button></div>`;const ml=document.getElementById('msgList');if(ml)ml.scrollTop=ml.scrollHeight;if(socket)socket.emit('join_room',roomId);state.chatCount=Math.max(0,state.chatCount-1);updateBadge('chatBadge',state.chatCount);}catch(e){toast(e.message);}}
+async function openChatList(){if(!state.user){openOverlay('loginOverlay');return;}try{const rooms=await api.getChatRooms();window._chatRooms=rooms;const list=document.getElementById('chatRoomsList');if(!rooms.length){list.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-sec);font-size:13px">ยังไม่มีการสนทนา</div>';goPage('chat');return;}list.innerHTML=rooms.map(r=>{const other=r.buyer_id===state.user.id?r.seller_name:r.buyer_name;return `<div class="chat-room-item ${r.unread>0?'unread':''}" onclick="openRoom(${r.id})"><div style="display:flex;justify-content:space-between"><div class="cr-name">${other}</div><div class="cr-time">${r.last_at?new Date(r.last_at).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'}):''}</div></div><div class="cr-last">${r.product_title?'['+r.product_title+'] ':''} ${r.last_message||'เริ่มการสนทนา'}</div></div>`;}).join('');goPage('chat');}catch(e){toast(e.message);}}
+async function openRoom(roomId){
+  currentRoomId=roomId;
+  try{
+    const msgs=await api.getMessages(roomId);
+    const room=(window._chatRooms||[]).find(r=>r.id===roomId);
+    const isSeller=room&&state.user&&room.seller_id===state.user.id;
+    const otherName=room?(room.buyer_id===state.user.id?room.seller_name:room.buyer_name):'';
+    const headerInfo=room?.product_title
+      ?`<div style="flex:1"><div style="font-weight:600;font-size:14px">${otherName}</div><div style="font-size:12px;color:var(--text-sec);margin-top:1px">📦 ${room.product_title}</div></div>`
+      :`<div style="flex:1;font-weight:600">${otherName||'การสนทนา'}</div>`;
+    const closeSaleBtn=(isSeller&&room?.product_id)
+      ?`<button class="btn btn-sm btn-danger" onclick="doCloseSale(${room.product_id})" id="closeSaleBtn">🏷️ ปิดการขาย</button>`
+      :'';
+    document.getElementById('chatMain').innerHTML=`
+      <div class="chat-header" style="display:flex;align-items:center;gap:8px">${headerInfo}${closeSaleBtn}</div>
+      <div class="chat-messages" id="msgList">${msgs.map(m=>{const out=m.sender_id===state.user.id;return `<div>${!out?`<div class="msg-name">${m.sender_name}</div>`:''}<div class="msg ${out?'msg-out':'msg-in'}">${m.content}<div class="msg-time">${new Date(m.created_at).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div></div></div>`;}).join('')}</div>
+      <div class="chat-input"><input type="text" id="msgInput" placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter')sendMsg()" autocomplete="off"/><button onclick="sendMsg()">ส่ง</button></div>`;
+    const ml=document.getElementById('msgList');
+    if(ml)ml.scrollTop=ml.scrollHeight;
+    if(socket)socket.emit('join_room',roomId);
+    state.chatCount=Math.max(0,state.chatCount-1);
+    updateBadge('chatBadge',state.chatCount);
+  }catch(e){toast(e.message);}
+}
+async function doCloseSale(productId){
+  if(!confirm('ปิดการขายสินค้านี้? สินค้าจะถูกทำเครื่องหมายว่า "ขายแล้ว"'))return;
+  try{
+    const res=await api.closeSale(productId);
+    toast(res.message,'#1D9E75');
+    // ซ่อนปุ่มหลังปิดแล้ว
+    const btn=document.getElementById('closeSaleBtn');
+    if(btn)btn.remove();
+    // ส่งข้อความในแชทแจ้งผู้ซื้อ
+    if(socket&&currentRoomId){
+      socket.emit('send_message',{room_id:currentRoomId,content:'🏷️ ปิดการขายสินค้านี้แล้ว ขอบคุณที่ซื้อขายด้วยกันนะครับ/ค่ะ'});
+    }
+    loadProducts();
+  }catch(e){toast(e.message);}
+}
 function sendMsg(){const input=document.getElementById('msgInput');if(!input||!input.value.trim()||!socket)return;socket.emit('send_message',{room_id:currentRoomId,content:input.value.trim()});input.value='';}
 
 async function openNotifications(){if(!state.user){openOverlay('loginOverlay');return;}try{const res=await api.getNotifications();const list=document.getElementById('notifList');if(!res.notifications.length){list.innerHTML='<div class="empty-msg">ไม่มีการแจ้งเตือน</div>';goPage('notifications');return;}list.innerHTML=res.notifications.map(n=>`<div class="notif-item ${n.is_read?'':'unread'}" onclick="clickNotif(${n.id},'${n.link}')"><div class="notif-icon">${NICONS[n.type]||'📢'}</div><div style="flex:1"><div class="notif-title">${n.title}</div><div class="notif-body">${n.body}</div><div class="notif-time">${new Date(n.created_at).toLocaleString('th')}</div></div><button onclick="event.stopPropagation();delNotif(${n.id})" style="background:none;border:none;color:var(--text-hint);cursor:pointer;font-size:16px">×</button></div>`).join('');
