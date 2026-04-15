@@ -82,4 +82,5 @@ const api = {
   getSellerOrders() { return this.get('/api/users/me/seller-orders'); },
   submitSlip(orderId, fd) { return this.req('POST', '/api/orders/'+orderId+'/slip', fd, true); },
   confirmPayment(orderId) { return this.patch('/api/orders/'+orderId+'/confirm-payment', {}); },
+  cancelOrder(orderId) { return this.patch('/api/orders/'+orderId+'/cancel', {}); },
 };
