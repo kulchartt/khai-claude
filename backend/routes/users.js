@@ -148,6 +148,33 @@ router.get('/me/transactions', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Verify request — user ส่งคำขอ (JSON only, ไม่มี file upload)
+router.post('/me/verify-request', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { reason } = req.body;
+    if (!reason) return res.status(400).json({ error: 'กรุณาระบุเหตุผล' });
+    const { rows: existing } = await db.query(
+      "SELECT * FROM verify_requests WHERE user_id = $1 AND status = 'pending'", [req.user.id]
+    );
+    if (existing.length) return res.status(400).json({ error: 'คุณมีคำขอที่รอพิจารณาอยู่แล้ว' });
+    await db.query(
+      "INSERT INTO verify_requests (user_id, reason) VALUES ($1,$2) ON CONFLICT (user_id) DO UPDATE SET reason=$2, id_card_url=NULL, status='pending', admin_note=NULL, created_at=NOW()",
+      [req.user.id, reason]
+    );
+    res.json({ message: 'ส่งคำขอยืนยันตัวตนแล้ว ⏳ รอ admin พิจารณา' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/me/verify-request', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await getDB().query(
+      'SELECT * FROM verify_requests WHERE user_id = $1', [req.user.id]
+    );
+    res.json(rows[0] || null);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { rows } = await getDB().query(

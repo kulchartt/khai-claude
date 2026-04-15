@@ -516,12 +516,8 @@ function openVerifyRequestModal(){
 async function doSubmitVerifyRequest(){
   const reason=document.getElementById('verifyReason').value.trim();
   if(!reason){toast('กรุณาระบุเหตุผล');return;}
-  const fd=new FormData();
-  fd.append('reason',reason);
-  const idCardFile=document.getElementById('verifyIdCard').files[0];
-  if(idCardFile)fd.append('id_card',idCardFile);
   try{
-    const res=await api.submitVerifyRequest(fd);
+    const res=await api.submitVerifyRequest(reason);
     closeOverlay('verifyRequestOverlay');
     toast(res.message,'#1D9E75');
     profileTab('verified-status');
