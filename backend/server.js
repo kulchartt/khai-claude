@@ -16,6 +16,7 @@ const chatRoutes = require('./routes/chat');
 const reviewRoutes = require('./routes/reviews');
 const notificationRoutes = require('./routes/notifications');
 const adminRoutes = require('./routes/admin');
+const reportRoutes = require('./routes/reports');
 
 const { initDB, getDB } = require('./db');
 
@@ -40,6 +41,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/reports', reportRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 

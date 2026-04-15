@@ -85,6 +85,12 @@ async function initDB() {
     is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT NOW()
   )`);
 
+  await db.query(`CREATE TABLE IF NOT EXISTS reports (
+    id SERIAL PRIMARY KEY, product_id INTEGER NOT NULL, reporter_id INTEGER NOT NULL,
+    reason TEXT NOT NULL, detail TEXT DEFAULT '', status TEXT DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT NOW(), UNIQUE(product_id, reporter_id)
+  )`);
+
   const { rows } = await db.query('SELECT COUNT(*) as c FROM products');
   if (parseInt(rows[0].c) === 0) {
     const hash = await bcrypt.hash('demo1234', 10);
