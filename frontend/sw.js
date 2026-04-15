@@ -1,15 +1,11 @@
-const CACHE_NAME = 'mueasong-v2';
+const CACHE_NAME = 'mueasong-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './css/style.css',
-  './js/config.js',
-  './js/api.js',
-  './js/app.js',
   './manifest.json'
 ];
 
-// Install: cache static assets
+// Install: cache only HTML and manifest (not JS/CSS — they change often)
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting())
@@ -25,15 +21,27 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Fetch: network-first for API, cache-first for static
+// Fetch strategy:
+// - JS / CSS → always network-first (never stale)
+// - API / uploads → skip SW entirely
+// - everything else → cache-first with network fallback
 self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') return;
+
   const url = new URL(e.request.url);
 
-  // Skip non-GET and cross-origin API requests
-  if (e.request.method !== 'GET') return;
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/')) return;
+  // Skip API and uploaded files
+  if (url.pathname.includes('/api/') || url.pathname.includes('/uploads/')) return;
 
-  // For static assets: cache-first with network fallback
+  // JS and CSS: always fetch from network so code updates appear immediately
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Everything else: cache-first with network fallback
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
