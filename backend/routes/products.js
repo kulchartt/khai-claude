@@ -52,13 +52,14 @@ router.get('/trending', async (req, res) => {
   try {
     const { rows } = await getDB().query(`
       SELECT p.*, u.name as seller_name, u.rating as seller_rating,
-        COUNT(DISTINCT w.id)::int as wishlist_count
+        COUNT(DISTINCT w.id)::int as wishlist_count,
+        (COALESCE(p.view_count,0) + COUNT(DISTINCT w.id) * 3) as score
       FROM products p
       JOIN users u ON p.seller_id = u.id
       LEFT JOIN wishlist_items w ON w.product_id = p.id
       WHERE p.status = 'available'
       GROUP BY p.id, u.name, u.rating
-      ORDER BY (p.view_count + COUNT(DISTINCT w.id) * 3) DESC
+      ORDER BY score DESC
       LIMIT 10
     `);
     res.json(rows);
