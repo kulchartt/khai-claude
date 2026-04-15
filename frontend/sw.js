@@ -1,66 +1,35 @@
-const CACHE_NAME = 'mueasong-v6';
+// sw.js — network-first for everything, cache only as offline fallback
+const CACHE = 'mueasong-v7';
 
-// Install: skip waiting immediately — no pre-caching of HTML
-self.addEventListener('install', (e) => {
-  e.waitUntil(self.skipWaiting());
-});
+self.addEventListener('install', () => self.skipWaiting());
 
-// Activate: clean old caches and claim all clients
-self.addEventListener('activate', (e) => {
+self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch strategy:
-// - HTML (index.html, /) → network-first, fallback to cache (for offline)
-// - JS / CSS           → network-first, fallback to cache
-// - API / uploads      → skip SW entirely (pass through)
-// - images / fonts     → cache-first with network update (safe to cache long-term)
-self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
-
+self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Skip API calls and uploaded files — never intercept
-  if (url.pathname.includes('/api/') || url.pathname.includes('/uploads/')) return;
-  // Skip external CDN resources (socket.io, qrcode, etc.)
+  // Only handle GET from same origin
+  if (e.request.method !== 'GET') return;
   if (url.origin !== self.location.origin) return;
 
-  const path = url.pathname;
-  const isHTML = path.endsWith('.html') || path === '/' || path.endsWith('/');
-  const isAsset = path.endsWith('.js') || path.endsWith('.css');
+  // Never intercept API calls
+  if (url.pathname.startsWith('/api/')) return;
 
-  if (isHTML || isAsset) {
-    // Network-first: always try network, fall back to cache only if offline
-    e.respondWith(
-      fetch(e.request, { cache: 'no-store' })
-        .then(res => {
-          // Cache successful response for offline fallback
-          if (res && res.status === 200) {
-            const clone = res.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-          }
-          return res;
-        })
-        .catch(() => caches.match(e.request))
-    );
-    return;
-  }
-
-  // Images & other static assets: cache-first (they rarely change)
+  // Network-first for everything: try network, fall back to cache for offline
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(res => {
-        if (res && res.status === 200 && res.type !== 'opaque') {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+    fetch(e.request)
+      .then(res => {
+        if (res.ok) {
+          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
         }
         return res;
-      });
-    })
+      })
+      .catch(() => caches.match(e.request))
   );
 });

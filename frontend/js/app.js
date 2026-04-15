@@ -5,6 +5,8 @@ const NICONS={chat:'💬',review:'⭐',order:'📦',system:'📢'};
 
 let state={user:JSON.parse(localStorage.getItem('user')||'null'),token:localStorage.getItem('token')||null,cat:'ทั้งหมด',cartCount:0,wlCount:0,notifCount:0,chatCount:0,wlIds:[],starRating:0};
 let socket=null,currentRoomId=null;
+let _productPage=1,_productLoading=false,_productDone=false;
+const _productLimit=20;
 
 function toast(msg,color){const t=document.getElementById('toast');t.textContent=msg;t.style.background=color||'#1a1a18';t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2800);}
 function goPage(p){
@@ -817,12 +819,6 @@ document.addEventListener('touchend',e=>{
 },{passive:true});
 
 // ===== Feature 6: Infinite Scroll =====
-let _productPage=1;
-const _productLimit=20;
-let _productLoading=false;
-let _productDone=false;
-
-const _origLoadProducts=loadProducts;
 async function loadProducts(){
   _productPage=1;_productDone=false;
   const q=document.getElementById('searchQ').value,minPrice=document.getElementById('minP').value,maxPrice=document.getElementById('maxP').value,sort=document.getElementById('sortSel').value,condition=document.getElementById('condSel').value,location=document.getElementById('locationSel').value;
