@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mueasong-v1';
+const CACHE_NAME = 'mueasong-v2';
 const STATIC_ASSETS = [
   './',
   './index.html',

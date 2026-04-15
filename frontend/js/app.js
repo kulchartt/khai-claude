@@ -24,7 +24,7 @@ function productImg(p){
   const url=p.image_url;
   const emoji=EMOJIS[p.category||p.cat]||'📦';
   if(url)return `<img src="${imgSrc(url)}" alt="${p.title}" loading="lazy"
-    onload="this.classList.add('visible');this.parentNode.classList.add('loaded')"
+    onload="this.parentNode.classList.add('loaded')"
     onerror="this.parentNode.classList.add('loaded');this.parentNode.innerHTML='<span class=\\'emoji\\'>${emoji}</span>'"/>`;
   return `<span class="emoji">${emoji}</span>`;
 }
