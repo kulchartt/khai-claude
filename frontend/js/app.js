@@ -197,15 +197,23 @@ async function syncBadges(){if(!state.user)return;try{const[cart,wl,notifs]=awai
 
 async function init(){
   updateNav();
-  await loadProducts();
-  if(state.user){await syncBadges();connectSocket();}
-  // Deep link: open product from URL hash
+
   const hash=window.location.hash;
-  if(hash.startsWith('#product-')){
-    const id=parseInt(hash.replace('#product-',''));
-    if(!isNaN(id))openDetail(id);
+  const hashId=hash.startsWith('#product-')?parseInt(hash.replace('#product-','')):null;
+
+  if(hashId&&!isNaN(hashId)){
+    // มี deep link → ข้ามไปหน้า detail ทันที ไม่โชว์ home
+    goPage('detail');
+    document.getElementById('detailContent').innerHTML='<div class="loading" style="padding:80px 0;text-align:center;grid-column:1/-1">กำลังโหลดสินค้า...</div>';
+    // โหลด products หลังบ้าน (ไม่ await)
+    loadProducts();
+    if(state.user){syncBadges();connectSocket();}
+    openDetail(hashId);
+  } else {
+    await loadProducts();
+    if(state.user){await syncBadges();connectSocket();}
   }
-  // Listen for back/forward navigation
+
   window.addEventListener('hashchange',()=>{
     const h=window.location.hash;
     if(h.startsWith('#product-')){const id=parseInt(h.replace('#product-',''));if(!isNaN(id))openDetail(id);}
