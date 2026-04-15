@@ -200,7 +200,26 @@ async function doUploadAvatar(input){if(!input.files[0])return;const fd=new Form
 
 async function openSellerProfile(userId){try{const[seller,products]=await Promise.all([api.getSeller(userId),api.getSellerProducts(userId)]);document.getElementById('sellerBackBtn').onclick=()=>history.back();const avatarHtml=seller.avatar?`<img src="${imgSrc(seller.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${(seller.name||'?').slice(0,2).toUpperCase()}`;document.getElementById('sellerContent').innerHTML=`<div class="profile-header"><div class="p-avatar" style="overflow:hidden">${avatarHtml}</div><div style="flex:1"><div class="p-name">${seller.name}</div><div class="p-email">สมาชิกตั้งแต่ ${new Date(seller.created_at).toLocaleDateString('th',{year:'numeric',month:'long'})}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${products.length}</div><div class="stat-l">สินค้า</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${seller.rating||5.0}★</div><div class="stat-l">คะแนน</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${seller.review_count||0}</div><div class="stat-l">รีวิว</div></div></div></div></div><div class="section-title" style="margin-top:20px"><span>สินค้าทั้งหมด (${products.length})</span></div><div class="product-grid" id="sellerProductGrid"></div>`;renderCards(products,'sellerProductGrid');goPage('seller');}catch(e){toast(e.message);}}
 
-function renderMyCards(list,cid){const g=document.getElementById(cid);if(!g)return;if(!list.length){g.innerHTML='<div class="empty-msg">ยังไม่มีสินค้า<br><br><button class="btn btn-g" onclick="openSell()">+ ลงขายเลย</button></div>';return;}g.innerHTML=list.map(p=>`<div class="card"><div class="card-img" onclick="openDetail(${p.id})">${productImg(p)}</div><div class="card-body" onclick="openDetail(${p.id})"><div class="card-title">${p.title}</div><div class="card-price">฿${Number(p.price).toLocaleString()}</div><div class="card-foot"><span class="cond ${CMAP[p.condition||p.cond]||''}">${p.condition||p.cond}</span><span class="seller-nm" style="color:${p.status==='sold'?'#dc2626':'var(--green)'}">${p.status==='sold'?'ขายแล้ว':'วางขาย'}</span></div></div><div class="card-actions"><button class="btn btn-sm" onclick="openEditModal(${p.id})">✏️ แก้ไข</button><button class="btn btn-sm btn-danger" onclick="confirmDeleteProduct(${p.id})">🗑️ ลบ</button></div></div>`).join('');}
+function canBump(bumpedAt){
+  if(!bumpedAt)return true;
+  const last=new Date(bumpedAt);
+  const now=new Date();
+  return last.toDateString()!==now.toDateString();
+}
+function renderMyCards(list,cid){const g=document.getElementById(cid);if(!g)return;if(!list.length){g.innerHTML='<div class="empty-msg">ยังไม่มีสินค้า<br><br><button class="btn btn-g" onclick="openSell()">+ ลงขายเลย</button></div>';return;}g.innerHTML=list.map(p=>{const bumpable=p.status==='available'&&canBump(p.bumped_at);const bumpBtn=p.status==='available'?`<button class="btn btn-sm btn-bump" onclick="doBump(${p.id})" ${bumpable?'':'disabled title="ดันได้พรุ่งนี้"'}>⬆️ ${bumpable?'ดัน':'ดันแล้ว'}</button>`:'';return `<div class="card"><div class="card-img" onclick="openDetail(${p.id})">${productImg(p)}</div><div class="card-body" onclick="openDetail(${p.id})"><div class="card-title">${p.title}</div><div class="card-price">฿${Number(p.price).toLocaleString()}</div><div class="card-foot"><span class="cond ${CMAP[p.condition||p.cond]||''}">${p.condition||p.cond}</span><span class="seller-nm" style="color:${p.status==='sold'?'#dc2626':'var(--green)'}">${p.status==='sold'?'ขายแล้ว':'วางขาย'}</span></div></div><div class="card-actions">${bumpBtn}<button class="btn btn-sm" onclick="openEditModal(${p.id})">✏️ แก้ไข</button><button class="btn btn-sm btn-danger" onclick="confirmDeleteProduct(${p.id})">🗑️ ลบ</button></div></div>`;}).join('');}
+
+async function doBump(id){
+  try{
+    const res=await api.bumpProduct(id);
+    toast(res.message,'#1D9E75');
+    loadProducts();
+    // refresh my products list
+    const myItems=await api.getMyProducts();
+    window._myItems=myItems;
+    const grid=document.getElementById('myProductsGrid');
+    if(grid)renderMyCards(myItems,'myProductsGrid');
+  }catch(e){toast(e.message);}
+}
 
 async function openEditModal(id){try{const p=await api.getProduct(id);document.getElementById('eId').value=p.id;document.getElementById('eTitle').value=p.title;document.getElementById('ePrice').value=p.price;document.getElementById('eDesc').value=p.description||'';document.getElementById('eLoc').value=p.location||'';document.getElementById('eCat').value=p.category;document.getElementById('eCond').value=p.condition;document.getElementById('eStatus').value=p.status||'available';openOverlay('editOverlay');}catch(e){toast(e.message);}}
 
