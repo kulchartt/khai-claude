@@ -148,12 +148,7 @@ async function doCheckout(){
     const res=await api.checkout();
     state.cartCount=0;
     updateBadge('cartBadge',0);
-    if(res.seller_promptpay){
-      showPaymentQR(res.order_id, res.total, res.seller_promptpay, res.seller_name||'ผู้ขาย');
-    } else {
-      goPage('home');
-      toast('สร้างคำสั่งซื้อแล้ว! 🎉 กรุณาติดต่อผู้ขายเพื่อชำระเงิน','#1D9E75');
-    }
+    showPaymentQR(res.order_id, res.total, res.seller_promptpay||null, res.seller_name||'ผู้ขาย');
   }catch(e){toast(e.message);}
 }
 
@@ -455,18 +450,22 @@ function buildPromptPayPayload(phone,amount){
 function showPaymentQR(orderId, total, promptpay, sellerName){
   document.getElementById('paymentOrderId').value=orderId;
   document.getElementById('paymentSellerName').textContent=sellerName;
-  document.getElementById('paymentPromptpay').textContent='PromptPay: '+promptpay;
   document.getElementById('paymentAmount').textContent='฿'+Number(total).toLocaleString();
   document.getElementById('slipPreview').style.display='none';
   document.getElementById('slipImg').value='';
   document.getElementById('slipPlaceholder').style.display='';
-  // สร้าง QR
   const container=document.getElementById('qrContainer');
   container.innerHTML='';
-  try{
-    const payload=buildPromptPayPayload(promptpay, total);
-    new QRCode(container,{text:payload,width:200,height:200,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
-  }catch(e){container.innerHTML='<div style="color:var(--text-hint);font-size:13px">ไม่สามารถสร้าง QR ได้</div>';}
+  if(promptpay){
+    document.getElementById('paymentPromptpay').textContent='PromptPay: '+promptpay;
+    try{
+      const payload=buildPromptPayPayload(promptpay, total);
+      new QRCode(container,{text:payload,width:200,height:200,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
+    }catch(e){container.innerHTML='<div style="color:var(--text-hint);font-size:13px">ไม่สามารถสร้าง QR ได้</div>';}
+  } else {
+    document.getElementById('paymentPromptpay').textContent='';
+    container.innerHTML=`<div style="text-align:center;padding:20px;background:var(--bg-sec);border-radius:var(--radius-lg);color:var(--text-sec);font-size:14px;line-height:1.6">ℹ️ ผู้ขายยังไม่ได้ตั้งค่า PromptPay<br><span style="font-size:13px">กรุณาติดต่อผู้ขายผ่าน 💬 Chat<br>เพื่อนัดชำระเงิน</span></div>`;
+  }
   openOverlay('paymentOverlay');
   goPage('home');
 }
