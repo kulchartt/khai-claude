@@ -20,7 +20,14 @@ function updateNav(){
 }
 
 function imgSrc(url){if(!url)return '';return url.startsWith('http')?url:CONFIG.API_URL+url;}
-function productImg(p){const url=p.image_url;if(url)return `<img src="${imgSrc(url)}" alt="${p.title}" onerror="this.parentNode.innerHTML='<span class=\\'emoji\\'>${EMOJIS[p.category||p.cat]||'📦'}</span>'"/>`;return `<span class="emoji">${EMOJIS[p.category||p.cat]||'📦'}</span>`;}
+function productImg(p){
+  const url=p.image_url;
+  const emoji=EMOJIS[p.category||p.cat]||'📦';
+  if(url)return `<img src="${imgSrc(url)}" alt="${p.title}" loading="lazy"
+    onload="this.classList.add('visible');this.parentNode.classList.add('loaded')"
+    onerror="this.parentNode.classList.add('loaded');this.parentNode.innerHTML='<span class=\\'emoji\\'>${emoji}</span>'"/>`;
+  return `<span class="emoji">${emoji}</span>`;
+}
 function renderCards(list,cid){const g=document.getElementById(cid);if(!g)return;if(!list.length){g.innerHTML='<div class="empty-msg">ไม่พบสินค้า</div>';return;}g.innerHTML=list.map(p=>`<div class="card" onclick="openDetail(${p.id})"><div class="card-img">${productImg(p)}</div><div class="card-body"><div class="card-title">${p.title}</div><div class="card-price">฿${Number(p.price).toLocaleString()}</div><div class="card-foot"><span class="cond ${CMAP[p.condition||p.cond]||''}">${p.condition||p.cond}</span><span class="seller-nm">${p.seller_name||p.location||''}</span></div></div></div>`).join('');}
 
 async function loadProducts(){
