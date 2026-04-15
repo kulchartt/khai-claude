@@ -222,6 +222,7 @@ function profileTab(tab){
               ${o.seller_id&&o.status!=='cancelled'?`<button class="btn btn-sm" onclick="startChat(${o.seller_id},${o.product_id||'null'})">💬 คุยกับผู้ขาย</button>`:''}
               ${o.status==='confirmed'&&o.shipping_status==='shipped'?`<button class="btn btn-sm btn-g" onclick="markOrderReceived(${o.id})">✅ ยืนยันรับสินค้า</button>`:''}
               ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-danger" onclick="doCancelOrder(${o.id})">❌ ยกเลิก</button>`:''}
+              ${o.status==='awaiting_confirmation'?`<span style="font-size:11px;color:#d97706;font-weight:500">⚠️ ส่ง slip แล้ว — ติดต่อผู้ขายหากต้องการยกเลิก</span>`:''}
             </div>
           </div>
         </div>`).join('')+'</div>';

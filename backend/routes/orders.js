@@ -52,8 +52,11 @@ router.patch('/:id/cancel', authMiddleware, async (req, res) => {
     const { rows: or } = await db.query('SELECT * FROM orders WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
     const order = or[0];
     if (!order) return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อ' });
-    if (!['awaiting_payment', 'awaiting_confirmation', 'pending'].includes(order.status)) {
-      return res.status(400).json({ error: 'ไม่สามารถยกเลิกได้ เนื่องจากผู้ขายยืนยันแล้ว' });
+    if (!['awaiting_payment', 'pending'].includes(order.status)) {
+      if (order.status === 'awaiting_confirmation') {
+        return res.status(400).json({ error: 'ไม่สามารถยกเลิกได้ เนื่องจากส่ง slip ไปแล้ว กรุณาติดต่อผู้ขายเพื่อขอเงินคืน' });
+      }
+      return res.status(400).json({ error: 'ไม่สามารถยกเลิกได้ เนื่องจากผู้ขายยืนยันการชำระเงินแล้ว' });
     }
     // คืนสินค้ากลับมา available
     const { rows: items } = await db.query(
