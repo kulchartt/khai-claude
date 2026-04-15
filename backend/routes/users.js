@@ -148,6 +148,18 @@ router.get('/me/transactions', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Ensure verify_requests table exists (self-healing migration)
+getDB().query(`CREATE TABLE IF NOT EXISTS verify_requests (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reason TEXT NOT NULL,
+  id_card_url TEXT DEFAULT NULL,
+  status TEXT DEFAULT 'pending',
+  admin_note TEXT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id)
+)`).catch(e => console.error('verify_requests table init error:', e.message));
+
 // Verify request — user ส่งคำขอ (JSON only, ไม่มี file upload)
 router.post('/me/verify-request', authMiddleware, async (req, res) => {
   try {
