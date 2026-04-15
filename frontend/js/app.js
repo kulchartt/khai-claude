@@ -64,6 +64,7 @@ async function openDetail(id){
             ${!isOwner?`<button class="btn" onclick="startChat(${p.seller_id},${p.id})">💬 แชทผู้ขาย</button>`:''}
             <button class="btn wl-btn ${inWl?'liked':''}" id="wlBtn_${p.id}" onclick="toggleWl(${p.id})">${inWl?'❤️':'🤍'}</button>
             ${!isOwner?`<button class="btn" onclick="openReviewModal(${p.id})">⭐ รีวิว</button>`:''}
+            ${!isOwner&&p.status==='available'?`<button class="btn btn-offer" onclick="openOfferModal(${p.id},'${p.title.replace(/'/g,"\\'")}',${p.price})">💰 เสนอราคา</button>`:''}
             ${isOwner?`<button class="btn" onclick="openEditModal(${p.id})">✏️ แก้ไข</button><button class="btn btn-danger" onclick="confirmDeleteProduct(${p.id})">🗑️ ลบสินค้า</button>`:''}
             <button class="share-btn" onclick="shareProduct(${p.id},'${p.title.replace(/'/g,"\\'")}')">🔗 แชร์</button>
             ${!isOwner?`<button class="report-btn" onclick="openReportModal(${p.id})">🚩 แจ้ง</button>`:''}
@@ -140,9 +141,60 @@ async function changeQty(pid,qty){try{await api.updateCartQty(pid,qty);if(qty<=0
 async function removeCartItem(pid){try{await api.removeCart(pid);state.cartCount=Math.max(0,state.cartCount-1);updateBadge('cartBadge',state.cartCount);openCart();}catch(e){toast(e.message);}}
 async function doCheckout(){try{await api.checkout();state.cartCount=0;updateBadge('cartBadge',0);goPage('home');toast('ชำระเงินสำเร็จ! 🎉','#1D9E75');}catch(e){toast(e.message);}}
 
-async function openProfile(){if(!state.user){openOverlay('loginOverlay');return;}try{const[me,myItems]=await Promise.all([api.getMe(),api.getMyProducts()]);const avatarHtml=me.avatar?`<img src="${imgSrc(me.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${me.name.slice(0,2).toUpperCase()}`;document.getElementById('profileContent').innerHTML=`<div class="profile-header"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="p-avatar" onclick="document.getElementById('avatarInput').click()" style="cursor:pointer;overflow:hidden">${avatarHtml}</div><div style="font-size:11px;color:var(--text-hint)">กดเพื่อเปลี่ยน</div><input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="doUploadAvatar(this)"/></div><div style="flex:1"><div class="p-name">${me.name}</div><div class="p-email">${me.email}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${myItems.length}</div><div class="stat-l">สินค้าลงขาย</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${state.wlCount}</div><div class="stat-l">รายการโปรด</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${me.rating||5.0}★</div><div class="stat-l">คะแนน</div></div></div></div></div><div class="profile-tabs"><div class="profile-tab on" id="ptab-products" onclick="profileTab('products')">สินค้าของฉัน (${myItems.length})</div><div class="profile-tab" id="ptab-orders" onclick="profileTab('orders')">ประวัติซื้อ</div></div><div id="profileTabContent"></div><div style="margin-top:24px;padding:0 4px"><button class="btn btn-danger full" onclick="doLogout()">ออกจากระบบ</button></div>`;window._myItems=myItems;profileTab('products');goPage('profile');}catch(e){toast(e.message);}}
+async function openProfile(){if(!state.user){openOverlay('loginOverlay');return;}try{const[me,myItems]=await Promise.all([api.getMe(),api.getMyProducts()]);const avatarHtml=me.avatar?`<img src="${imgSrc(me.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${me.name.slice(0,2).toUpperCase()}`;document.getElementById('profileContent').innerHTML=`<div class="profile-header"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="p-avatar" onclick="document.getElementById('avatarInput').click()" style="cursor:pointer;overflow:hidden">${avatarHtml}</div><div style="font-size:11px;color:var(--text-hint)">กดเพื่อเปลี่ยน</div><input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="doUploadAvatar(this)"/></div><div style="flex:1"><div class="p-name">${me.name}</div><div class="p-email">${me.email}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${myItems.length}</div><div class="stat-l">สินค้าลงขาย</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${state.wlCount}</div><div class="stat-l">รายการโปรด</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${me.rating||5.0}★</div><div class="stat-l">คะแนน</div></div></div></div></div><div class="profile-tabs"><div class="profile-tab on" id="ptab-products" onclick="profileTab('products')">สินค้าของฉัน (${myItems.length})</div><div class="profile-tab" id="ptab-orders" onclick="profileTab('orders')">ประวัติซื้อ</div><div class="profile-tab" id="ptab-offers" onclick="profileTab('offers')">ข้อเสนอ 💰</div></div><div id="profileTabContent"></div><div style="margin-top:24px;padding:0 4px"><button class="btn btn-danger full" onclick="doLogout()">ออกจากระบบ</button></div>`;window._myItems=myItems;profileTab('products');goPage('profile');}catch(e){toast(e.message);}}
 
-function profileTab(tab){document.querySelectorAll('.profile-tab').forEach(t=>t.classList.toggle('on',t.id==='ptab-'+tab));const c=document.getElementById('profileTabContent');if(tab==='products'){c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px"><span style="font-weight:600">สินค้าของฉัน</span><button class="btn btn-sm btn-g" onclick="openSell()">+ ลงขายเพิ่ม</button></div><div class="product-grid" id="myProductsGrid"></div>`;renderMyCards(window._myItems||[],'myProductsGrid');}else{c.innerHTML='<div class="loading">กำลังโหลด...</div>';api.getOrders().then(orders=>{if(!orders.length){c.innerHTML='<div class="empty-msg">ยังไม่มีประวัติการสั่งซื้อ</div>';return;}c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`<div class="order-item"><div class="order-top"><div><div class="order-id">คำสั่งซื้อ #${String(o.id).padStart(4,'0')}</div><div class="order-date">${new Date(o.created_at).toLocaleDateString('th',{year:'numeric',month:'long',day:'numeric'})}</div></div><div class="order-total">฿${Number(o.total).toLocaleString()}</div></div><div class="order-items-list">${o.items}</div><div class="order-status ${o.status==='pending'?'status-pending':'status-done'}">${o.status==='pending'?'รอดำเนินการ':'สำเร็จ'}</div></div>`).join('')+'</div>';}).catch(e=>toast(e.message));}}
+function profileTab(tab){
+  document.querySelectorAll('.profile-tab').forEach(t=>t.classList.toggle('on',t.id==='ptab-'+tab));
+  const c=document.getElementById('profileTabContent');
+  if(tab==='products'){
+    c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px"><span style="font-weight:600">สินค้าของฉัน</span><button class="btn btn-sm btn-g" onclick="openSell()">+ ลงขายเพิ่ม</button></div><div class="product-grid" id="myProductsGrid"></div>`;
+    renderMyCards(window._myItems||[],'myProductsGrid');
+  } else if(tab==='orders'){
+    c.innerHTML='<div class="loading">กำลังโหลด...</div>';
+    api.getOrders().then(orders=>{
+      if(!orders.length){c.innerHTML='<div class="empty-msg">ยังไม่มีประวัติการสั่งซื้อ</div>';return;}
+      c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`<div class="order-item"><div class="order-top"><div><div class="order-id">คำสั่งซื้อ #${String(o.id).padStart(4,'0')}</div><div class="order-date">${new Date(o.created_at).toLocaleDateString('th',{year:'numeric',month:'long',day:'numeric'})}</div></div><div class="order-total">฿${Number(o.total).toLocaleString()}</div></div><div class="order-items-list">${o.items}</div><div class="order-status ${o.status==='pending'?'status-pending':'status-done'}">${o.status==='pending'?'รอดำเนินการ':'สำเร็จ'}</div></div>`).join('')+'</div>';
+    }).catch(e=>toast(e.message));
+  } else if(tab==='offers'){
+    c.innerHTML='<div class="loading">กำลังโหลด...</div>';
+    Promise.all([api.getIncomingOffers(),api.getOutgoingOffers()]).then(([incoming,outgoing])=>{
+      let html='<div style="margin-top:16px">';
+      if(incoming.length){
+        html+=`<div style="font-weight:600;margin-bottom:10px;font-size:15px">📥 ข้อเสนอที่ได้รับ (${incoming.length})</div>`;
+        html+=incoming.map(o=>`
+          <div class="offer-item">
+            <div class="offer-top">
+              <div class="offer-avatar">${(o.buyer_name||'?').slice(0,2).toUpperCase()}</div>
+              <div style="flex:1">
+                <div class="offer-product">${o.product_title}</div>
+                <div class="offer-buyer">${o.buyer_name} เสนอ <span class="offer-price">฿${Number(o.offer_price).toLocaleString()}</span> <span style="color:var(--text-hint);font-size:12px">(ตั้งไว้ ฿${Number(o.product_price).toLocaleString()})</span></div>
+                ${o.message?`<div class="offer-msg">"${o.message}"</div>`:''}
+              </div>
+              <div class="offer-status offer-${o.status}">${{pending:'รอตอบ',accepted:'✅ ยอมรับ',declined:'❌ ปฏิเสธ'}[o.status]}</div>
+            </div>
+            ${o.status==='pending'?`<div class="offer-actions"><button class="btn btn-g btn-sm" onclick="respondOffer(${o.id},'accepted')">✅ ยอมรับ</button><button class="btn btn-sm btn-danger" onclick="respondOffer(${o.id},'declined')">❌ ปฏิเสธ</button></div>`:''}
+          </div>`).join('');
+      }
+      if(outgoing.length){
+        html+=`<div style="font-weight:600;margin:20px 0 10px;font-size:15px">📤 ข้อเสนอที่ส่งไป (${outgoing.length})</div>`;
+        html+=outgoing.map(o=>`
+          <div class="offer-item">
+            <div class="offer-top">
+              <div style="flex:1">
+                <div class="offer-product" style="cursor:pointer" onclick="openDetail(${o.product_id})">${o.product_title}</div>
+                <div class="offer-buyer">เสนอ <span class="offer-price">฿${Number(o.offer_price).toLocaleString()}</span> หา ${o.seller_name}</div>
+                ${o.message?`<div class="offer-msg">"${o.message}"</div>`:''}
+              </div>
+              <div class="offer-status offer-${o.status}">${{pending:'⏳ รอผล',accepted:'✅ ยอมรับ',declined:'❌ ปฏิเสธ'}[o.status]}</div>
+            </div>
+          </div>`).join('');
+      }
+      if(!incoming.length&&!outgoing.length){html+='<div class="empty-msg">ยังไม่มีข้อเสนอ</div>';}
+      html+='</div>';
+      c.innerHTML=html;
+    }).catch(e=>toast(e.message));
+  }
+}
 
 async function doUploadAvatar(input){if(!input.files[0])return;const fd=new FormData();fd.append('avatar',input.files[0]);try{const res=await api.uploadAvatar(fd);toast('อัปเดตรูปโปรไฟล์แล้ว ✅','#1D9E75');openProfile();}catch(e){toast(e.message);}}
 
@@ -155,6 +207,33 @@ async function openEditModal(id){try{const p=await api.getProduct(id);document.g
 async function doEditProduct(){const id=document.getElementById('eId').value,title=document.getElementById('eTitle').value.trim(),price=document.getElementById('ePrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}try{await api.updateProduct(id,{title,price:Number(price),category:document.getElementById('eCat').value,condition:document.getElementById('eCond').value,description:document.getElementById('eDesc').value,location:document.getElementById('eLoc').value,status:document.getElementById('eStatus').value});closeOverlay('editOverlay');toast('อัปเดตสินค้าแล้ว ✅','#1D9E75');loadProducts();openProfile();}catch(e){toast(e.message);}}
 
 async function confirmDeleteProduct(id){if(!confirm('ลบสินค้านี้? จะไม่สามารถกู้คืนได้'))return;try{await api.deleteProduct(id);toast('ลบสินค้าแล้ว');openProfile();}catch(e){toast(e.message);}}
+
+function openOfferModal(productId, title, price){
+  if(!state.user){openOverlay('loginOverlay');return;}
+  document.getElementById('offerProductId').value=productId;
+  document.getElementById('offerPrice').value='';
+  document.getElementById('offerMessage').value='';
+  document.getElementById('offerProductInfo').innerHTML=`<div style="font-weight:600;margin-bottom:4px">${title}</div><div style="color:var(--green)">ราคาตั้ง ฿${Number(price).toLocaleString()}</div>`;
+  openOverlay('offerOverlay');
+}
+async function doMakeOffer(){
+  const pid=document.getElementById('offerProductId').value;
+  const price=document.getElementById('offerPrice').value;
+  const msg=document.getElementById('offerMessage').value;
+  if(!price||Number(price)<=0){toast('กรุณาใส่ราคาที่เสนอ');return;}
+  try{
+    const res=await api.makeOffer(pid,Number(price),msg);
+    closeOverlay('offerOverlay');
+    toast(res.message,'#1D9E75');
+  }catch(e){toast(e.message);}
+}
+async function respondOffer(id,status){
+  try{
+    const res=await api.respondOffer(id,status);
+    toast(res.message,status==='accepted'?'#1D9E75':undefined);
+    profileTab('offers');
+  }catch(e){toast(e.message);}
+}
 
 function switchTab(t){document.getElementById('loginForm').classList.toggle('hidden',t!=='login');document.getElementById('regForm').classList.toggle('hidden',t!=='reg');document.getElementById('tabLogin').classList.toggle('on',t==='login');document.getElementById('tabReg').classList.toggle('on',t==='reg');}
 async function doLogin(){const email=document.getElementById('loginEmail').value.trim(),pass=document.getElementById('loginPass').value;if(!email||!pass){toast('กรุณากรอกข้อมูลให้ครบ');return;}try{const res=await api.login(email,pass);localStorage.setItem('token',res.token);localStorage.setItem('user',JSON.stringify(res.user));state.user=res.user;state.token=res.token;closeOverlay('loginOverlay');updateNav();toast('ยินดีต้อนรับ '+res.user.name+'!','#1D9E75');await syncBadges();connectSocket();}catch(e){toast(e.message);}}
