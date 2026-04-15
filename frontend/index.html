@@ -238,6 +238,28 @@
   </div>
 </div>
 
+<!-- Offer Modal -->
+<div class="overlay" id="offerOverlay">
+  <div class="modal">
+    <button class="mclose" onclick="closeOverlay('offerOverlay')">×</button>
+    <h2>💰 เสนอราคา</h2>
+    <input type="hidden" id="offerProductId"/>
+    <div id="offerProductInfo" style="background:var(--bg-sec);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:14px"></div>
+    <div class="field">
+      <label>ราคาที่เสนอ (บาท)</label>
+      <input type="number" id="offerPrice" placeholder="0"/>
+    </div>
+    <div class="field">
+      <label>ข้อความถึงผู้ขาย (ไม่บังคับ)</label>
+      <textarea id="offerMessage" placeholder="เช่น ขอลดได้ไหมครับ..."></textarea>
+    </div>
+    <div class="row-btns">
+      <button class="btn btn-g" style="flex:1" onclick="doMakeOffer()">ส่งข้อเสนอ</button>
+      <button class="btn" onclick="closeOverlay('offerOverlay')">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
 <!-- Report Modal -->
 <div class="overlay" id="reportOverlay">
   <div class="modal">

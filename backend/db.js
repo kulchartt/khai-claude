@@ -85,6 +85,17 @@ async function initDB() {
     is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT NOW()
   )`);
 
+  await db.query(`CREATE TABLE IF NOT EXISTS offers (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    buyer_id INTEGER NOT NULL REFERENCES users(id),
+    seller_id INTEGER NOT NULL REFERENCES users(id),
+    offer_price REAL NOT NULL,
+    message TEXT DEFAULT '',
+    status TEXT DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+
   await db.query(`CREATE TABLE IF NOT EXISTS reports (
     id SERIAL PRIMARY KEY, product_id INTEGER NOT NULL, reporter_id INTEGER NOT NULL,
     reason TEXT NOT NULL, detail TEXT DEFAULT '', status TEXT DEFAULT 'pending',

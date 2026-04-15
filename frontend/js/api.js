@@ -68,4 +68,8 @@ const api = {
   adminDeleteProduct(id) { return this.delete('/api/admin/products/'+id); },
   adminUpdateProductStatus(id,status) { return this.patch('/api/admin/products/'+id+'/status',{status}); },
   report(productId, reason, detail) { return this.post('/api/reports',{product_id:productId,reason,detail}); },
+  makeOffer(productId, offerPrice, message) { return this.post('/api/offers',{product_id:productId,offer_price:offerPrice,message}); },
+  getIncomingOffers() { return this.get('/api/offers/incoming'); },
+  getOutgoingOffers() { return this.get('/api/offers/outgoing'); },
+  respondOffer(id, status) { return this.patch('/api/offers/'+id,{status}); },
 };

@@ -246,6 +246,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .detail-thumb:hover,.detail-thumb.active{border-color:var(--green)}
 .detail-thumb img{width:100%;height:100%;object-fit:cover}
 
+/* ===== Offer / ต่อรองราคา ===== */
+.btn-offer{background:#fff8e1;color:#b45309;border-color:#fcd34d}
+.btn-offer:hover{background:#fef3c7}
+.offer-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px}
+.offer-top{display:flex;align-items:flex-start;gap:12px}
+.offer-avatar{width:36px;height:36px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--green-dark);flex-shrink:0}
+.offer-product{font-size:14px;font-weight:600;margin-bottom:3px}
+.offer-buyer{font-size:13px;color:var(--text-sec)}
+.offer-price{color:var(--green);font-weight:700}
+.offer-msg{font-size:12px;color:var(--text-hint);margin-top:4px;font-style:italic}
+.offer-status{font-size:12px;font-weight:600;white-space:nowrap;padding:3px 10px;border-radius:99px}
+.offer-pending{background:#fef9c3;color:#854d0e}
+.offer-accepted{background:#dcfce7;color:#166534}
+.offer-declined{background:#fef2f2;color:#dc2626}
+.offer-actions{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+
 /* ===== Skeleton Loading ===== */
 .skeleton-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
 .skeleton{background:linear-gradient(90deg,var(--bg-sec) 25%,var(--border-hover) 50%,var(--bg-sec) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}
