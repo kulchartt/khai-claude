@@ -188,8 +188,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .review-name{font-size:14px;font-weight:500}
 .review-stars{color:#f59e0b;font-size:13px}
 .review-comment{font-size:13px;color:var(--text-sec);line-height:1.6}
-.profile-tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:20px}
-.profile-tab{padding:10px 20px;font-size:14px;font-weight:500;cursor:pointer;color:var(--text-sec);border-bottom:2px solid transparent;margin-bottom:-2px;transition:.15s}
+.profile-tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:20px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+.profile-tabs::-webkit-scrollbar{display:none}
+.profile-tab{padding:10px 14px;font-size:13px;font-weight:500;cursor:pointer;color:var(--text-sec);border:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.15s;white-space:nowrap;flex-shrink:0;background:transparent;font-family:inherit}
 .profile-tab.on{color:var(--green);border-bottom-color:var(--green)}
 .order-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:10px}
 .order-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
