@@ -44,6 +44,15 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/health/cloudinary', async (req, res) => {
+  const { cloudinary } = require('./cloudinary');
+  const cfg = cloudinary.config();
+  res.json({
+    cloud_name: cfg.cloud_name || 'NOT SET',
+    api_key: cfg.api_key || 'NOT SET',
+    api_secret: cfg.api_secret ? cfg.api_secret.slice(0,4)+'***' : 'NOT SET',
+  });
+});
 
 const onlineUsers = new Map();
 
