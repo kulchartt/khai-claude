@@ -85,6 +85,9 @@ async function initDB() {
     is_read INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT NOW()
   )`);
 
+  // เพิ่ม bumped_at column ถ้ายังไม่มี
+  await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS bumped_at TIMESTAMP DEFAULT NULL`);
+
   await db.query(`CREATE TABLE IF NOT EXISTS offers (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,

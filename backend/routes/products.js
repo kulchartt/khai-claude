@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
     if (location) { sql += ` AND p.location ILIKE ${p()}`; params.push(`%${location}%`); }
     if (sort === 'price-asc') sql += ' ORDER BY p.price ASC';
     else if (sort === 'price-desc') sql += ' ORDER BY p.price DESC';
-    else sql += ' ORDER BY p.created_at DESC';
+    else sql += ' ORDER BY GREATEST(p.created_at, COALESCE(p.bumped_at, p.created_at)) DESC';
     sql += ` LIMIT ${p()} OFFSET ${p()}`;
     params.push(Number(limit), (Number(page) - 1) * Number(limit));
     const { rows } = await db.query(sql, params);
@@ -125,6 +125,37 @@ router.put('/:id', authMiddleware, uploadMiddleware, async (req, res) => {
        firstImage, status||product.status, req.params.id]
     );
     res.json({ message: 'อัปเดตสินค้าแล้ว' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/:id/bump', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows: pr } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
+    const product = pr[0];
+    if (!product) return res.status(404).json({ error: 'ไม่พบสินค้า' });
+    if (product.seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+    if (product.status !== 'available') return res.status(400).json({ error: 'สินค้านี้ไม่ได้วางขาย' });
+
+    // เช็คว่า bump ไปแล้วในวันนี้หรือเปล่า
+    if (product.bumped_at) {
+      const lastBump = new Date(product.bumped_at);
+      const now = new Date();
+      const sameDay = lastBump.toDateString() === now.toDateString();
+      if (sameDay) {
+        // คำนวณเวลาที่ bump ได้อีก (เที่ยงคืนวันถัดไป)
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        const diff = tomorrow - now;
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        return res.status(400).json({ error: `ดันโพสต์ได้อีกครั้งใน ${h} ชม. ${m} นาที` });
+      }
+    }
+
+    await db.query('UPDATE products SET bumped_at = NOW() WHERE id = $1', [req.params.id]);
+    res.json({ message: 'ดันโพสต์ขึ้นบนสุดแล้ว! ⬆️' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
