@@ -24,7 +24,7 @@ function renderCards(list,cid){const g=document.getElementById(cid);if(!g)return
 
 async function loadProducts(){
   const q=document.getElementById('searchQ').value,minPrice=document.getElementById('minP').value,maxPrice=document.getElementById('maxP').value,sort=document.getElementById('sortSel').value,condition=document.getElementById('condSel').value;
-  document.getElementById('productGrid').innerHTML='<div class="loading">กำลังโหลดสินค้า...</div>';
+  document.getElementById('productGrid').innerHTML=Array(8).fill('<div class="skeleton-card"><div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div></div>').join('');
   try{const params={};if(state.cat!=='ทั้งหมด')params.cat=state.cat;if(q)params.q=q;if(minPrice)params.minPrice=minPrice;if(maxPrice)params.maxPrice=maxPrice;if(sort)params.sort=sort;if(condition)params.condition=condition;const products=await api.getProducts(params);document.getElementById('statCount').textContent=products.length+'+';renderCards(products,'productGrid');}
   catch(e){document.getElementById('productGrid').innerHTML='<div class="empty-msg">โหลดไม่สำเร็จ</div>';}
 }
@@ -35,6 +35,7 @@ async function openDetail(id){
   try{
     const[p,rv]=await Promise.all([api.getProduct(id),api.getReviews(id)]);
     const inWl=state.wlIds.includes(id),isOwner=state.user&&state.user.id===p.seller_id;
+    window.location.hash='product-'+id;
     document.getElementById('detailContent').innerHTML=`
       <div class="detail-hero">
         <div>${buildGallery(p)}</div>
@@ -47,6 +48,8 @@ async function openDetail(id){
             <button class="btn wl-btn ${inWl?'liked':''}" id="wlBtn_${p.id}" onclick="toggleWl(${p.id})">${inWl?'❤️':'🤍'}</button>
             ${!isOwner?`<button class="btn" onclick="openReviewModal(${p.id})">⭐ รีวิว</button>`:''}
             ${isOwner?`<button class="btn" onclick="openEditModal(${p.id})">✏️ แก้ไข</button><button class="btn btn-danger" onclick="confirmDeleteProduct(${p.id})">🗑️ ลบสินค้า</button>`:''}
+            <button class="share-btn" onclick="shareProduct(${p.id},'${p.title.replace(/'/g,"\\'")}')">🔗 แชร์</button>
+            ${!isOwner?`<button class="report-btn" onclick="openReportModal(${p.id})">🚩 แจ้ง</button>`:''}
           </div>
           <div class="detail-meta">
             <div class="meta-box"><div class="meta-l">สภาพ</div><div class="meta-v">${p.condition}</div></div>
@@ -68,9 +71,45 @@ async function openDetail(id){
           <h3>รีวิว (${rv.count}) — เฉลี่ย ${rv.average}★</h3>
           ${rv.reviews.length?rv.reviews.map(r=>`<div class="review-item"><div class="review-top"><div class="review-avatar">${r.reviewer_name.slice(0,2).toUpperCase()}</div><div><div class="review-name">${r.reviewer_name}</div><div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div></div></div><div class="review-comment">${r.comment||'—'}</div></div>`).join(''):'<p style="color:var(--text-sec);font-size:14px">ยังไม่มีรีวิว</p>'}
         </div>
-      </div>`;
+      </div>
+      <div class="related-wrap" id="relatedWrap"></div>`;
     goPage('detail');
+    loadRelated(p.id, p.category);
   }catch(e){toast('โหลดสินค้าไม่สำเร็จ');}
+}
+
+async function loadRelated(currentId, category){
+  try{
+    const all=await api.getProducts({cat:category,limit:7});
+    const related=all.filter(p=>p.id!==currentId).slice(0,6);
+    const wrap=document.getElementById('relatedWrap');
+    if(!wrap||!related.length)return;
+    wrap.innerHTML=`<h3>สินค้าที่คล้ายกัน 🛍️</h3><div class="product-grid" id="relatedGrid"></div>`;
+    renderCards(related,'relatedGrid');
+  }catch{}
+}
+
+function shareProduct(id,title){
+  const url=location.origin+location.pathname+'#product-'+id;
+  if(navigator.share){navigator.share({title,url}).catch(()=>{});}
+  else{navigator.clipboard.writeText(url).then(()=>toast('คัดลอกลิงก์แล้ว! 🔗','#1D9E75')).catch(()=>toast('คัดลอกไม่สำเร็จ'));}
+}
+
+function openReportModal(productId){
+  if(!state.user){openOverlay('loginOverlay');return;}
+  document.getElementById('reportProductId').value=productId;
+  document.getElementById('reportDetail').value='';
+  openOverlay('reportOverlay');
+}
+async function doReport(){
+  const pid=document.getElementById('reportProductId').value;
+  const reason=document.getElementById('reportReason').value;
+  const detail=document.getElementById('reportDetail').value;
+  try{
+    const res=await api.report(pid,reason,detail);
+    closeOverlay('reportOverlay');
+    toast(res.message,'#1D9E75');
+  }catch(e){toast(e.message);}
 }
 
 async function addToCart(id){if(!state.user){toast('กรุณาเข้าสู่ระบบก่อน');openOverlay('loginOverlay');return;}try{await api.addCart(id);state.cartCount++;updateBadge('cartBadge',state.cartCount);toast('เพิ่มลงตะกร้าแล้ว! 🛒','#1D9E75');}catch(e){toast(e.message);}}
@@ -133,8 +172,30 @@ function connectSocket(){if(!state.token||socket)return;socket=window.io(CONFIG.
 
 async function syncBadges(){if(!state.user)return;try{const[cart,wl,notifs]=await Promise.all([api.getCart(),api.getWishlist(),api.getNotifications()]);state.cartCount=cart.reduce((s,x)=>s+x.qty,0);state.wlCount=wl.length;state.wlIds=wl.map(x=>x.product_id);state.notifCount=notifs.unread;updateBadge('cartBadge',state.cartCount);updateBadge('wlBadge',state.wlCount);updateBadge('notifBadge',state.notifCount);}catch{}}
 
-async function init(){updateNav();await loadProducts();if(state.user){await syncBadges();connectSocket();}}
+async function init(){
+  updateNav();
+  await loadProducts();
+  if(state.user){await syncBadges();connectSocket();}
+  // Deep link: open product from URL hash
+  const hash=window.location.hash;
+  if(hash.startsWith('#product-')){
+    const id=parseInt(hash.replace('#product-',''));
+    if(!isNaN(id))openDetail(id);
+  }
+  // Listen for back/forward navigation
+  window.addEventListener('hashchange',()=>{
+    const h=window.location.hash;
+    if(h.startsWith('#product-')){const id=parseInt(h.replace('#product-',''));if(!isNaN(id))openDetail(id);}
+    else if(!h||h==='#'){goPage('home');}
+  });
+}
 init();
+
+function goPageClearHash(p){window.location.hash='';goPage(p);}
+// Override back button on detail page to clear hash
+document.querySelector('#page-detail .back-btn')?.addEventListener('click',()=>{window.location.hash='';});
+
+function openAdvSearch(){/* placeholder – filters are inline */}
 
 function previewImages(input) {
   const grid = document.getElementById('imgPreviewGrid');
