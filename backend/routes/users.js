@@ -18,10 +18,15 @@ const avatarUpload = multer({
 router.get('/me/orders', authMiddleware, async (req, res) => {
   try {
     const { rows } = await getDB().query(`
-      SELECT o.*, STRING_AGG(p.title, ', ') as items
+      SELECT o.*,
+        STRING_AGG(DISTINCT p.title, ', ') as items,
+        MIN(p.seller_id) as seller_id,
+        MIN(p.id) as product_id,
+        MIN(s.name) as seller_name
       FROM orders o
       JOIN order_items oi ON o.id = oi.order_id
       JOIN products p ON oi.product_id = p.id
+      JOIN users s ON p.seller_id = s.id
       WHERE o.user_id = $1
       GROUP BY o.id
       ORDER BY o.created_at DESC
