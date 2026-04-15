@@ -510,7 +510,6 @@ async function openVerifiedStatusTab(){
 
 function openVerifyRequestModal(){
   document.getElementById('verifyReason').value='';
-  document.getElementById('verifyIdCard').value='';
   openOverlay('verifyRequestOverlay');
 }
 async function doSubmitVerifyRequest(){
