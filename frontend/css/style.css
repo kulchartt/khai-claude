@@ -157,7 +157,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 }
 
 .hidden{display:none!important}
-#page-chat{height:calc(100vh - 56px);display:flex;flex-direction:column;overflow:hidden}
+#page-chat.active{display:flex;height:calc(100vh - 56px);flex-direction:column;overflow:hidden}
 .chat-layout{display:grid;grid-template-columns:280px 1fr;flex:1;overflow:hidden}
 .chat-rooms{border-right:1px solid var(--border);overflow-y:auto;background:var(--bg-card)}
 .chat-room-item{padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:.15s}
