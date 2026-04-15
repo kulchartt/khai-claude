@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
   try {
     const db = getDB();
     const { cat, q, minPrice, maxPrice, sort, condition, location, page = 1, limit = 20 } = req.query;
-    let sql = `SELECT p.*, u.name as seller_name, u.rating as seller_rating FROM products p JOIN users u ON p.seller_id = u.id WHERE p.status = 'available'`;
+    let sql = `SELECT p.*, u.name as seller_name, u.rating as seller_rating FROM products p JOIN users u ON p.seller_id = u.id WHERE p.status IN ('available','reserved')`;
     const params = [];
     let n = 0;
     const p = () => `$${++n}`;

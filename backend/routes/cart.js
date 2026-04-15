@@ -65,7 +65,7 @@ router.post('/checkout', authMiddleware, async (req, res) => {
     const orderId = or[0].id;
     for (const item of items) {
       await client.query('INSERT INTO order_items (order_id, product_id, price, qty) VALUES ($1,$2,$3,$4)', [orderId, item.product_id, item.price, item.qty]);
-      await client.query("UPDATE products SET status = 'sold' WHERE id = $1", [item.product_id]);
+      await client.query("UPDATE products SET status = 'reserved' WHERE id = $1", [item.product_id]);
     }
     await client.query('DELETE FROM cart_items WHERE user_id = $1', [req.user.id]);
     await client.query('COMMIT');

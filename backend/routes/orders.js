@@ -52,8 +52,8 @@ router.patch('/:id/cancel', authMiddleware, async (req, res) => {
     const { rows: or } = await db.query('SELECT * FROM orders WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
     const order = or[0];
     if (!order) return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อ' });
-    if (!['awaiting_payment', 'pending'].includes(order.status)) {
-      return res.status(400).json({ error: 'ไม่สามารถยกเลิกได้ เนื่องจากส่ง slip ไปแล้วหรือผู้ขายยืนยันแล้ว' });
+    if (!['awaiting_payment', 'awaiting_confirmation', 'pending'].includes(order.status)) {
+      return res.status(400).json({ error: 'ไม่สามารถยกเลิกได้ เนื่องจากผู้ขายยืนยันแล้ว' });
     }
     // คืนสินค้ากลับมา available
     const { rows: items } = await db.query(
@@ -98,6 +98,11 @@ router.patch('/:id/confirm-payment', authMiddleware, async (req, res) => {
     if (!or[0]) return res.status(404).json({ error: 'ไม่พบออเดอร์' });
 
     await db.query("UPDATE orders SET status = 'confirmed' WHERE id = $1", [req.params.id]);
+    // ตอนนี้ยืนยันแล้ว — เปลี่ยนสถานะสินค้าเป็น sold จริงๆ
+    await db.query(`
+      UPDATE products SET status = 'sold'
+      WHERE id IN (SELECT product_id FROM order_items WHERE order_id = $1)
+    `, [req.params.id]);
 
     // แจ้งเตือนผู้ซื้อ
     const io = req.app.get('io');
