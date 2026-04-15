@@ -476,8 +476,10 @@ function tlv(tag, val){return tag+String(val.length).padStart(2,'0')+val;}
 function crc16(str){let c=0xFFFF;for(let i=0;i<str.length;i++){c^=str.charCodeAt(i)<<8;for(let j=0;j<8;j++)c=c&0x8000?(c<<1)^0x1021:c<<1;}return(c&0xFFFF).toString(16).toUpperCase().padStart(4,'0');}
 function buildPromptPayPayload(phone,amount){
   let id=phone.replace(/[^0-9]/g,'');
-  if(id.length===10&&id.startsWith('0'))id='0066'+id.slice(1);
-  const acc=tlv('00','A000000677010111')+tlv('01',id);
+  let subtag='01';
+  if(id.length===13){subtag='02';id='0013'+id;} // เลขบัตรประชาชน
+  else if(id.length===10&&id.startsWith('0')){id='0066'+id.slice(1);} // เบอร์มือถือ
+  const acc=tlv('00','A000000677010111')+tlv(subtag,id);
   let p=tlv('00','01')+tlv('01',amount?'12':'11')+tlv('29',acc)+tlv('53','764')+(amount?tlv('54',Number(amount).toFixed(2)):'')+tlv('58','TH')+tlv('59','PromptPay')+tlv('60','Bangkok')+'6304';
   return p+crc16(p);
 }
