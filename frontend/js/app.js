@@ -1,4 +1,4 @@
-console.log('%c app.js v20260418a ', 'background:#16a34a;color:#fff;padding:2px 6px;border-radius:4px');
+console.log('%c app.js v20260418b ', 'background:#16a34a;color:#fff;padding:2px 6px;border-radius:4px');
 const EMOJIS={มือถือ:'📱',เสื้อผ้า:'👗',หนังสือ:'📚',กีฬา:'⚽',ของแต่งบ้าน:'🏠',กล้อง:'📷'};
 const CMAP={'มือสองใหม่':'cond-new','สภาพดี':'cond-good','สภาพพอใช้':'cond-fair'};
 const NICONS={chat:'💬',review:'⭐',order:'📦',system:'📢'};

@@ -8,7 +8,9 @@ const api = {
     if (body) opts.body = formData ? body : JSON.stringify(body);
     try {
       const res = await fetch(CONFIG.API_URL + path, opts);
-      const data = await res.json();
+      let data;
+      try { data = await res.json(); }
+      catch { throw new Error(`Server error ${res.status} — กรุณาลองใหม่อีกครั้ง`); }
       if (res.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
