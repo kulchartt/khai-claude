@@ -139,4 +139,41 @@ router.patch('/disputes/:id', adminOnly, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Verify requests
+router.get('/verify-requests', adminOnly, async (req, res) => {
+  try {
+    const { rows } = await getDB().query(`
+      SELECT vr.*, u.name, u.email, u.rating, u.review_count, u.is_verified,
+        (SELECT COUNT(*) FROM products WHERE seller_id = u.id) as product_count
+      FROM verify_requests vr
+      JOIN users u ON vr.user_id = u.id
+      ORDER BY CASE vr.status WHEN 'pending' THEN 0 ELSE 1 END, vr.created_at DESC
+    `);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.patch('/verify-requests/:id', adminOnly, async (req, res) => {
+  try {
+    const { action, admin_note } = req.body; // action: 'approve' | 'reject'
+    const db = getDB();
+    const { rows: vr } = await db.query('SELECT * FROM verify_requests WHERE id = $1', [req.params.id]);
+    if (!vr[0]) return res.status(404).json({ error: 'ไม่พบคำขอ' });
+    const status = action === 'approve' ? 'approved' : 'rejected';
+    await db.query('UPDATE verify_requests SET status = $1, admin_note = $2 WHERE id = $3', [status, admin_note || null, req.params.id]);
+    if (action === 'approve') {
+      await db.query('UPDATE users SET is_verified = 1 WHERE id = $1', [vr[0].user_id]);
+    }
+    // แจ้งเตือน user
+    const msg = action === 'approve'
+      ? 'ยินดีด้วย! บัญชีของคุณได้รับ ✅ Verified Badge แล้ว'
+      : `คำขอ Verified ถูกปฏิเสธ${admin_note ? ': ' + admin_note : ''}`;
+    await db.query(
+      "INSERT INTO notifications (user_id, type, title, body) VALUES ($1,'system','สถานะ Verified Badge',$2)",
+      [vr[0].user_id, msg]
+    );
+    res.json({ message: action === 'approve' ? 'อนุมัติแล้ว ✅' : 'ปฏิเสธแล้ว' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;
