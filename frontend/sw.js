@@ -26,7 +26,8 @@ self.addEventListener('fetch', e => {
     fetch(e.request)
       .then(res => {
         if (res.ok) {
-          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+          const cloned = res.clone(); // clone ก่อน return เพื่อป้องกัน body already used
+          caches.open(CACHE).then(c => c.put(e.request, cloned));
         }
         return res;
       })
