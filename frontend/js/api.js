@@ -73,4 +73,7 @@ const api = {
   getIncomingOffers() { return this.get('/api/offers/incoming'); },
   getOutgoingOffers() { return this.get('/api/offers/outgoing'); },
   respondOffer(id, status) { return this.patch('/api/offers/'+id,{status}); },
+  getAnalytics() { return this.get('/api/users/me/analytics'); },
+  getChatUnread() { return this.get('/api/chat/unread'); },
+  markOrderReceived(id) { return this.patch('/api/users/me/orders/'+id+'/received', {}); },
 };
