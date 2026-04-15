@@ -27,7 +27,7 @@ function uploadMiddleware(req, res, next) {
 router.get('/', async (req, res) => {
   try {
     const db = getDB();
-    const { cat, q, minPrice, maxPrice, sort, condition, page = 1, limit = 20 } = req.query;
+    const { cat, q, minPrice, maxPrice, sort, condition, location, page = 1, limit = 20 } = req.query;
     let sql = `SELECT p.*, u.name as seller_name, u.rating as seller_rating FROM products p JOIN users u ON p.seller_id = u.id WHERE p.status = 'available'`;
     const params = [];
     let n = 0;
@@ -37,6 +37,7 @@ router.get('/', async (req, res) => {
     if (minPrice) { sql += ` AND p.price >= ${p()}`; params.push(Number(minPrice)); }
     if (maxPrice) { sql += ` AND p.price <= ${p()}`; params.push(Number(maxPrice)); }
     if (condition) { sql += ` AND p.condition = ${p()}`; params.push(condition); }
+    if (location) { sql += ` AND p.location ILIKE ${p()}`; params.push(`%${location}%`); }
     if (sort === 'price-asc') sql += ' ORDER BY p.price ASC';
     else if (sort === 'price-desc') sql += ' ORDER BY p.price DESC';
     else sql += ' ORDER BY p.created_at DESC';
