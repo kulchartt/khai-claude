@@ -187,7 +187,7 @@ function profileTab(tab){
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
               ${o.slip_url?`<a href="${o.slip_url}" target="_blank" class="btn btn-sm">🖼️ slip</a>`:''}
-              ${o.status==='awaiting_confirmation'?`<button class="btn btn-sm btn-g" onclick="doConfirmPayment(${o.id})">✅ ยืนยันรับเงิน</button>`:''}
+              ${['awaiting_payment','awaiting_confirmation'].includes(o.status)?`<button class="btn btn-sm btn-g" onclick="doConfirmPayment(${o.id})">✅ ยืนยันรับเงิน</button>`:''}
               ${o.status==='confirmed'&&(!o.shipping_status||o.shipping_status==='pending')?`<button class="btn btn-sm" onclick="doShipOrder(${o.id},'preparing')">📦 กำลังเตรียมของ</button>`:''}
               ${o.status==='confirmed'&&o.shipping_status==='preparing'?`<button class="btn btn-sm btn-g" onclick="doShipOrder(${o.id},'shipped')">🚚 ส่งพัสดุแล้ว</button>`:''}
               ${o.status==='confirmed'&&o.shipping_status==='shipped'?`<span style="font-size:12px;color:#16a34a;font-weight:600">🚚 รอผู้ซื้อยืนยันรับ</span>`:''}
