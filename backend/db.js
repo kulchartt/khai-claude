@@ -93,6 +93,18 @@ async function initDB() {
   await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS slip_url TEXT DEFAULT NULL`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS promptpay TEXT DEFAULT NULL`);
 
+  // Fix: สินค้าที่อยู่ใน order ที่ยังไม่จบ (awaiting_payment / awaiting_confirmation)
+  // ถูก set เป็น sold ผิดพลาดโดยโค้ดเก่า — เปลี่ยนกลับเป็น reserved
+  await db.query(`
+    UPDATE products SET status = 'reserved'
+    WHERE status = 'sold'
+    AND id IN (
+      SELECT oi.product_id FROM order_items oi
+      JOIN orders o ON oi.order_id = o.id
+      WHERE o.status IN ('awaiting_payment', 'awaiting_confirmation')
+    )
+  `);
+
   await db.query(`CREATE TABLE IF NOT EXISTS offers (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
