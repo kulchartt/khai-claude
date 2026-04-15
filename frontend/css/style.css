@@ -67,8 +67,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .card:hover{border-color:var(--border-hover);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
 .card-actions{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--border);background:var(--bg-sec)}
 .card-actions .btn{flex:1;padding:5px 8px;font-size:12px;text-align:center}
-.card-img{height:150px;display:flex;align-items:center;justify-content:center;background:var(--bg-sec);overflow:hidden}
-.card-img img{width:100%;height:100%;object-fit:cover}
+.card-img{height:150px;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,var(--bg-sec) 25%,var(--border) 50%,var(--bg-sec) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;overflow:hidden}
+.card-img.loaded{background:var(--bg-sec);animation:none}
+.card-img img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s ease}
+.card-img img.visible{opacity:1}
 .card-img .emoji{font-size:52px}
 .card-body{padding:12px}
 .card-title{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
