@@ -30,6 +30,33 @@ router.get('/me/orders', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.patch('/me/orders/:id/received', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows } = await db.query('SELECT * FROM orders WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อ' });
+    await db.query("UPDATE orders SET shipping_status = 'received', status = 'completed' WHERE id = $1", [req.params.id]);
+    res.json({ message: 'ยืนยันรับสินค้าแล้ว ✅' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/me/analytics', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await getDB().query(`
+      SELECT p.id, p.title, p.price, p.status, p.view_count, p.image_url, p.created_at,
+        COUNT(DISTINCT w.id)::int as wishlist_count,
+        COUNT(DISTINCT o.id)::int as offer_count
+      FROM products p
+      LEFT JOIN wishlist_items w ON w.product_id = p.id
+      LEFT JOIN offers o ON o.product_id = p.id
+      WHERE p.seller_id = $1
+      GROUP BY p.id
+      ORDER BY p.view_count DESC NULLS LAST, p.created_at DESC
+    `, [req.user.id]);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.patch('/me/avatar', authMiddleware, (req, res) => {
   avatarUpload.single('avatar')(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message });

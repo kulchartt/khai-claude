@@ -60,13 +60,15 @@ router.get('/:id', async (req, res) => {
     if (!product) return res.status(404).json({ error: 'ไม่พบสินค้า' });
     const { rows: images } = await db.query('SELECT * FROM product_images WHERE product_id = $1 ORDER BY sort_order ASC', [req.params.id]);
     product.images = images;
+    // เพิ่ม view_count (fire-and-forget)
+    db.query('UPDATE products SET view_count = view_count + 1 WHERE id = $1', [req.params.id]).catch(() => {});
     res.json(product);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 router.post('/', authMiddleware, uploadMiddleware, async (req, res) => {
   try {
-    const { title, price, category, condition, description, location } = req.body;
+    const { title, price, category, condition, description, location, delivery_method } = req.body;
     if (!title || !price || !category) return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     const db = getDB();
 
@@ -82,8 +84,8 @@ router.post('/', authMiddleware, uploadMiddleware, async (req, res) => {
     }
 
     const { rows } = await db.query(
-      'INSERT INTO products (title,price,category,condition,description,location,image_url,seller_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id',
-      [title, Number(price), category, condition || 'สภาพดี', description || '', location || '', firstImageUrl, req.user.id]
+      'INSERT INTO products (title,price,category,condition,description,location,image_url,seller_id,delivery_method) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id',
+      [title, Number(price), category, condition || 'สภาพดี', description || '', location || '', firstImageUrl, req.user.id, delivery_method || 'both']
     );
     const productId = rows[0].id;
 
@@ -103,7 +105,7 @@ router.put('/:id', authMiddleware, uploadMiddleware, async (req, res) => {
     if (!product) return res.status(404).json({ error: 'ไม่พบสินค้า' });
     if (product.seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์แก้ไข' });
 
-    const { title, price, category, condition, description, location, status } = req.body;
+    const { title, price, category, condition, description, location, status, delivery_method } = req.body;
     let firstImage = product.image_url;
 
     if (req.files && req.files.length > 0) {
@@ -118,11 +120,22 @@ router.put('/:id', authMiddleware, uploadMiddleware, async (req, res) => {
       }
     }
 
+    // คำนวณ original_price: ถ้าลดราคา ให้บันทึกราคาเดิม
+    let newOriginalPrice = product.original_price;
+    if (price) {
+      const newPrice = Number(price);
+      if (newPrice < product.price) {
+        newOriginalPrice = product.price; // ราคาลด → บันทึกราคาเดิม
+      } else if (product.original_price && newPrice >= product.original_price) {
+        newOriginalPrice = null; // ราคากลับขึ้น → เคลียร์ badge
+      }
+    }
+
     await db.query(
-      'UPDATE products SET title=$1,price=$2,category=$3,condition=$4,description=$5,location=$6,image_url=$7,status=$8 WHERE id=$9',
+      'UPDATE products SET title=$1,price=$2,category=$3,condition=$4,description=$5,location=$6,image_url=$7,status=$8,delivery_method=$9,original_price=$10 WHERE id=$11',
       [title||product.title, price?Number(price):product.price, category||product.category, condition||product.condition,
        description!==undefined?description:product.description, location!==undefined?location:product.location,
-       firstImage, status||product.status, req.params.id]
+       firstImage, status||product.status, delivery_method||product.delivery_method||'both', newOriginalPrice, req.params.id]
     );
     res.json({ message: 'อัปเดตสินค้าแล้ว' });
   } catch (e) { res.status(500).json({ error: e.message }); }

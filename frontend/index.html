@@ -17,9 +17,10 @@
 
 <header class="navbar">
   <div class="logo" onclick="goPage('home')">มือสอง<span>market</span></div>
-  <div class="search-wrap">
-    <input type="text" id="searchQ" placeholder="ค้นหาสินค้า..." oninput="applyFilter()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+  <div class="search-wrap" style="position:relative">
+    <input type="text" id="searchQ" placeholder="ค้นหาสินค้า..." oninput="applyFilter();showSuggestions(this.value)" onfocus="showSuggestions(this.value)" onblur="hideSuggestions()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
     <button onclick="openAdvSearch()">🔍</button>
+    <div class="search-suggestions hidden" id="searchSuggestions"></div>
   </div>
   <nav class="nav-r">
     <button class="icon-btn" onclick="goPage('home')">🏠</button>
@@ -159,6 +160,10 @@
     <section class="products-section" id="products-section">
       <div class="product-grid" id="productGrid"><div class="loading">กำลังโหลดสินค้า...</div></div>
     </section>
+    <section class="products-section hidden" id="recentlyViewedSection" style="padding:0 24px 32px">
+      <h3 style="font-size:16px;font-weight:600;margin-bottom:12px;color:var(--text-sec)">👀 ดูล่าสุด</h3>
+      <div class="product-grid" id="recentlyViewedGrid"></div>
+    </section>
   </div>
 
   <div id="page-detail" class="page">
@@ -264,6 +269,13 @@
     </div>
     <div class="field"><label>รายละเอียด</label><textarea id="sDesc" placeholder="อธิบายสินค้า..."></textarea></div>
     <div class="field"><label>จังหวัด</label><input type="text" id="sLoc" placeholder="เช่น กรุงเทพฯ"/></div>
+    <div class="field"><label>วิธีส่งมอบ</label>
+      <select id="sDel">
+        <option value="both">📦🤝 ส่งพัสดุ / นัดรับได้</option>
+        <option value="shipping">📦 ส่งพัสดุเท่านั้น</option>
+        <option value="pickup">🤝 นัดรับเท่านั้น</option>
+      </select>
+    </div>
     <div class="field"><label>รูปภาพ (เลือกได้สูงสุด 10 รูป)</label><div class="img-upload-wrap" id="imgUploadWrap" onclick="document.getElementById('sImg').click()"><div class="img-upload-placeholder">📷 กดเพื่อเลือกรูปภาพ<br><span style="font-size:12px;color:var(--text-hint)">JPG, PNG ขนาดไม่เกิน 5MB ต่อรูป</span></div></div><input type="file" id="sImg" accept="image/*" multiple style="display:none" onchange="previewImages(this)"/><div class="img-preview-grid" id="imgPreviewGrid"></div></div>
     <div class="row-btns">
       <button class="btn btn-g" style="flex:1" onclick="doSell()">ลงขายเลย</button>
@@ -308,6 +320,13 @@
     </div>
     <div class="field"><label>รายละเอียด</label><textarea id="eDesc" placeholder="อธิบายสินค้า..."></textarea></div>
     <div class="field"><label>จังหวัด</label><input type="text" id="eLoc" placeholder="เช่น กรุงเทพฯ"/></div>
+    <div class="field"><label>วิธีส่งมอบ</label>
+      <select id="eDel">
+        <option value="both">📦🤝 ส่งพัสดุ / นัดรับได้</option>
+        <option value="shipping">📦 ส่งพัสดุเท่านั้น</option>
+        <option value="pickup">🤝 นัดรับเท่านั้น</option>
+      </select>
+    </div>
     <div class="field"><label>สถานะ</label>
       <select id="eStatus"><option value="available">วางขาย</option><option value="sold">ขายแล้ว</option></select>
     </div>

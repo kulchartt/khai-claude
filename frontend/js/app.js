@@ -37,12 +37,13 @@ function productImg(p){
     onerror="this.parentNode.classList.add('loaded');this.parentNode.innerHTML='<span class=\\'emoji\\'>${emoji}</span>'"/>`;
   return `<span class="emoji">${emoji}</span>`;
 }
-function renderCards(list,cid){const g=document.getElementById(cid);if(!g)return;if(!list.length){g.innerHTML='<div class="empty-msg">ไม่พบสินค้า</div>';return;}g.innerHTML=list.map(p=>`<div class="card" onclick="openDetail(${p.id})"><div class="card-img">${productImg(p)}</div><div class="card-body"><div class="card-title">${p.title}</div><div class="card-price">฿${Number(p.price).toLocaleString()}</div><div class="card-foot"><span class="cond ${CMAP[p.condition||p.cond]||''}">${p.condition||p.cond}</span><span class="seller-nm">${p.seller_name||p.location||''}</span></div></div></div>`).join('');}
+const DELIVERY_ICON={pickup:'🤝',shipping:'📦',both:'📦🤝'};
+function renderCards(list,cid){const g=document.getElementById(cid);if(!g)return;if(!list.length){g.innerHTML='<div class="empty-msg">ไม่พบสินค้า</div>';return;}g.innerHTML=list.map(p=>{const priceHtml=p.original_price?`<div class="card-price">฿${Number(p.price).toLocaleString()} <span class="original-price">฿${Number(p.original_price).toLocaleString()}</span></div>`:`<div class="card-price">฿${Number(p.price).toLocaleString()}</div>`;const dropBadge=p.original_price?'<span class="price-drop-badge">ลดราคา</span>':'';const delIcon=p.delivery_method&&p.delivery_method!=='both'?`<span class="delivery-icon">${DELIVERY_ICON[p.delivery_method]||''}</span>`:'';return `<div class="card" onclick="openDetail(${p.id})"><div class="card-img">${productImg(p)}${dropBadge}</div><div class="card-body"><div class="card-title">${p.title}</div>${priceHtml}<div class="card-foot"><span class="cond ${CMAP[p.condition||p.cond]||''}">${p.condition||p.cond}</span><span class="seller-nm">${p.seller_name||p.location||''}</span>${delIcon}</div></div></div>`;}).join('');}
 
 async function loadProducts(){
   const q=document.getElementById('searchQ').value,minPrice=document.getElementById('minP').value,maxPrice=document.getElementById('maxP').value,sort=document.getElementById('sortSel').value,condition=document.getElementById('condSel').value,location=document.getElementById('locationSel').value;
   document.getElementById('productGrid').innerHTML=Array(8).fill('<div class="skeleton-card"><div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div></div>').join('');
-  try{const params={};if(state.cat!=='ทั้งหมด')params.cat=state.cat;if(q)params.q=q;if(minPrice)params.minPrice=minPrice;if(maxPrice)params.maxPrice=maxPrice;if(sort)params.sort=sort;if(condition)params.condition=condition;if(location)params.location=location;const products=await api.getProducts(params);document.getElementById('statCount').textContent=products.length+'+';renderCards(products,'productGrid');}
+  try{const params={};if(state.cat!=='ทั้งหมด')params.cat=state.cat;if(q)params.q=q;if(minPrice)params.minPrice=minPrice;if(maxPrice)params.maxPrice=maxPrice;if(sort)params.sort=sort;if(condition)params.condition=condition;if(location)params.location=location;const products=await api.getProducts(params);window._allProducts=(window._allProducts||[]);if(!q&&!minPrice&&!maxPrice&&!condition&&!location&&state.cat==='ทั้งหมด')window._allProducts=products;document.getElementById('statCount').textContent=products.length+'+';renderCards(products,'productGrid');renderRecentlyViewed();}
   catch(e){document.getElementById('productGrid').innerHTML='<div class="empty-msg">โหลดไม่สำเร็จ</div>';}
 }
 function applyFilter(){loadProducts();}
@@ -53,12 +54,13 @@ async function openDetail(id){
     const[p,rv]=await Promise.all([api.getProduct(id),api.getReviews(id)]);
     const inWl=state.wlIds.includes(id),isOwner=state.user&&state.user.id===p.seller_id;
     window.location.hash='product-'+id;
+    addRecentlyViewed(p);
     document.getElementById('detailContent').innerHTML=`
       <div class="detail-hero">
         <div>${buildGallery(p)}</div>
         <div class="detail-info">
           <h1 class="detail-title">${p.title}</h1>
-          <div class="detail-price">฿${Number(p.price).toLocaleString()}</div>
+          <div class="detail-price">฿${Number(p.price).toLocaleString()}${p.original_price?` <span class="original-price" style="font-size:16px">฿${Number(p.original_price).toLocaleString()}</span> <span class="price-drop-badge">ลดราคา</span>`:''}</div>
           <div class="detail-actions">
             ${!isOwner?`<button class="btn btn-g" onclick="addToCart(${p.id})">🛒 ใส่ตะกร้า</button>`:''}
             ${!isOwner?`<button class="btn" onclick="startChat(${p.seller_id},${p.id})">💬 แชทผู้ขาย</button>`:''}
@@ -74,6 +76,7 @@ async function openDetail(id){
             <div class="meta-box"><div class="meta-l">สภาพ</div><div class="meta-v">${p.condition}</div></div>
             <div class="meta-box"><div class="meta-l">หมวดหมู่</div><div class="meta-v">${p.category}</div></div>
             <div class="meta-box"><div class="meta-l">จังหวัด</div><div class="meta-v">${p.location||'ไม่ระบุ'}</div></div>
+            <div class="meta-box"><div class="meta-l">ส่งมอบ</div><div class="meta-v">${{pickup:'🤝 นัดรับ',shipping:'📦 ส่งพัสดุ',both:'📦🤝 ส่งหรือนัดรับ'}[p.delivery_method||'both']}</div></div>
             <div class="meta-box"><div class="meta-l">รหัสสินค้า</div><div class="meta-v">#${String(p.id).padStart(4,'0')}</div></div>
           </div>
         </div>
@@ -142,7 +145,7 @@ async function changeQty(pid,qty){try{await api.updateCartQty(pid,qty);if(qty<=0
 async function removeCartItem(pid){try{await api.removeCart(pid);state.cartCount=Math.max(0,state.cartCount-1);updateBadge('cartBadge',state.cartCount);openCart();}catch(e){toast(e.message);}}
 async function doCheckout(){try{await api.checkout();state.cartCount=0;updateBadge('cartBadge',0);goPage('home');toast('ชำระเงินสำเร็จ! 🎉','#1D9E75');}catch(e){toast(e.message);}}
 
-async function openProfile(){if(!state.user){openOverlay('loginOverlay');return;}try{const[me,myItems]=await Promise.all([api.getMe(),api.getMyProducts()]);const avatarHtml=me.avatar?`<img src="${imgSrc(me.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${me.name.slice(0,2).toUpperCase()}`;document.getElementById('profileContent').innerHTML=`<div class="profile-header"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="p-avatar" onclick="document.getElementById('avatarInput').click()" style="cursor:pointer;overflow:hidden">${avatarHtml}</div><div style="font-size:11px;color:var(--text-hint)">กดเพื่อเปลี่ยน</div><input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="doUploadAvatar(this)"/></div><div style="flex:1"><div class="p-name">${me.name}</div><div class="p-email">${me.email}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${myItems.length}</div><div class="stat-l">สินค้าลงขาย</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${state.wlCount}</div><div class="stat-l">รายการโปรด</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${me.rating||5.0}★</div><div class="stat-l">คะแนน</div></div></div></div></div><div class="profile-tabs"><div class="profile-tab on" id="ptab-products" onclick="profileTab('products')">สินค้าของฉัน (${myItems.length})</div><div class="profile-tab" id="ptab-orders" onclick="profileTab('orders')">ประวัติซื้อ</div><div class="profile-tab" id="ptab-offers" onclick="profileTab('offers')">ข้อเสนอ 💰</div></div><div id="profileTabContent"></div><div style="margin-top:24px;padding:0 4px"><button class="btn btn-danger full" onclick="doLogout()">ออกจากระบบ</button></div>`;window._myItems=myItems;profileTab('products');goPage('profile');}catch(e){toast(e.message);}}
+async function openProfile(){if(!state.user){openOverlay('loginOverlay');return;}try{const[me,myItems]=await Promise.all([api.getMe(),api.getMyProducts()]);const avatarHtml=me.avatar?`<img src="${imgSrc(me.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${me.name.slice(0,2).toUpperCase()}`;document.getElementById('profileContent').innerHTML=`<div class="profile-header"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="p-avatar" onclick="document.getElementById('avatarInput').click()" style="cursor:pointer;overflow:hidden">${avatarHtml}</div><div style="font-size:11px;color:var(--text-hint)">กดเพื่อเปลี่ยน</div><input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="doUploadAvatar(this)"/></div><div style="flex:1"><div class="p-name">${me.name}</div><div class="p-email">${me.email}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${myItems.length}</div><div class="stat-l">สินค้าลงขาย</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${state.wlCount}</div><div class="stat-l">รายการโปรด</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${me.rating||5.0}★</div><div class="stat-l">คะแนน</div></div></div></div></div><div class="profile-tabs"><div class="profile-tab on" id="ptab-products" onclick="profileTab('products')">สินค้าของฉัน (${myItems.length})</div><div class="profile-tab" id="ptab-orders" onclick="profileTab('orders')">ประวัติซื้อ</div><div class="profile-tab" id="ptab-offers" onclick="profileTab('offers')">ข้อเสนอ 💰</div><div class="profile-tab" id="ptab-analytics" onclick="profileTab('analytics')">📊 สถิติ</div></div><div id="profileTabContent"></div><div style="margin-top:24px;padding:0 4px"><button class="btn btn-danger full" onclick="doLogout()">ออกจากระบบ</button></div>`;window._myItems=myItems;profileTab('products');goPage('profile');}catch(e){toast(e.message);}}
 
 function profileTab(tab){
   document.querySelectorAll('.profile-tab').forEach(t=>t.classList.toggle('on',t.id==='ptab-'+tab));
@@ -154,7 +157,7 @@ function profileTab(tab){
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
     api.getOrders().then(orders=>{
       if(!orders.length){c.innerHTML='<div class="empty-msg">ยังไม่มีประวัติการสั่งซื้อ</div>';return;}
-      c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`<div class="order-item"><div class="order-top"><div><div class="order-id">คำสั่งซื้อ #${String(o.id).padStart(4,'0')}</div><div class="order-date">${new Date(o.created_at).toLocaleDateString('th',{year:'numeric',month:'long',day:'numeric'})}</div></div><div class="order-total">฿${Number(o.total).toLocaleString()}</div></div><div class="order-items-list">${o.items}</div><div class="order-status ${o.status==='pending'?'status-pending':'status-done'}">${o.status==='pending'?'รอดำเนินการ':'สำเร็จ'}</div></div>`).join('')+'</div>';
+      c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`<div class="order-item"><div class="order-top"><div><div class="order-id">คำสั่งซื้อ #${String(o.id).padStart(4,'0')}</div><div class="order-date">${new Date(o.created_at).toLocaleDateString('th',{year:'numeric',month:'long',day:'numeric'})}</div></div><div class="order-total">฿${Number(o.total).toLocaleString()}</div></div><div class="order-items-list">${o.items}</div><div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px"><div class="order-status ${o.status==='pending'?'status-pending':'status-done'}">${o.status==='pending'?'⏳ รอส่งสินค้า':o.shipping_status==='received'?'✅ รับสินค้าแล้ว':'✅ สำเร็จ'}</div>${(o.status==='pending'||(!o.shipping_status||o.shipping_status==='pending'))&&o.status!=='completed'?`<button class="btn btn-sm btn-g" onclick="markOrderReceived(${o.id})">✅ ยืนยันรับสินค้า</button>`:''}</div></div>`).join('')+'</div>';
     }).catch(e=>toast(e.message));
   } else if(tab==='offers'){
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
@@ -194,6 +197,15 @@ function profileTab(tab){
       html+='</div>';
       c.innerHTML=html;
     }).catch(e=>toast(e.message));
+  } else if(tab==='analytics'){
+    c.innerHTML='<div class="loading">กำลังโหลด...</div>';
+    api.getAnalytics().then(products=>{
+      if(!products.length){c.innerHTML='<div class="empty-msg">ยังไม่มีสินค้า</div>';return;}
+      const tv=products.reduce((s,p)=>s+(p.view_count||0),0);
+      const tw=products.reduce((s,p)=>s+(p.wishlist_count||0),0);
+      const to=products.reduce((s,p)=>s+(p.offer_count||0),0);
+      c.innerHTML=`<div class="analytics-summary"><div class="analytics-card"><div class="analytics-n">${tv}</div><div class="analytics-l">👁️ ยอดชมรวม</div></div><div class="analytics-card"><div class="analytics-n">${tw}</div><div class="analytics-l">❤️ ถูกใจรวม</div></div><div class="analytics-card"><div class="analytics-n">${to}</div><div class="analytics-l">💰 ข้อเสนอรวม</div></div></div><div style="overflow-x:auto;margin-top:16px"><table class="data-table"><thead><tr><th>สินค้า</th><th>ราคา</th><th>👁️</th><th>❤️</th><th>💰</th><th>สถานะ</th></tr></thead><tbody>${products.map(p=>`<tr style="cursor:pointer" onclick="openDetail(${p.id})"><td><div style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">${p.title}</div></td><td style="font-size:13px">฿${Number(p.price).toLocaleString()}</td><td style="text-align:center">${p.view_count||0}</td><td style="text-align:center">${p.wishlist_count||0}</td><td style="text-align:center">${p.offer_count||0}</td><td><span style="font-size:11px;padding:2px 7px;border-radius:99px;background:${p.status==='available'?'#f0fdf4':'#f9fafb'};color:${p.status==='available'?'#16a34a':'#6b7280'}">${p.status==='available'?'วางขาย':'ขายแล้ว'}</span></td></tr>`).join('')}</tbody></table></div>`;
+    }).catch(e=>toast(e.message));
   }
 }
 
@@ -222,9 +234,9 @@ async function doBump(id){
   }catch(e){toast(e.message);}
 }
 
-async function openEditModal(id){try{const p=await api.getProduct(id);document.getElementById('eId').value=p.id;document.getElementById('eTitle').value=p.title;document.getElementById('ePrice').value=p.price;document.getElementById('eDesc').value=p.description||'';document.getElementById('eLoc').value=p.location||'';document.getElementById('eCat').value=p.category;document.getElementById('eCond').value=p.condition;document.getElementById('eStatus').value=p.status||'available';openOverlay('editOverlay');}catch(e){toast(e.message);}}
+async function openEditModal(id){try{const p=await api.getProduct(id);document.getElementById('eId').value=p.id;document.getElementById('eTitle').value=p.title;document.getElementById('ePrice').value=p.price;document.getElementById('eDesc').value=p.description||'';document.getElementById('eLoc').value=p.location||'';document.getElementById('eCat').value=p.category;document.getElementById('eCond').value=p.condition;document.getElementById('eStatus').value=p.status||'available';document.getElementById('eDel').value=p.delivery_method||'both';openOverlay('editOverlay');}catch(e){toast(e.message);}}
 
-async function doEditProduct(){const id=document.getElementById('eId').value,title=document.getElementById('eTitle').value.trim(),price=document.getElementById('ePrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}try{await api.updateProduct(id,{title,price:Number(price),category:document.getElementById('eCat').value,condition:document.getElementById('eCond').value,description:document.getElementById('eDesc').value,location:document.getElementById('eLoc').value,status:document.getElementById('eStatus').value});closeOverlay('editOverlay');toast('อัปเดตสินค้าแล้ว ✅','#1D9E75');loadProducts();openProfile();}catch(e){toast(e.message);}}
+async function doEditProduct(){const id=document.getElementById('eId').value,title=document.getElementById('eTitle').value.trim(),price=document.getElementById('ePrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}try{await api.updateProduct(id,{title,price:Number(price),category:document.getElementById('eCat').value,condition:document.getElementById('eCond').value,description:document.getElementById('eDesc').value,location:document.getElementById('eLoc').value,status:document.getElementById('eStatus').value,delivery_method:document.getElementById('eDel').value});closeOverlay('editOverlay');toast('อัปเดตสินค้าแล้ว ✅','#1D9E75');loadProducts();openProfile();}catch(e){toast(e.message);}}
 
 async function confirmDeleteProduct(id){if(!confirm('ลบสินค้านี้? จะไม่สามารถกู้คืนได้'))return;try{await api.deleteProduct(id);toast('ลบสินค้าแล้ว');openProfile();}catch(e){toast(e.message);}}
 
@@ -260,7 +272,7 @@ async function doLogin(){const email=document.getElementById('loginEmail').value
 async function doRegister(){const name=document.getElementById('regName').value.trim(),email=document.getElementById('regEmail').value.trim(),pass=document.getElementById('regPass').value;if(!name||!email||!pass){toast('กรุณากรอกข้อมูลให้ครบ');return;}try{const res=await api.register(name,email,pass);localStorage.setItem('token',res.token);localStorage.setItem('user',JSON.stringify(res.user));state.user=res.user;state.token=res.token;closeOverlay('loginOverlay');updateNav();toast('สมัครสำเร็จ! ยินดีต้อนรับ 🎉','#1D9E75');connectSocket();}catch(e){toast(e.message);}}
 function doLogout(){if(socket){socket.disconnect();socket=null;}localStorage.removeItem('token');localStorage.removeItem('user');state.user=null;state.token=null;state.cartCount=0;state.wlCount=0;state.notifCount=0;state.chatCount=0;state.wlIds=[];['cartBadge','wlBadge','notifBadge','chatBadge'].forEach(id=>updateBadge(id,0));updateNav();goPage('home');toast('ออกจากระบบแล้ว');}
 function openSell(){if(!state.user){toast('กรุณาเข้าสู่ระบบก่อน');openOverlay('loginOverlay');return;}openOverlay('sellOverlay');}
-async function doSell(){const title=document.getElementById('sTitle').value.trim(),price=document.getElementById('sPrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}const fd=new FormData();fd.append('title',title);fd.append('price',price);fd.append('category',document.getElementById('sCat').value);fd.append('condition',document.getElementById('sCond').value);fd.append('description',document.getElementById('sDesc').value);fd.append('location',document.getElementById('sLoc').value);const imgs=document.getElementById('sImg').files;for(const img of imgs)fd.append('images',img);try{
+async function doSell(){const title=document.getElementById('sTitle').value.trim(),price=document.getElementById('sPrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}const fd=new FormData();fd.append('title',title);fd.append('price',price);fd.append('category',document.getElementById('sCat').value);fd.append('condition',document.getElementById('sCond').value);fd.append('description',document.getElementById('sDesc').value);fd.append('location',document.getElementById('sLoc').value);fd.append('delivery_method',document.getElementById('sDel').value);const imgs=document.getElementById('sImg').files;for(const img of imgs)fd.append('images',img);try{
     await api.createProduct(fd);
     closeOverlay('sellOverlay');
     ['sTitle','sPrice','sDesc','sLoc'].forEach(i=>document.getElementById(i).value='');
@@ -320,7 +332,7 @@ async function adminToggleProduct(id,status){try{await api.adminUpdateProductSta
 
 function connectSocket(){if(!state.token||socket)return;socket=window.io(CONFIG.API_URL,{auth:{token:state.token}});socket.on('new_message',msg=>{if(msg.room_id!==currentRoomId)return;const ml=document.getElementById('msgList');if(!ml)return;const out=msg.sender_id===state.user.id;const div=document.createElement('div');div.innerHTML=`${!out?`<div class="msg-name">${msg.sender_name}</div>`:''}<div class="msg ${out?'msg-out':'msg-in'}">${msg.content}<div class="msg-time">${new Date(msg.created_at).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div></div>`;ml.appendChild(div);ml.scrollTop=ml.scrollHeight;});socket.on('notification',()=>{state.notifCount++;updateBadge('notifBadge',state.notifCount);state.chatCount++;updateBadge('chatBadge',state.chatCount);});}
 
-async function syncBadges(){if(!state.user)return;try{const[cart,wl,notifs]=await Promise.all([api.getCart(),api.getWishlist(),api.getNotifications()]);state.cartCount=cart.reduce((s,x)=>s+x.qty,0);state.wlCount=wl.length;state.wlIds=wl.map(x=>x.product_id);state.notifCount=notifs.unread;updateBadge('cartBadge',state.cartCount);updateBadge('wlBadge',state.wlCount);updateBadge('notifBadge',state.notifCount);}catch{}}
+async function syncBadges(){if(!state.user)return;try{const[cart,wl,notifs,chatUnread]=await Promise.all([api.getCart(),api.getWishlist(),api.getNotifications(),api.getChatUnread().catch(()=>({unread:0}))]);state.cartCount=cart.reduce((s,x)=>s+x.qty,0);state.wlCount=wl.length;state.wlIds=wl.map(x=>x.product_id);state.notifCount=notifs.unread;state.chatCount=chatUnread.unread||0;updateBadge('cartBadge',state.cartCount);updateBadge('wlBadge',state.wlCount);updateBadge('notifBadge',state.notifCount);updateBadge('chatBadge',state.chatCount);}catch{}}
 
 async function init(){
   updateNav();
@@ -354,6 +366,59 @@ function goPageClearHash(p){window.location.hash='';goPage(p);}
 document.querySelector('#page-detail .back-btn')?.addEventListener('click',()=>{window.location.hash='';});
 
 function openAdvSearch(){/* placeholder – filters are inline */}
+
+// ===== Recently Viewed =====
+function addRecentlyViewed(p){
+  try{
+    let rv=JSON.parse(localStorage.getItem('recentlyViewed')||'[]');
+    rv=rv.filter(x=>x.id!==p.id);
+    rv.unshift({id:p.id,title:p.title,price:p.price,image_url:p.image_url,category:p.category,condition:p.condition,seller_name:p.seller_name,original_price:p.original_price,delivery_method:p.delivery_method});
+    rv=rv.slice(0,10);
+    localStorage.setItem('recentlyViewed',JSON.stringify(rv));
+  }catch{}
+}
+function renderRecentlyViewed(){
+  try{
+    const rv=JSON.parse(localStorage.getItem('recentlyViewed')||'[]');
+    const sec=document.getElementById('recentlyViewedSection');
+    if(!sec)return;
+    if(!rv.length){sec.classList.add('hidden');return;}
+    sec.classList.remove('hidden');
+    renderCards(rv,'recentlyViewedGrid');
+  }catch{}
+}
+
+// ===== Search Suggestions =====
+function showSuggestions(q){
+  const box=document.getElementById('searchSuggestions');
+  if(!box)return;
+  if(!q||q.length<1){box.classList.add('hidden');return;}
+  const all=window._allProducts||[];
+  const cats=['มือถือ','เสื้อผ้า','หนังสือ','กีฬา','ของแต่งบ้าน','กล้อง'];
+  const ql=q.toLowerCase();
+  const titles=[...new Set(all.filter(p=>p.title.toLowerCase().includes(ql)).map(p=>p.title))].slice(0,4);
+  const matchCats=cats.filter(c=>c.includes(q)).slice(0,2);
+  const items=[...titles,...matchCats.filter(c=>!titles.includes(c))];
+  if(!items.length){box.classList.add('hidden');return;}
+  box.innerHTML=items.map(s=>`<div class="suggestion-item" onmousedown="selectSuggestion('${s.replace(/'/g,"\\'")}')">${EMOJIS[s]||'🔍'} ${s}</div>`).join('');
+  box.classList.remove('hidden');
+}
+function selectSuggestion(val){
+  document.getElementById('searchQ').value=val;
+  document.getElementById('searchSuggestions').classList.add('hidden');
+  loadProducts();
+}
+function hideSuggestions(){setTimeout(()=>document.getElementById('searchSuggestions')?.classList.add('hidden'),150);}
+
+// ===== Order Status =====
+async function markOrderReceived(id){
+  if(!confirm('ยืนยันว่าได้รับสินค้าแล้ว?'))return;
+  try{
+    const res=await api.markOrderReceived(id);
+    toast(res.message,'#1D9E75');
+    profileTab('orders');
+  }catch(e){toast(e.message);}
+}
 
 function previewImages(input) {
   const grid = document.getElementById('imgPreviewGrid');

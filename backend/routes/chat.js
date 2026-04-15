@@ -59,4 +59,17 @@ router.get('/rooms/:roomId/messages', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.get('/unread', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await getDB().query(`
+      SELECT COUNT(*)::int as count
+      FROM messages m
+      JOIN chat_rooms r ON m.room_id = r.id
+      WHERE (r.buyer_id = $1 OR r.seller_id = $1)
+        AND m.sender_id != $1 AND m.is_read = 0
+    `, [req.user.id]);
+    res.json({ unread: rows[0].count });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;
