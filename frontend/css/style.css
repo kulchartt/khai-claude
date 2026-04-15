@@ -247,6 +247,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .detail-thumb img{width:100%;height:100%;object-fit:cover}
 
 /* ===== Offer / ต่อรองราคา ===== */
+.btn-available{background:#f0fdf4;color:#166534;border-color:#86efac}
+.btn-available:hover{background:#dcfce7}
 .btn-bump{background:#eff6ff;color:#1d4ed8;border-color:#93c5fd}
 .btn-bump:hover{background:#dbeafe}
 .btn-bump:disabled{opacity:.5;cursor:not-allowed;background:var(--bg-sec)}
