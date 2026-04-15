@@ -45,6 +45,43 @@ router.post('/:id/slip', authMiddleware, (req, res) => {
   });
 });
 
+// PATCH /api/orders/:id/cancel — ผู้ซื้อยกเลิกคำสั่งซื้อ (เฉพาะตอนยังไม่ได้ส่ง slip)
+router.patch('/:id/cancel', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows: or } = await db.query('SELECT * FROM orders WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+    const order = or[0];
+    if (!order) return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อ' });
+    if (!['awaiting_payment', 'pending'].includes(order.status)) {
+      return res.status(400).json({ error: 'ไม่สามารถยกเลิกได้ เนื่องจากส่ง slip ไปแล้วหรือผู้ขายยืนยันแล้ว' });
+    }
+    // คืนสินค้ากลับมา available
+    const { rows: items } = await db.query(
+      'SELECT product_id FROM order_items WHERE order_id = $1', [req.params.id]
+    );
+    for (const { product_id } of items) {
+      await db.query("UPDATE products SET status = 'available' WHERE id = $1", [product_id]);
+    }
+    await db.query("UPDATE orders SET status = 'cancelled' WHERE id = $1", [req.params.id]);
+
+    // แจ้งผู้ขาย
+    const { rows: sellers } = await db.query(`
+      SELECT DISTINCT p.seller_id FROM order_items oi
+      JOIN products p ON oi.product_id = p.id WHERE oi.order_id = $1
+    `, [req.params.id]);
+    const io = req.app.get('io');
+    const onlineUsers = req.app.get('onlineUsers');
+    for (const { seller_id } of sellers) {
+      await db.query("INSERT INTO notifications (user_id, type, title, body) VALUES ($1,'order','ผู้ซื้อยกเลิกคำสั่งซื้อ ❌',$2)",
+        [seller_id, `ออเดอร์ #${String(req.params.id).padStart(4,'0')} ถูกยกเลิก — สินค้ากลับมาวางขายแล้ว`]);
+      const sock = onlineUsers?.get(seller_id);
+      if (sock) io?.to(sock).emit('notification', { type: 'order' });
+    }
+
+    res.json({ message: 'ยกเลิกคำสั่งซื้อแล้ว สินค้ากลับมาวางขายแล้ว' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // PATCH /api/orders/:id/confirm-payment — ผู้ขายยืนยันรับเงิน
 router.patch('/:id/confirm-payment', authMiddleware, async (req, res) => {
   try {
