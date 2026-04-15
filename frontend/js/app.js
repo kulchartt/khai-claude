@@ -627,13 +627,23 @@ async function doSellerCancel(id){
   }catch(e){toast(e.message);}
 }
 
+let _shipOrderId=null;
 async function doShipOrder(id, shipping_status){
-  const labels={preparing:'ยืนยันว่ากำลังเตรียมของ?',shipped:'ยืนยันว่าส่งพัสดุแล้ว? ผู้ซื้อจะได้รับการแจ้งเตือน'};
-  if(!confirm(labels[shipping_status]))return;
-  let tracking=null;
-  if(shipping_status==='shipped'){tracking=prompt('กรอกเลข Tracking (ไปรษณีย์/Kerry/Flash ฯลฯ)\nหรือกด Cancel เพื่อข้าม');}
+  if(shipping_status==='preparing'){
+    if(!confirm('ยืนยันว่ากำลังเตรียมของ?'))return;
+    try{const res=await api.shipOrder(id,'preparing',null);toast(res.message,'#1D9E75');profileTab('selling');}catch(e){toast(e.message);}
+    return;
+  }
+  // shipped — เปิด modal ให้กรอก tracking
+  _shipOrderId=id;
+  document.getElementById('trackingInput').value='';
+  openOverlay('trackingOverlay');
+}
+async function confirmShipWithTracking(){
+  const tracking=document.getElementById('trackingInput').value.trim()||null;
+  closeOverlay('trackingOverlay');
   try{
-    const res=await api.shipOrder(id,shipping_status,tracking||null);
+    const res=await api.shipOrder(_shipOrderId,'shipped',tracking);
     toast(res.message,'#1D9E75');
     profileTab('selling');
   }catch(e){toast(e.message);}
