@@ -88,7 +88,7 @@ async function openDetail(id){
             <div class="meta-box"><div class="meta-l">รหัสสินค้า</div><div class="meta-v">#${String(p.id).padStart(4,'0')}</div></div>
           ${p.meetup_lat && p.meetup_lng ? `
             <div class="meta-box" onclick="openProductMap(${p.meetup_lat},${p.meetup_lng},'${(p.meetup_note||'').replace(/'/g,"\\'")}')">
-              <div class="meta-l">📍 จุดนัดรับ</div>
+              <div class="meta-l">📍 จุดนัดรับ (กดเพื่อดูแผนที่)</div>
               <div class="meta-v">${p.meetup_note||'ดูตำแหน่งบนแผนที่'}</div>
             </div>` : ''}
           </div>
