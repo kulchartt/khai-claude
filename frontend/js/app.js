@@ -2296,6 +2296,23 @@ function openMeetupMap(src = 's') {
   }, 300);
 }
 
+function meetupSearchGo() {
+  const q = document.getElementById('meetupSearch').value.trim();
+  if (!q || !window.google) return;
+  const geocoder = new google.maps.Geocoder();
+  geocoder.geocode({ address: q, region: 'th', language: 'th' }, (results, status) => {
+    if (status !== 'OK' || !results[0]) { toast('ไม่พบสถานที่ กรุณาลองใหม่'); return; }
+    const loc = results[0].geometry.location;
+    _meetupLatLng = { lat: loc.lat(), lng: loc.lng() };
+    if (_meetupMap && _meetupMarker) {
+      _meetupMap.panTo(loc); _meetupMap.setZoom(16);
+      _meetupMarker.setPosition(loc);
+      _meetupMarker.setAnimation(google.maps.Animation.DROP);
+      setTimeout(() => _meetupMarker.setAnimation(null), 1000);
+    }
+  });
+}
+
 function meetupCurrentLocation() {
   if (!navigator.geolocation) { toast('เบราว์เซอร์ไม่รองรับ GPS'); return; }
   toast('กำลังหาตำแหน่ง...⏳');

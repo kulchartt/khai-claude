@@ -1,4 +1,8 @@
 *{box-sizing:border-box;margin:0;padding:0}
+/* Google Places autocomplete dropdown ต้องอยู่เหนือ overlay */
+.pac-container{z-index:9999!important;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.pac-item{padding:8px 12px;font-size:14px;cursor:pointer}
+.pac-item:hover{background:var(--bg-sec)}
 :root{
   --green:#E8001A;--green-dark:#B5001A;--green-light:#FFE5E8;
   --text:#1a1a1a;--text-sec:#666;--text-hint:#999;
