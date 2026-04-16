@@ -86,16 +86,16 @@ async function openDetail(id){
             <div class="meta-box"><div class="meta-l">จังหวัด</div><div class="meta-v">${p.location||'ไม่ระบุ'}</div></div>
             <div class="meta-box"><div class="meta-l">ส่งมอบ</div><div class="meta-v">${{pickup:'🤝 นัดรับ',shipping:'📦 ส่งพัสดุ',both:'📦🤝 ส่งหรือนัดรับ'}[p.delivery_method||'both']}</div></div>
             <div class="meta-box"><div class="meta-l">รหัสสินค้า</div><div class="meta-v">#${String(p.id).padStart(4,'0')}</div></div>
-          </div>
           ${p.meetup_lat && p.meetup_lng ? `
-          <div style="margin-top:10px;display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg-sec);border-radius:var(--radius);border:1px solid var(--border)">
-            <div id="detailMap" style="width:72px;height:72px;border-radius:6px;flex-shrink:0"></div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:2px">📍 จุดนัดรับ</div>
-              <div style="font-size:12px;color:var(--text-sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.meetup_note||'กดดูแผนที่'}</div>
-            </div>
-            <button class="btn btn-sm" onclick="openProductMap(${p.meetup_lat},${p.meetup_lng},'${(p.meetup_note||'').replace(/'/g,"\\'")}')">🗺️ ดูแผนที่</button>
-          </div>` : ''}
+            <div class="meta-box" style="grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:8px 10px">
+              <div id="detailMap" style="width:60px;height:60px;border-radius:6px;flex-shrink:0;overflow:hidden"></div>
+              <div style="flex:1;min-width:0">
+                <div class="meta-l">📍 จุดนัดรับ</div>
+                <div class="meta-v" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.meetup_note||'ดูตำแหน่งบนแผนที่'}</div>
+              </div>
+              <button class="btn btn-sm" onclick="openProductMap(${p.meetup_lat},${p.meetup_lng},'${(p.meetup_note||'').replace(/'/g,"\\'")}')">🗺️ ดูแผนที่</button>
+            </div>` : ''}
+          </div>
         </div>
       </div>
       <div class="detail-body">
