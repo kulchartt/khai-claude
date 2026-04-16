@@ -1983,11 +1983,15 @@ function initSwipeDrag(card){
 // ===== SWIPE TO DISMISS MODALS =====
 (function(){
   let startY=0;
-  document.addEventListener('touchstart',e=>{if(e.target.closest('.modal'))startY=e.touches[0].clientY;},{ passive:true });
+  let canDismiss=false;
+  document.addEventListener('touchstart',e=>{
+    const modal=e.target.closest('.modal');
+    if(modal){startY=e.touches[0].clientY;canDismiss=modal.scrollTop===0;}
+  },{ passive:true });
   document.addEventListener('touchend',e=>{
     if(!e.target.closest('.modal'))return;
     const diff=e.changedTouches[0].clientY-startY;
-    if(diff>80){const ov=e.target.closest('.overlay');if(ov)ov.classList.remove('open');}
+    if(canDismiss&&diff>120){const ov=e.target.closest('.overlay');if(ov)closeOverlay(ov.id);}
   },{ passive:true });
 })();
 
