@@ -2553,8 +2553,10 @@ async function deleteBiometric(id) {
 }
 
 function _base64urlToBuffer(b64url) {
+  if (!b64url) return new Uint8Array(0);
   const b64 = b64url.replace(/-/g,'+').replace(/_/g,'/');
-  const bin = atob(b64);
+  const padded = b64.padEnd(b64.length + (4 - b64.length % 4) % 4, '=');
+  const bin = atob(padded);
   return Uint8Array.from(bin, c => c.charCodeAt(0));
 }
 function _bufferToBase64url(buf) {
