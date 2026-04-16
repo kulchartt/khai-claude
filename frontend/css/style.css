@@ -456,3 +456,50 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .bar{background:var(--green);border-radius:4px 4px 0 0;width:100%;min-height:4px;transition:.3s}
 .bar-label{font-size:10px;color:var(--text-sec);white-space:nowrap}
 .bar-val{font-size:10px;font-weight:600;color:var(--green)}
+
+/* ===== RECENTLY VIEWED ===== */
+.rv-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+.rv-scroll::-webkit-scrollbar{display:none}
+.rv-card{flex-shrink:0;width:140px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:.15s}
+.rv-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.1)}
+.rv-card-thumb{width:100%;height:90px;object-fit:cover;display:block;background:var(--bg-sec)}
+.rv-card-emoji{width:100%;height:90px;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--bg-sec)}
+.rv-card-body{padding:8px}
+.rv-card-title{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.rv-card-price{font-size:13px;font-weight:700;color:var(--green)}
+
+/* ===== QUICK REPLIES ===== */
+.quick-replies{display:flex;gap:8px;padding:8px 12px;overflow-x:auto;background:var(--bg-card);border-top:1px solid var(--border);scrollbar-width:none}
+.quick-replies::-webkit-scrollbar{display:none}
+.qr-btn{flex-shrink:0;padding:6px 14px;border:1px solid var(--green);border-radius:99px;background:var(--green-light);color:#085041;font-size:12px;cursor:pointer;white-space:nowrap;font-family:inherit;transition:.15s}
+.qr-btn:hover{background:var(--green);color:#fff}
+[data-theme="dark"] .qr-btn{background:var(--bg-sec);color:var(--text);border-color:var(--border)}
+[data-theme="dark"] .qr-btn:hover{background:var(--green);color:#fff}
+
+/* ===== PWA INSTALL BANNER ===== */
+.pwa-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;background:var(--green);color:#fff;font-size:14px;font-weight:500;position:sticky;top:56px;z-index:99;flex-wrap:wrap}
+.pwa-banner .btn{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)}
+.pwa-banner .btn-g{background:#fff;color:var(--green);border-color:#fff}
+.pwa-banner .btn-g:hover{background:#f0fdf4}
+
+/* ===== SWIPE TO BROWSE ===== */
+.swipe-wrap{display:flex;flex-direction:column;align-items:center;padding:16px;min-height:calc(100vh - 56px)}
+.swipe-counter{font-size:13px;color:var(--text-sec);margin-bottom:12px;font-weight:500;height:18px}
+.swipe-stack{position:relative;width:320px;max-width:100%;height:420px;margin-bottom:24px}
+.swipe-card{position:absolute;inset:0;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:grab;user-select:none;touch-action:none;transition:box-shadow .2s;will-change:transform}
+.swipe-card.dragging{box-shadow:0 8px 32px rgba(0,0,0,.18);transition:none;cursor:grabbing}
+.swipe-card-img{width:100%;height:240px;background:var(--bg-sec);display:flex;align-items:center;justify-content:center;font-size:72px;overflow:hidden}
+.swipe-card-img img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+.swipe-card-body{padding:16px}
+.swipe-card-title{font-size:17px;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.swipe-card-price{font-size:20px;font-weight:700;color:var(--green);margin-bottom:4px}
+.swipe-card-meta{font-size:12px;color:var(--text-sec)}
+.swipe-indicator{position:absolute;top:20px;font-size:22px;font-weight:900;padding:6px 14px;border-radius:8px;opacity:0;transition:opacity .1s;pointer-events:none}
+.swipe-indicator.like{left:16px;color:#16a34a;border:3px solid #16a34a;background:rgba(22,163,74,.1);transform:rotate(-12deg)}
+.swipe-indicator.skip{right:16px;color:#dc2626;border:3px solid #dc2626;background:rgba(220,38,38,.1);transform:rotate(12deg)}
+.swipe-actions{display:flex;gap:32px;justify-content:center}
+.swipe-btn{width:64px;height:64px;border-radius:50%;border:2px solid var(--border);background:var(--bg-card);font-size:24px;cursor:pointer;transition:.15s;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.swipe-btn:hover{transform:scale(1.12)}
+.swipe-btn.swipe-skip{border-color:#fca5a5}
+.swipe-btn.swipe-like{border-color:#86efac}
+.swipe-done{text-align:center;padding:40px 20px}
