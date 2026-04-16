@@ -124,4 +124,7 @@ const api = {
   getMyVerifyRequest() { return this.get('/api/users/me/verify-request'); },
   adminGetVerifyRequests() { return this.get('/api/admin/verify-requests'); },
   adminHandleVerifyRequest(id, action, admin_note) { return this.patch('/api/admin/verify-requests/'+id, {action, admin_note}); },
+  submitFeedback(category, message, sender_name, sender_email) { return this.post('/api/feedback', {category, message, sender_name, sender_email}); },
+  adminGetFeedback() { return this.get('/api/feedback/admin'); },
+  adminUpdateFeedback(id, data) { return this.patch('/api/feedback/admin/'+id, data); },
 };

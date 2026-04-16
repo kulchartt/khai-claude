@@ -1,4 +1,4 @@
-// v20260418b
+// v20260419a
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
@@ -27,6 +27,7 @@ const buyerReviewRoutes = require('./routes/buyer-reviews');
 const savedSearchRoutes = require('./routes/saved-searches');
 const disputeRoutes = require('./routes/disputes');
 const promoRoutes = require('./routes/promo');
+const feedbackRoutes = require('./routes/feedback');
 
 const { initDB, getDB } = require('./db');
 
@@ -61,6 +62,7 @@ app.use('/api/buyer-reviews', buyerReviewRoutes);
 app.use('/api/saved-searches', savedSearchRoutes);
 app.use('/api/disputes', disputeRoutes);
 app.use('/api/promo', promoRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/health/cloudinary', async (req, res) => {

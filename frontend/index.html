@@ -635,11 +635,48 @@
   </div>
 </div>
 
+<!-- Feedback floating button -->
+<button id="feedbackFab" onclick="openFeedbackModal()" title="ติชม / แจ้งปัญหา" style="position:fixed;bottom:76px;left:16px;z-index:900;background:#6366f1;color:#fff;border:none;border-radius:99px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 12px rgba(99,102,241,.4);display:flex;align-items:center;gap:6px">💬 ติชม</button>
+
+<!-- Feedback Modal -->
+<div class="overlay" id="feedbackOverlay">
+  <div class="modal">
+    <button class="mclose" onclick="closeOverlay('feedbackOverlay')">×</button>
+    <h2>💬 ติชม / แจ้งปัญหา</h2>
+    <p style="font-size:13px;color:var(--text-sec);margin:-8px 0 16px">ไม่ต้องล็อกอิน ทีมงานยินดีรับฟังทุก Feedback ครับ</p>
+    <div class="field">
+      <label>หมวดหมู่ <span style="color:#ef4444">*</span></label>
+      <select id="feedbackCategory" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text);font-size:14px">
+        <option value="">— เลือกหมวดหมู่ —</option>
+        <option value="bug">🐛 แจ้งบัค</option>
+        <option value="feature">💡 เสนอ Feature</option>
+        <option value="complaint">😤 ร้องเรียน</option>
+        <option value="review">💬 ติชม</option>
+        <option value="keep">⭐ ฟังก์ชั่นที่ดี / อยากให้คงไว้หรือพัฒนา</option>
+        <option value="other">📌 อื่นๆ</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>ข้อความ <span style="color:#ef4444">*</span></label>
+      <textarea id="feedbackMessage" placeholder="อธิบายรายละเอียด..." style="min-height:100px"></textarea>
+    </div>
+    <div class="field">
+      <label>ชื่อ <span style="font-size:12px;color:var(--text-hint)">(ไม่บังคับ)</span></label>
+      <input type="text" id="feedbackName" placeholder="ชื่อของคุณ"/>
+    </div>
+    <div class="field">
+      <label>อีเมล <span style="font-size:12px;color:var(--text-hint)">(ไม่บังคับ — ถ้าอยากให้ตอบกลับ)</span></label>
+      <input type="email" id="feedbackEmail" placeholder="email@example.com"/>
+    </div>
+    <button class="btn btn-g full" onclick="doSubmitFeedback()">ส่ง Feedback 🙏</button>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260418e"></script>
-<script src="js/app.js?v=20260418e"></script>
+<script src="js/api.js?v=20260419a"></script>
+<script src="js/app.js?v=20260419a"></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
 </body>
 </html>
