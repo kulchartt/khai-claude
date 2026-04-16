@@ -184,13 +184,16 @@ router.put('/:id', authMiddleware, uploadMiddleware, async (req, res) => {
       }
     }
 
+    const newWatermark = req.body.watermark !== undefined ? (req.body.watermark === '1' ? 1 : 0) : product.watermark;
     await db.query(
-      'UPDATE products SET title=$1,price=$2,category=$3,condition=$4,description=$5,location=$6,image_url=$7,status=$8,delivery_method=$9,original_price=$10,meetup_lat=$11,meetup_lng=$12,meetup_note=$13 WHERE id=$14',
+      'UPDATE products SET title=$1,price=$2,category=$3,condition=$4,description=$5,location=$6,image_url=$7,status=$8,delivery_method=$9,original_price=$10,meetup_lat=$11,meetup_lng=$12,meetup_note=$13,watermark=$14 WHERE id=$15',
       [title||product.title, price?Number(price):product.price, category||product.category, condition||product.condition,
        description!==undefined?description:product.description, location!==undefined?location:product.location,
        firstImage, status||product.status, delivery_method||product.delivery_method||'both', newOriginalPrice,
-       meetup_lat!==undefined?meetup_lat:product.meetup_lat, meetup_lng!==undefined?meetup_lng:product.meetup_lng,
-       meetup_note!==undefined?meetup_note:product.meetup_note, req.params.id]
+       meetup_lat!==undefined?(meetup_lat||null):product.meetup_lat,
+       meetup_lng!==undefined?(meetup_lng||null):product.meetup_lng,
+       meetup_note!==undefined?meetup_note:product.meetup_note,
+       newWatermark, req.params.id]
     );
 
     // Price drop alert: notify wishlist users
@@ -290,9 +293,13 @@ router.delete('/:id/images/:imageId', authMiddleware, async (req, res) => {
     if (!img) return res.status(404).json({ error: 'ไม่พบรูปภาพ' });
     // Delete from Cloudinary if it's a Cloudinary URL
     if (img.url && img.url.includes('cloudinary.com')) {
-      const publicId = img.url.split('/').slice(-1)[0].split('.')[0];
-      const { cloudinary } = require('../cloudinary');
-      await cloudinary.uploader.destroy(`mueasong/${publicId}`).catch(() => {});
+      // extract full public_id: everything after /upload/v.../
+      const match = img.url.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-z]+$/i);
+      const publicId = match ? match[1] : null;
+      if (publicId) {
+        const { cloudinary } = require('../cloudinary');
+        await cloudinary.uploader.destroy(publicId).catch(() => {});
+      }
     }
     await db.query('DELETE FROM product_images WHERE id = $1', [req.params.imageId]);
 

@@ -466,6 +466,7 @@ function downloadInvoice(order){
 async function openEditModal(id){
   _clearAccFiles('eImgNew');
   _meetupData.e = null;
+  const ewm = document.getElementById('eWatermark'); if (ewm) ewm.checked = false;
   try{
     const p = await api.getProduct(id);
     document.getElementById('eId').value = p.id;
@@ -512,7 +513,8 @@ async function deleteProductImage(productId, imageId){
   }catch(e){toast(e.message);}
 }
 
-function previewEditImages(input){
+// previewEditImages (ใช้เวอร์ชันสมบูรณ์บรรทัดล่าง — ลบ duplicate นี้ออก)
+function _previewEditImages_UNUSED(input){
   const preview = document.getElementById('eImgNewPreview');
   preview.innerHTML = '';
   Array.from(input.files).forEach(file => {
@@ -546,7 +548,9 @@ async function doEditProduct(){
       fd.append('delivery_method',document.getElementById('eDel').value);
       const wm = document.getElementById('eWatermark')?.checked ? '1' : '0';
       fd.append('watermark', wm);
-      if(_meetupData.e){fd.append('meetup_lat',_meetupData.e.lat);fd.append('meetup_lng',_meetupData.e.lng);fd.append('meetup_note',_meetupData.e.note||'');}
+      fd.append('meetup_lat', _meetupData.e ? _meetupData.e.lat : '');
+      fd.append('meetup_lng', _meetupData.e ? _meetupData.e.lng : '');
+      fd.append('meetup_note', _meetupData.e ? (_meetupData.e.note||'') : '');
       Array.from(newFiles).forEach(f => fd.append('images',f));
       await api.req('PUT','/api/products/'+id,fd,true);
     } else {
@@ -556,8 +560,10 @@ async function doEditProduct(){
         description:document.getElementById('eDesc').value,
         location:document.getElementById('eLoc').value,
         status:document.getElementById('eStatus').value,
-        delivery_method:document.getElementById('eDel').value};
-      if(_meetupData.e){upd.meetup_lat=_meetupData.e.lat;upd.meetup_lng=_meetupData.e.lng;upd.meetup_note=_meetupData.e.note||'';}
+        delivery_method:document.getElementById('eDel').value,
+        meetup_lat: _meetupData.e ? _meetupData.e.lat : null,
+        meetup_lng: _meetupData.e ? _meetupData.e.lng : null,
+        meetup_note: _meetupData.e ? (_meetupData.e.note||'') : ''};
       await api.updateProduct(id,upd);
     }
     closeOverlay('editOverlay');
