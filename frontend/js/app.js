@@ -1337,7 +1337,7 @@ document.addEventListener('touchstart',e=>{_touchStartY=e.touches[0].clientY;},{
 document.addEventListener('touchend',e=>{
   const diff=e.changedTouches[0].clientY-_touchStartY;
   const page=document.querySelector('.page.active');
-  if(diff>80&&page?.id==='page-home'&&window.scrollY===0){loadProducts();toast('🔄 รีเฟรชแล้ว','#1D9E75');}
+  if(diff>80&&page?.id==='page-home'&&window.scrollY===0&&!document.querySelector('.overlay.open')){loadProducts();toast('🔄 รีเฟรชแล้ว','#1D9E75');}
 },{passive:true});
 
 // ===== Feature 6: Infinite Scroll =====
