@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260419x"/>
+  <link rel="stylesheet" href="css/style.css?v=20260419y"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -486,11 +486,13 @@
     </div>
     <div class="field" style="background:var(--bg-sec);border-radius:var(--radius);padding:12px">
       <label style="font-weight:600;margin-bottom:8px;display:block">⚙️ ตัวเลือกการโพสต์</label>
-      <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer">
-        <input type="checkbox" id="sellDraft"/> <span>บันทึกเป็น Draft (ยังไม่เผยแพร่)</span>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;font-size:14px;user-select:none">
+        <input type="checkbox" id="sellDraft" style="width:15px;height:15px;margin:0;flex-shrink:0;accent-color:var(--green);cursor:pointer"/>
+        <span>บันทึกเป็น Draft (ยังไม่เผยแพร่)</span>
       </label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer">
-        <input type="checkbox" id="sellWatermark"/> 🖼️ ใส่ลายน้ำ PloiKhong บนรูป
+      <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;user-select:none">
+        <input type="checkbox" id="sellWatermark" style="width:15px;height:15px;margin:0;flex-shrink:0;accent-color:var(--green);cursor:pointer"/>
+        <span>🖼️ ใส่ลายน้ำ PloiKhong บนรูป</span>
       </label>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px">
         <span style="white-space:nowrap">⏰ เผยแพร่วันที่:</span>
@@ -906,8 +908,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260419x"></script>
-<script src="js/app.js?v=20260419x"></script>
+<script src="js/api.js?v=20260419y"></script>
+<script src="js/app.js?v=20260419y"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
