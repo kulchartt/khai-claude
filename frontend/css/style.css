@@ -348,12 +348,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* ===== Mobile: hide-sm & bottom nav ===== */
 .bottom-nav{display:none}
+.bn-sell{display:none}
 @media(max-width:640px){
   .hide-sm{display:none!important}
-  /* give body bottom padding so content not hidden behind bottom nav */
-  body{padding-bottom:60px}
+  /* body padding so content clears bottom nav */
+  body{padding-bottom:64px}
   #page-chat.active{height:calc(100vh - 56px - 56px)}
   .swipe-wrap{min-height:calc(100vh - 56px - 56px)}
+
+  /* Bottom nav bar */
   .bottom-nav{
     display:flex;position:fixed;bottom:0;left:0;right:0;z-index:200;
     background:var(--bg-card);border-top:1px solid var(--border);
@@ -369,6 +372,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   .bn-btn:active{color:var(--green)}
   .bn-icon{font-size:20px;line-height:1}
   .bn-label{font-size:10px;font-weight:500;line-height:1}
+
+  /* Center sell button */
+  .bn-sell{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    flex:1;border:none;background:transparent;cursor:pointer;padding:0;gap:2px;font-family:inherit;
+  }
+  .bn-sell-inner{
+    background:var(--green);color:#fff;border-radius:50%;
+    width:42px;height:42px;display:flex;align-items:center;justify-content:center;
+    font-size:22px;box-shadow:0 2px 8px rgba(29,158,117,.4);margin-top:-8px;
+  }
+  .bn-sell-label{font-size:10px;font-weight:600;color:var(--green);line-height:1}
+
+  /* Profile tabs: horizontal scroll on mobile */
+  .profile-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:0}
+  .profile-tabs::-webkit-scrollbar{display:none}
+  .profile-tab{white-space:nowrap;flex-shrink:0}
+
+  /* Modal: never exceed viewport */
+  .modal{max-width:min(480px,calc(100vw - 12px));max-height:90dvh;overflow-y:auto}
+
+  /* Toast: above bottom nav */
+  .toast{bottom:72px}
+
+  /* Feedback FAB: above bottom nav */
+  #feedbackFab{bottom:72px!important}
+
+  /* Product grid: 2 cols at small size */
+  .product-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr))}
 }
 
 /* ===== Price Drop Badge ===== */

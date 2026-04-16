@@ -43,17 +43,18 @@
 
   <!-- Bottom navigation bar (mobile only) -->
   <nav class="bottom-nav" id="bottomNav">
-    <button class="bn-btn" onclick="goPage('home')" id="bn-home">
+    <button class="bn-btn" onclick="goPage('home')">
       <span class="bn-icon">🏠</span><span class="bn-label">หน้าแรก</span>
     </button>
     <button class="bn-btn" onclick="openCategories()">
       <span class="bn-icon">🗂️</span><span class="bn-label">หมวดหมู่</span>
     </button>
+    <button class="bn-sell" onclick="openSell()">
+      <div class="bn-sell-inner">＋</div>
+      <span class="bn-sell-label">ลงขาย</span>
+    </button>
     <button class="bn-btn" onclick="openWishlist()">
       <span class="bn-icon">❤️</span><span class="bn-label">โปรด</span>
-    </button>
-    <button class="bn-btn" onclick="openCart()">
-      <span class="bn-icon">🛒</span><span class="bn-label">ตะกร้า</span>
     </button>
     <button class="bn-btn" onclick="openProfile()">
       <span class="bn-icon">👤</span><span class="bn-label">ฉัน</span>
@@ -1045,7 +1046,7 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js?v=20260416r6h"></script>
-<script src="js/app.js?v=20260416r6l"></script>
+<script src="js/app.js?v=20260416r6m"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
