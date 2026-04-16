@@ -2554,20 +2554,18 @@ async function deleteBiometric(id) {
 
 function _base64urlToBuffer(b64url) {
   if (!b64url) return new Uint8Array(0);
-  // Replace base64url chars → base64, then add padding
   const b64 = b64url.replace(/-/g,'+').replace(/_/g,'/');
   const padded = b64.padEnd(b64.length + (4 - b64.length % 4) % 4, '=');
-  // Use fetch/TextDecoder-free pure-JS decode (no atob) for reliability
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  let result = [], i = 0;
-  const clean = padded.replace(/=+$/, '');
-  while (i < clean.length) {
-    const a = chars.indexOf(clean[i++] || ''), b = chars.indexOf(clean[i++] || '');
-    const c = chars.indexOf(clean[i++] || ''), d = chars.indexOf(clean[i++] || '');
-    const n = (a << 18) | (b << 12) | (c << 6) | d;
-    result.push((n >> 16) & 255);
-    if (c !== -1) result.push((n >> 8) & 255);
-    if (d !== -1) result.push(n & 255);
+  // Use padded string directly — '=' acts as boundary, getIdx returns -1 for '=' or OOB
+  const getIdx = (i) => i < padded.length && padded[i] !== '=' ? chars.indexOf(padded[i]) : -1;
+  const result = [];
+  for (let i = 0; i < padded.length; i += 4) {
+    const a = getIdx(i), b = getIdx(i+1), c = getIdx(i+2), d = getIdx(i+3);
+    if (a < 0 || b < 0) break;
+    result.push(((a << 2) | (b >> 4)) & 255);
+    if (c >= 0) result.push(((b << 4) | (c >> 2)) & 255);
+    if (d >= 0) result.push(((c << 6) | d) & 255);
   }
   return new Uint8Array(result);
 }
