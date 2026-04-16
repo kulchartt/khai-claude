@@ -294,6 +294,7 @@ async function initDB() {
     counter BIGINT DEFAULT 0,
     created_at TIMESTAMP DEFAULT NOW()
   )`);
+  await db.query(`ALTER TABLE webauthn_credentials ADD COLUMN IF NOT EXISTS aaguid TEXT DEFAULT ''`);
   await db.query(`CREATE TABLE IF NOT EXISTS webauthn_challenges (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,

@@ -9,6 +9,52 @@ const RP_ID = 'kulchartt.github.io';
 const RP_NAME = 'PloiKhong';
 const ORIGIN = 'https://kulchartt.github.io';
 
+// ──────────────────────────────────────────────────────────────
+// AAGUID → Authenticator name lookup
+// Source: https://github.com/passkeydeveloper/passkey-authenticator-aaguids
+// ──────────────────────────────────────────────────────────────
+const AAGUID_MAP = {
+  // Windows Hello
+  '08987058-cadc-4b81-b6e1-30de50dcbe96': { name: 'Windows Hello', icon: '🪟' },
+  '6028b017-b1d4-4c02-b4b3-afcdafc96bb2': { name: 'Windows Hello', icon: '🪟' },
+  '9ddd1817-af5a-4672-a2b9-3e3dd95000a9': { name: 'Windows Hello (Hardware)', icon: '🪟' },
+  'b92c3f9a-c014-4056-887f-140a2501163b': { name: 'Windows Hello', icon: '🪟' },
+  'aadca000-0000-0000-0000-000000000000': { name: 'Windows Hello', icon: '🪟' },
+  '08987058-cadc-4b81-b6e1-30de50dcbe97': { name: 'Windows Hello', icon: '🪟' },
+  // Apple (Touch ID / Face ID)
+  'dd4ec289-e01d-41c9-bb89-70fa845d4bf2': { name: 'Apple Touch ID / Face ID', icon: '🍎' },
+  'adce0002-35bc-c60a-648b-0b25f1f05503': { name: 'Apple Touch ID (Chrome)', icon: '🍎' },
+  'adce0003-35bc-c60a-648b-0b25f1f05503': { name: 'Apple Touch ID', icon: '🍎' },
+  'bada5566-a7aa-401f-bd96-45619a55120d': { name: 'Apple Passkey', icon: '🍎' },
+  // Google / Android
+  'ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4': { name: 'Google Password Manager', icon: '🔵' },
+  'b5397666-4885-aa6b-cebf-e52262a439a2': { name: 'Chrome Touch ID (Mac)', icon: '🔵' },
+  'b93fd961-f2e6-462f-b122-82002247de78': { name: 'Android Fingerprint', icon: '📱' },
+  'de503ab9-519a-4a9d-9a9e-8d0c4ef50a9a': { name: 'Android (Pixel)', icon: '📱' },
+  '12ded745-4bed-47d4-abaa-e713f51d6393': { name: 'Android Fingerprint', icon: '📱' },
+  // Samsung
+  '53414d53-554e-4700-0000-000000000000': { name: 'Samsung Pass', icon: '📱' },
+  // YubiKey
+  'fa2b99dc-9e39-4257-8f92-4a30d23c4118': { name: 'YubiKey 5', icon: '🔑' },
+  'cb69481e-8ff7-4039-93ec-0a2729a154a8': { name: 'YubiKey 5 NFC', icon: '🔑' },
+  'c1f9a0bc-1dd2-404a-b27f-8e29047a43fd': { name: 'YubiKey 5C NFC', icon: '🔑' },
+  'ee882879-721c-4913-9775-3dfcce97072a': { name: 'YubiKey 5 Series', icon: '🔑' },
+  '2fc0579f-8113-47ea-b116-bb5a8db9202a': { name: 'YubiKey 5 Series', icon: '🔑' },
+  // 1Password
+  'bada5566-a7aa-401f-bd96-45619a55120e': { name: '1Password', icon: '🔐' },
+  // Bitwarden
+  'd548826e-79b4-db40-a3d8-11116f7e8349': { name: 'Bitwarden', icon: '🔐' },
+  // iCloud Keychain
+  'fbfc3007-154e-4ecc-8c0b-6e020557d7bd': { name: 'iCloud Keychain', icon: '☁️' },
+};
+
+function getDeviceInfo(aaguid) {
+  if (!aaguid || aaguid === '00000000-0000-0000-0000-000000000000') {
+    return { name: 'Platform Authenticator', icon: '🔒' };
+  }
+  return AAGUID_MAP[aaguid.toLowerCase()] || { name: 'Security Key', icon: '🔑' };
+}
+
 // POST /api/webauthn/register-challenge — generate options for credential creation (requires login)
 router.post('/register-challenge', authMiddleware, async (req, res) => {
   try {
@@ -59,14 +105,23 @@ router.post('/register', authMiddleware, async (req, res) => {
 
     if (!verification.verified) return res.status(400).json({ error: 'ยืนยันไม่ผ่าน' });
 
-    const { credentialID, credentialPublicKey, counter } = verification.registrationInfo;
+    const { credentialID, credentialPublicKey, counter, aaguid } = verification.registrationInfo;
     await db.query('DELETE FROM webauthn_challenges WHERE user_id = $1 AND type = $2', [req.user.id, 'registration']);
     await db.query(
-      'INSERT INTO webauthn_credentials (user_id, credential_id, public_key, counter) VALUES ($1,$2,$3,$4) ON CONFLICT (credential_id) DO UPDATE SET counter = $4',
-      [req.user.id, Buffer.from(credentialID).toString('base64url'), Buffer.from(credentialPublicKey).toString('base64'), counter]
+      `INSERT INTO webauthn_credentials (user_id, credential_id, public_key, counter, aaguid)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (credential_id) DO UPDATE SET counter = $4, aaguid = $5`,
+      [
+        req.user.id,
+        Buffer.from(credentialID).toString('base64url'),
+        Buffer.from(credentialPublicKey).toString('base64'),
+        counter,
+        aaguid || '',
+      ]
     );
 
-    res.json({ success: true, message: 'ลงทะเบียน Biometric สำเร็จ!' });
+    const deviceInfo = getDeviceInfo(aaguid);
+    res.json({ success: true, message: `ลงทะเบียน ${deviceInfo.name} ${deviceInfo.icon} สำเร็จ!` });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -143,11 +198,18 @@ router.post('/login', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET /api/webauthn/credentials — list registered credentials
+// GET /api/webauthn/credentials — list registered credentials with device info
 router.get('/credentials', authMiddleware, async (req, res) => {
   try {
-    const { rows } = await getDB().query('SELECT id, created_at FROM webauthn_credentials WHERE user_id = $1', [req.user.id]);
-    res.json(rows);
+    const { rows } = await getDB().query(
+      'SELECT id, created_at, aaguid FROM webauthn_credentials WHERE user_id = $1 ORDER BY created_at ASC',
+      [req.user.id]
+    );
+    const result = rows.map(r => ({
+      ...r,
+      device: getDeviceInfo(r.aaguid),
+    }));
+    res.json(result);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

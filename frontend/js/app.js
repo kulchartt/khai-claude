@@ -2475,14 +2475,12 @@ async function registerBiometric() {
   try {
     toast('กำลังตั้งค่า Biometric...');
     const rawOpts = await api.webauthnRegisterChallenge();
-    console.log('[WebAuthn] raw options from server:', JSON.stringify(rawOpts));
     const options = { ...rawOpts };
     options.challenge = _base64urlToBuffer(options.challenge);
     options.user = { ...options.user, id: _base64urlToBuffer(options.user.id) };
     if (options.excludeCredentials) {
       options.excludeCredentials = options.excludeCredentials.map(c => ({ ...c, id: _base64urlToBuffer(c.id) }));
     }
-    console.log('[WebAuthn] converted options — challenge.len:', options.challenge.length, 'user.id.len:', options.user.id.length);
     const credential = await navigator.credentials.create({ publicKey: options });
     const credJSON = {
       id: credential.id,
@@ -2493,8 +2491,8 @@ async function registerBiometric() {
         attestationObject: _bufferToBase64url(credential.response.attestationObject),
       },
     };
-    await api.webauthnRegister(credJSON);
-    toast('✅ ลงทะเบียน Biometric สำเร็จ!', '#1D9E75');
+    const regResult = await api.webauthnRegister(credJSON);
+    toast('✅ ' + (regResult.message || 'ลงทะเบียน Biometric สำเร็จ!'), '#1D9E75');
     loadBiometricCredentials();
   } catch (e) {
     toast('Biometric: ' + e.name + ' — ' + (e.message || ''));
@@ -2545,7 +2543,21 @@ async function loadBiometricCredentials() {
     const box = document.getElementById('biometricCredsBox');
     if (!box) return;
     if (!creds.length) { box.innerHTML = '<div style="font-size:13px;color:var(--text-sec)">ยังไม่มี Biometric ที่ลงทะเบียน</div>'; return; }
-    box.innerHTML = creds.map(c => `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px">🔑 ลงทะเบียนเมื่อ ${new Date(c.created_at).toLocaleDateString('th-TH')}</span><button class="btn btn-sm btn-danger" onclick="deleteBiometric(${c.id})">ลบ</button></div>`).join('');
+    box.innerHTML = creds.map(c => {
+      const icon = c.device?.icon || '🔑';
+      const name = c.device?.name || 'Security Key';
+      const date = new Date(c.created_at).toLocaleDateString('th-TH');
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:20px">${icon}</span>
+          <div>
+            <div style="font-size:13px;font-weight:600">${name}</div>
+            <div style="font-size:11px;color:var(--text-sec)">ลงทะเบียนเมื่อ ${date}</div>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="deleteBiometric(${c.id})">ลบ</button>
+      </div>`;
+    }).join('');
   } catch (e) {}
 }
 
