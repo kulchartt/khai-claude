@@ -1003,9 +1003,12 @@ function _renderNewImgGrid(files, gridEl, inputId, isEdit) {
       div.draggable = true;
       div.dataset.idx = i;
       div.style.cssText = 'position:relative;cursor:grab';
+      const hasExisting = isEdit && _editImgs.length > 0;
+      const showCover = i === 0 && !hasExisting;
       div.innerHTML = `
         <img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover"/>
-        ${i === 0 ? '<span class="edit-img-first-badge">หน้าปก</span>' : ''}
+        ${showCover ? '<span class="edit-img-first-badge">หน้าปก</span>' : ''}
+        <span style="position:absolute;top:3px;left:4px;font-size:10px;font-weight:700;color:#fff;background:rgba(0,0,0,.45);border-radius:3px;padding:1px 5px;pointer-events:none">${i+1}</span>
         <button class="${isEdit?'edit-img-del':'remove-img'}" onclick="removeNewImg(${i},'${inputId}')" title="ลบรูปนี้">${isEdit?'✕':'×'}</button>
         <div style="position:absolute;bottom:2px;right:2px;font-size:13px;opacity:.4;pointer-events:none">⠿</div>`;
       div.addEventListener('dragstart', ev => {
