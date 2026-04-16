@@ -83,7 +83,9 @@ router.post('/login-challenge', async (req, res) => {
     const { rows: creds } = await db.query('SELECT credential_id FROM webauthn_credentials WHERE user_id = $1', [user.id]);
     if (!creds.length) return res.status(404).json({ error: 'ยังไม่ได้ลงทะเบียน Biometric' });
 
-    const allowCredentials = creds.map(c => ({ id: c.credential_id, type: 'public-key' }));
+    // Must pass as Buffer, not string — generateAuthenticationOptions calls isoBase64URL.fromBuffer()
+    // which does new Uint8Array(x), and new Uint8Array("string") = empty array → id becomes ""
+    const allowCredentials = creds.map(c => ({ id: Buffer.from(c.credential_id, 'base64url'), type: 'public-key' }));
     const options = await generateAuthenticationOptions({
       rpID: RP_ID, timeout: 60000, userVerification: 'preferred', allowCredentials,
     });
