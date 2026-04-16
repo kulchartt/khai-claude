@@ -1,7 +1,7 @@
 # PloiKhong — Feature List
 
 > ตลาดออนไลน์ ของมือหนึ่งก็มี มือสองก็ดี — with AI  
-> อัปเดตล่าสุด: **2026-04-16** — Round 3 complete (Points, Referral, Draft, Tier Badge, Invoice PDF)
+> อัปเดตล่าสุด: **2026-04-16** — Round 4 complete (Community Board, Story Feed, Bulk CSV, Watermark, Map Meetup)
 
 ---
 
@@ -35,8 +35,8 @@
 | Price Drop Alert | แจ้งเตือนคนที่ wishlist เมื่อราคาลดลง | ✅ Done |
 | จองสินค้า (Reserve) | ผู้ซื้อขอจอง, ผู้ขาย approve/reject | ✅ Done |
 | Close Sale | ผู้ขายปิดการขายก่อนกำหนด | ✅ Done |
-| Watermark รูปภาพ | ใส่ลายน้ำอัตโนมัติบนรูปสินค้า | 🔲 Round 4 |
-| Bulk CSV Upload | อัปโหลดสินค้าหลายรายการผ่าน CSV | 🔲 Round 4 |
+| Watermark รูปภาพ | ใส่ลายน้ำอัตโนมัติบนรูปสินค้า | ✅ Done |
+| Bulk CSV Upload | อัปโหลดสินค้าหลายรายการผ่าน CSV | ✅ Done |
 | Image Search | ค้นหาสินค้าด้วยรูปภาพ | 🔲 Round 6 |
 | AI เขียน Description | AI ช่วยเขียนรายละเอียดสินค้า | 🔲 Round 5 |
 | AI แนะนำราคา | วิเคราะห์ราคาตลาดแล้วแนะนำราคาขาย | 🔲 Round 5 |
@@ -175,7 +175,7 @@
 |---------|-----------|-------|
 | Address Book | บันทึกที่อยู่จัดส่งหลายรายการ | ✅ Done |
 | Default Address | ตั้งที่อยู่หลัก | ✅ Done |
-| Map Meetup | นัดรับของโดยเลือกจุดบนแผนที่ | 🔲 Round 4 |
+| Map Meetup | นัดรับของโดยเลือกจุดบนแผนที่ | ✅ Done |
 
 ---
 
@@ -220,8 +220,8 @@
 
 | Feature | รายละเอียด | สถานะ |
 |---------|-----------|-------|
-| Community Board | กระดานโพสต์ชุมชน ถาม-ตอบ แชร์ดีล | 🔲 Round 4 |
-| Story Feed | โพสต์รูป/ข้อความ อยู่ 24 ชม. | 🔲 Round 4 |
+| Community Board | กระดานโพสต์ชุมชน ถาม-ตอบ แชร์ดีล | ✅ Done |
+| Story Feed | โพสต์รูป/ข้อความ อยู่ 24 ชม. | ✅ Done |
 
 ---
 
@@ -232,7 +232,7 @@
 | Round 1 | Core UX — Chat, Quick Reply, Swipe, QR, PWA | ✅ Done |
 | Round 2 | Commerce — Flash Sale, Bundle, Reserve, Holiday Mode | ✅ Done |
 | Round 3 | Loyalty — Points, Referral, Draft/Schedule, Tier Badge, Invoice | ✅ Done |
-| Round 4 | Community — Board, Story, CSV, Watermark, Map | 🔲 Planned |
+| Round 4 | Community — Board, Story, CSV, Watermark, Map | ✅ Done |
 | Round 5 | AI & Safety — AI desc, AI price, Track, Escrow, Protection | 🔲 Planned |
 | Round 6 | Advanced — Live, Voice, Image Search, eKYC, Biometric | 🔲 Planned |
 
