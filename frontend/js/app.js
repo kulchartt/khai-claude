@@ -989,6 +989,69 @@ async function confirmShipWithTracking(){
   }catch(e){toast(e.message);}
 }
 
+// ── New Image Preview with Drag & Drop (ใช้ได้ทั้ง sell และ edit) ──
+let _newImgDragIdx = null;
+
+function _renderNewImgGrid(files, gridEl, inputId, isEdit) {
+  gridEl.innerHTML = '';
+  if (!files.length) return;
+  Array.from(files).forEach((file, i) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const div = document.createElement('div');
+      div.className = 'edit-img-item';
+      div.draggable = true;
+      div.dataset.idx = i;
+      div.style.cssText = 'position:relative;cursor:grab';
+      div.innerHTML = `
+        <img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover"/>
+        ${i === 0 ? '<span class="edit-img-first-badge">หน้าปก</span>' : ''}
+        <button class="${isEdit?'edit-img-del':'remove-img'}" onclick="removeNewImg(${i},'${inputId}')" title="ลบรูปนี้">${isEdit?'✕':'×'}</button>
+        <div style="position:absolute;bottom:2px;right:2px;font-size:13px;opacity:.4;pointer-events:none">⠿</div>`;
+      div.addEventListener('dragstart', ev => {
+        _newImgDragIdx = i;
+        div.classList.add('dragging');
+        ev.dataTransfer.effectAllowed = 'move';
+      });
+      div.addEventListener('dragover', ev => {
+        ev.preventDefault();
+        gridEl.querySelectorAll('.edit-img-item').forEach(el => el.classList.remove('drag-over'));
+        div.classList.add('drag-over');
+      });
+      div.addEventListener('drop', ev => {
+        ev.preventDefault();
+        const targetIdx = parseInt(div.dataset.idx);
+        if (_newImgDragIdx === null || _newImgDragIdx === targetIdx) return;
+        // reorder files
+        const input = document.getElementById(inputId);
+        const arr = Array.from(input.files);
+        const moved = arr.splice(_newImgDragIdx, 1)[0];
+        arr.splice(targetIdx, 0, moved);
+        const dt = new DataTransfer();
+        arr.forEach(f => dt.items.add(f));
+        input.files = dt.files;
+        if (isEdit) previewEditImages(input);
+        else previewImages(input);
+      });
+      div.addEventListener('dragend', () => {
+        gridEl.querySelectorAll('.edit-img-item,.img-preview-item').forEach(el => el.classList.remove('dragging','drag-over'));
+        _newImgDragIdx = null;
+      });
+      gridEl.appendChild(div);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeNewImg(index, inputId) {
+  const input = document.getElementById(inputId);
+  const dt = new DataTransfer();
+  Array.from(input.files).forEach((f, i) => { if (i !== index) dt.items.add(f); });
+  input.files = dt.files;
+  if (inputId === 'eImgNew') previewEditImages(input);
+  else previewImages(input);
+}
+
 function previewImages(input) {
   const grid = document.getElementById('imgPreviewGrid');
   const wrap = document.getElementById('imgUploadWrap');
@@ -997,52 +1060,20 @@ function previewImages(input) {
     wrap.innerHTML = `<div style="font-size:48px;margin-bottom:8px">📸</div><div style="font-size:15px;font-weight:600;color:var(--green);margin-bottom:4px">กดที่นี่เพื่อเลือกรูป</div><div style="font-size:12px;color:var(--text-hint)">เลือกได้สูงสุด 10 รูป · JPG, PNG ไม่เกิน 5MB/รูป</div>`;
     return;
   }
-  wrap.innerHTML = `<div style="font-size:15px;font-weight:600;color:var(--green)">📷 เลือกแล้ว ${input.files.length} รูป</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px">กดเพื่อเพิ่มรูปอีก</div>`;
-  Array.from(input.files).forEach((file, i) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const div = document.createElement('div');
-      div.className = 'img-preview-item' + (i === 0 ? ' main-img' : '');
-      div.style.cssText = 'position:relative';
-      div.innerHTML = `<img src="${e.target.result}" alt="preview"/><button class="remove-img" onclick="removePreviewImg(${i})" title="ลบรูปนี้">×</button>`;
-      grid.appendChild(div);
-    };
-    reader.readAsDataURL(file);
-  });
+  wrap.innerHTML = `<div style="font-size:15px;font-weight:600;color:var(--green)">📷 เลือกแล้ว ${input.files.length} รูป</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px">กดเพื่อเพิ่มรูปอีก · ลากเพื่อเรียงลำดับ</div>`;
+  _renderNewImgGrid(input.files, grid, 'sImg', false);
 }
 
-function removePreviewImg(index) {
-  const input = document.getElementById('sImg');
-  const dt = new DataTransfer();
-  Array.from(input.files).forEach((f, i) => { if (i !== index) dt.items.add(f); });
-  input.files = dt.files;
-  previewImages(input);
-}
+function removePreviewImg(index) { removeNewImg(index, 'sImg'); }
 
 function previewEditImages(input) {
   const preview = document.getElementById('eImgNewPreview');
   preview.innerHTML = '';
   if (!input.files.length) return;
-  Array.from(input.files).forEach((file, i) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const div = document.createElement('div');
-      div.className = 'edit-img-item';
-      div.id = `enew-${i}`;
-      div.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover"/><button class="edit-img-del" onclick="removeEditNewImg(${i})" title="ลบรูปนี้">✕</button>`;
-      preview.appendChild(div);
-    };
-    reader.readAsDataURL(file);
-  });
+  _renderNewImgGrid(input.files, preview, 'eImgNew', true);
 }
 
-function removeEditNewImg(index) {
-  const input = document.getElementById('eImgNew');
-  const dt = new DataTransfer();
-  Array.from(input.files).forEach((f, i) => { if (i !== index) dt.items.add(f); });
-  input.files = dt.files;
-  previewEditImages(input);
-}
+function removeEditNewImg(index) { removeNewImg(index, 'eImgNew'); }
 
 // ── Edit Image Grid with Drag & Drop ──────────────────────
 let _editImgs = [];
