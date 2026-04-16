@@ -1868,17 +1868,20 @@ async function loadCommunity() {
     if (!posts.length) { list.innerHTML = '<div class="empty-state"><span class="empty-state-icon">📋</span><h3>ยังไม่มีโพสต์</h3><p>เป็นคนแรกที่โพสต์ในหมวดนี้!</p></div>'; return; }
     list.innerHTML = posts.map(p => `
       <div class="community-card" onclick="openPost(${p.id})">
-        <div style="display:flex;align-items:center;gap:10px">
-          ${p.image_url ? `<img src="${p.image_url}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0"/>` : `<div style="width:48px;height:48px;border-radius:6px;background:var(--bg-sec);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">💬</div>`}
+        <div style="font-size:11px;color:var(--text-hint);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+          <span class="community-cat-badge">${p.category}</span>
+          <span>โดย ${p.author_name}</span>
+          <span style="margin-left:auto">${new Date(p.created_at).toLocaleDateString('th',{month:'short',day:'numeric'})}</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px">
           <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${p.title}</div>
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              <span class="community-cat-badge">${p.category}</span>
-              <span style="font-size:11px;color:var(--text-hint)">${p.author_name}</span>
-              <span style="font-size:11px;color:var(--text-hint)">· ❤️ ${p.like_count} · 💬 ${p.comment_count}</span>
-              <span style="font-size:11px;color:var(--text-hint);margin-left:auto">${new Date(p.created_at).toLocaleDateString('th',{month:'short',day:'numeric'})}</span>
+            <div style="font-weight:700;font-size:15px;line-height:1.35;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${p.title}</div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="rc-btn" onclick="event.stopPropagation();openPost(${p.id})">▲ ${p.like_count} ถูกใจ</button>
+              <button class="rc-btn" onclick="event.stopPropagation();openPost(${p.id})">💬 ${p.comment_count} ความคิดเห็น</button>
             </div>
           </div>
+          ${p.image_url ? `<img src="${p.image_url}" style="width:80px;height:64px;border-radius:6px;object-fit:cover;flex-shrink:0;margin-top:2px"/>` : ''}
         </div>
       </div>`).join('');
   } catch(e) { toast(e.message); }
