@@ -1,6 +1,11 @@
 const express = require('express');
 const { getDB } = require('../db');
-const { authMiddleware, adminOnly } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
+
+function adminOnly(req, res, next) {
+  if (!req.user?.is_admin) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+  next();
+}
 
 const router = express.Router();
 
