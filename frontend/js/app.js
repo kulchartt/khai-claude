@@ -88,10 +88,13 @@ async function openDetail(id){
             <div class="meta-box"><div class="meta-l">รหัสสินค้า</div><div class="meta-v">#${String(p.id).padStart(4,'0')}</div></div>
           </div>
           ${p.meetup_lat && p.meetup_lng ? `
-          <div style="margin-top:12px;padding:12px;background:var(--bg-sec);border-radius:var(--radius);border:1px solid var(--border)">
-            <div style="font-size:13px;font-weight:600;margin-bottom:8px">📍 จุดนัดรับสินค้า${p.meetup_note ? ` · ${p.meetup_note}` : ''}</div>
-            <div id="detailMap" style="height:180px;border-radius:8px;margin-bottom:8px"></div>
-            <button class="btn btn-sm full" onclick="openProductMap(${p.meetup_lat},${p.meetup_lng},'${(p.meetup_note||'').replace(/'/g,"\\'")}')">🗺️ เปิดแผนที่เต็ม</button>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg-sec);border-radius:var(--radius);border:1px solid var(--border)">
+            <div id="detailMap" style="width:72px;height:72px;border-radius:6px;flex-shrink:0"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:2px">📍 จุดนัดรับ</div>
+              <div style="font-size:12px;color:var(--text-sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.meetup_note||'กดดูแผนที่'}</div>
+            </div>
+            <button class="btn btn-sm" onclick="openProductMap(${p.meetup_lat},${p.meetup_lng},'${(p.meetup_note||'').replace(/'/g,"\\'")}')">🗺️ ดูแผนที่</button>
           </div>` : ''}
         </div>
       </div>
