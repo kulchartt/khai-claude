@@ -391,7 +391,7 @@ async function toggleFollow(sellerId){if(!state.user){openOverlay('loginOverlay'
 async function openSellerProfile(userId){try{const reqs=[api.getSeller(userId),api.getSellerProducts(userId),api.getFollowerCount(userId),api.getSellerReviews(userId)];if(state.user)reqs.push(api.getFollowStatus(userId));const[seller,products,followerData,reviewData,...rest]=await Promise.all(reqs);const followStatus=rest[0];document.getElementById('sellerBackBtn').onclick=()=>history.back();const avatarHtml=seller.avatar?`<img src="${imgSrc(seller.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${(seller.name||'?').slice(0,2).toUpperCase()}`;const isOwnProfile=state.user&&state.user.id===seller.id;const isFollowing=followStatus?.following||false;const followerCount=followerData?.count||0;
 const reviewsHtml=reviewData.reviews.length?reviewData.reviews.map(r=>`<div class="review-item"><div class="review-top"><div class="review-avatar">${r.reviewer_name.slice(0,2).toUpperCase()}</div><div style="flex:1"><div class="review-name">${r.reviewer_name}</div><div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>${r.product_title?`<div style="font-size:11px;color:var(--text-hint);margin-top:2px">สินค้า: ${r.product_title}</div>`:''}</div><div style="font-size:11px;color:var(--text-hint)">${new Date(r.created_at).toLocaleDateString('th',{year:'numeric',month:'short',day:'numeric'})}</div></div><div class="review-comment">${r.comment||'—'}</div></div>`).join(''):`<p style="color:var(--text-sec);font-size:14px;padding:8px 0">ยังไม่มีรีวิว</p>`;
 const tierLabel={bronze:'🥉 Bronze',silver:'🥈 Silver',gold:'🥇 Gold',diamond:'💎 Diamond'};const tierClass={bronze:'tier-bronze',silver:'tier-silver',gold:'tier-gold',diamond:'tier-diamond'};const sellerTier=seller.shop_tier||'bronze';const publicProducts=products.filter(p=>!p.is_draft);
-document.getElementById('sellerContent').innerHTML=`<div class="profile-header"><div class="p-avatar" style="overflow:hidden">${avatarHtml}</div><div style="flex:1"><div class="p-name">${seller.name}${seller.is_verified?'<span class="verified-badge">✅ ยืนยันแล้ว</span>':''} <span class="tier-badge ${tierClass[sellerTier]}">${tierLabel[sellerTier]}</span></div><div class="p-email">สมาชิกตั้งแต่ ${new Date(seller.created_at).toLocaleDateString('th',{year:'numeric',month:'long'})}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${products.length}</div><div class="stat-l">สินค้า</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${seller.rating||5.0}★</div><div class="stat-l">คะแนน</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${reviewData.count||0}</div><div class="stat-l">รีวิว</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${followerCount}</div><div class="stat-l">ผู้ติดตาม</div></div></div>${!isOwnProfile?`<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="flex:1" onclick="startChat(${seller.id},null)">💬 แชทกับผู้ขาย</button><button class="btn ${isFollowing?'btn-danger':''}" style="flex:1" onclick="toggleFollow(${seller.id})">${isFollowing?'💔 เลิกติดตาม':'❤️ ติดตาม'}</button></div>`:''}</div></div><div class="section-title" style="margin-top:20px"><span>สินค้าทั้งหมด (${publicProducts.length})</span></div><div class="product-grid" id="sellerProductGrid"></div><div class="reviews-section" style="margin-top:24px"><h3>รีวิวผู้ขาย (${reviewData.count}) — เฉลี่ย ${reviewData.average}★</h3>${reviewsHtml}</div>`;renderCards(publicProducts,'sellerProductGrid');goPage('seller');}catch(e){toast(e.message);}}
+document.getElementById('sellerContent').innerHTML=`<div class="profile-header"><div class="p-avatar" style="overflow:hidden">${avatarHtml}</div><div style="flex:1"><div class="p-name">${seller.name}${seller.is_verified?'<span class="verified-badge">✅ ยืนยันแล้ว</span>':''} <span class="tier-badge ${tierClass[sellerTier]}">${tierLabel[sellerTier]}</span></div><div class="p-email">สมาชิกตั้งแต่ ${new Date(seller.created_at).toLocaleDateString('th',{year:'numeric',month:'long'})}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${products.length}</div><div class="stat-l">สินค้า</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${seller.rating||5.0}★</div><div class="stat-l">คะแนน</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${reviewData.count||0}</div><div class="stat-l">รีวิว</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${followerCount}</div><div class="stat-l">ผู้ติดตาม</div></div></div>${!isOwnProfile?`<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="flex:1" onclick="startChat(${seller.id},null)">💬 แชทกับผู้ขาย</button><button class="btn ${isFollowing?'btn-danger':''}" style="flex:1" onclick="toggleFollow(${seller.id})">${isFollowing?'💔 เลิกติดตาม':'❤️ ติดตาม'}</button></div>`:''}</div></div>${renderSellerStories(seller.id)}<div class="section-title" style="margin-top:20px"><span>สินค้าทั้งหมด (${publicProducts.length})</span></div><div class="product-grid" id="sellerProductGrid"></div><div class="reviews-section" style="margin-top:24px"><h3>รีวิวผู้ขาย (${reviewData.count}) — เฉลี่ย ${reviewData.average}★</h3>${reviewsHtml}</div>`;renderCards(publicProducts,'sellerProductGrid');goPage('seller');}catch(e){toast(e.message);}}
 
 function canBump(bumpedAt){
   if(!bumpedAt)return true;
@@ -1765,32 +1765,116 @@ async function doDeletePost(id) {
 }
 
 // ============ ROUND 4: Story Feed ============
+// ── Story System (redesigned) ──────────────────────────────
+let _storyGroups = {}, _storyQueue = [], _storyIdx = 0, _storyTimer = null;
+
 async function loadStories() {
   try {
     const stories = await api.getStories();
     const strip = document.getElementById('storyStrip');
     const list = document.getElementById('storyList');
     if (!strip || !list) return;
+    if (!stories.length) { strip.style.display = 'none'; return; }
     strip.style.display = 'flex';
-    list.innerHTML = stories.map(s => `
-      <div class="story-item" onclick="viewStory(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+
+    // group by user
+    _storyGroups = {};
+    stories.forEach(s => {
+      if (!_storyGroups[s.user_id]) _storyGroups[s.user_id] = { ...s, stories: [] };
+      _storyGroups[s.user_id].stories.push(s);
+    });
+
+    list.innerHTML = Object.values(_storyGroups).map(g => `
+      <div class="story-item" onclick="viewStoryGroup(${g.user_id})">
         <div class="story-ring">
-          ${s.image_url ? `<img src="${s.image_url}" class="story-thumb"/>` : `<div class="story-thumb story-text-thumb">${(s.author_name||'?').slice(0,2).toUpperCase()}</div>`}
+          ${g.author_avatar ? `<img src="${imgSrc(g.author_avatar)}" class="story-thumb"/>` : `<div class="story-thumb story-text-thumb">${(g.author_name||'?').slice(0,2).toUpperCase()}</div>`}
         </div>
-        <div class="story-name">${(s.author_name||'').split(' ')[0]}</div>
+        <div class="story-name">${(g.author_name||'').split(' ')[0]}</div>
       </div>`).join('');
   } catch(e) {}
 }
 
-function viewStory(s) {
-  const c = document.getElementById('storyViewerContent');
-  const timeLeft = Math.max(0, Math.floor((new Date(s.expires_at)-Date.now())/3600000));
-  c.innerHTML = `
-    <div style="font-size:13px;color:#aaa;margin-bottom:8px">${s.author_name} · เหลืออีก ${timeLeft} ชม.</div>
-    ${s.image_url ? `<img src="${s.image_url}" style="max-width:100%;max-height:60vh;border-radius:12px;object-fit:contain"/>` : ''}
-    ${s.caption ? `<p style="color:#fff;margin-top:12px;font-size:16px">${s.caption}</p>` : ''}
-    ${state.user && state.user.id === s.user_id ? `<button class="btn btn-danger btn-sm" style="margin-top:16px" onclick="doDeleteStory(${s.id})">🗑️ ลบ Story</button>` : ''}`;
+function viewStoryGroup(userId) {
+  const group = _storyGroups[userId];
+  if (!group) return;
+  _storyQueue = group.stories;
+  _storyIdx = 0;
   openOverlay('storyOverlay');
+  _renderStory();
+}
+
+function _renderStory() {
+  if (_storyTimer) { clearTimeout(_storyTimer); _storyTimer = null; }
+  const s = _storyQueue[_storyIdx];
+  if (!s) { closeStoryViewer(); return; }
+  const total = _storyQueue.length;
+  const timeLeft = Math.max(0, Math.floor((new Date(s.expires_at) - Date.now()) / 3600000));
+  const canDelete = state.user && state.user.id === s.user_id;
+
+  const bars = Array.from({length: total}, (_, i) => `
+    <div class="story-progress-bar">
+      <div class="story-progress-fill" id="spb-${i}" style="width:${i < _storyIdx ? '100%' : '0%'}"></div>
+    </div>`).join('');
+
+  document.getElementById('storyViewerContent').innerHTML = `
+    <div class="story-progress-track">${bars}</div>
+    <div class="story-user-row">
+      <div class="story-avatar" style="width:36px;height:36px;font-size:12px">${(s.author_name||'?').slice(0,2).toUpperCase()}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px;color:#fff">${s.author_name}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.6)">เหลืออีก ${timeLeft} ชม.</div>
+      </div>
+      ${canDelete ? `<button onclick="doDeleteStory(${s.id})" style="background:rgba(255,255,255,.15);border:none;color:#fff;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px">🗑️ ลบ</button>` : ''}
+    </div>
+    <div class="story-media-area" onclick="storyTapNav(event)">
+      ${s.image_url ? `<img src="${s.image_url}" style="width:100%;max-height:62vh;border-radius:14px;object-fit:contain;display:block"/>` : `<div style="height:160px"></div>`}
+      ${s.caption ? `<p style="color:#fff;margin-top:14px;font-size:17px;text-align:center;font-weight:500;text-shadow:0 1px 4px rgba(0,0,0,.6)">${s.caption}</p>` : ''}
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:12px 4px 0;opacity:.4;font-size:12px;color:#fff">
+      <span>${_storyIdx > 0 ? '◀ ก่อนหน้า' : ''}</span>
+      <span>${_storyIdx < total-1 ? 'ถัดไป ▶' : '✕ ปิด'}</span>
+    </div>`;
+
+  // animate progress bar
+  requestAnimationFrame(() => {
+    const fill = document.getElementById(`spb-${_storyIdx}`);
+    if (fill) { fill.style.transition = 'width 5s linear'; fill.style.width = '100%'; }
+  });
+  _storyTimer = setTimeout(() => storyNext(), 5000);
+}
+
+function storyTapNav(e) {
+  const r = e.currentTarget.getBoundingClientRect();
+  if ((e.clientX - r.left) < r.width / 2) storyPrev(); else storyNext();
+}
+function storyNext() {
+  if (_storyTimer) { clearTimeout(_storyTimer); _storyTimer = null; }
+  if (_storyIdx < _storyQueue.length - 1) { _storyIdx++; _renderStory(); }
+  else closeStoryViewer();
+}
+function storyPrev() {
+  if (_storyTimer) { clearTimeout(_storyTimer); _storyTimer = null; }
+  if (_storyIdx > 0) { _storyIdx--; _renderStory(); }
+}
+function closeStoryViewer() {
+  if (_storyTimer) { clearTimeout(_storyTimer); _storyTimer = null; }
+  closeOverlay('storyOverlay');
+}
+
+// stories on seller profile
+function renderSellerStories(sellerId) {
+  const group = _storyGroups[sellerId];
+  if (!group || !group.stories.length) return '';
+  return `<div style="margin:12px 0 4px;font-weight:600;font-size:14px;color:var(--text-sec)">📖 Story ล่าสุด</div>
+    <div class="seller-story-strip">
+      ${group.stories.map((s,i) => `
+        <div style="flex-shrink:0;cursor:pointer" onclick="viewStoryGroup(${sellerId});_storyIdx=${i};_renderStory()">
+          <div class="story-ring" style="width:54px;height:54px">
+            ${s.image_url ? `<img src="${s.image_url}" class="story-thumb" style="width:50px;height:50px"/>` : `<div class="story-thumb story-text-thumb" style="width:50px;height:50px;font-size:14px">${i+1}</div>`}
+          </div>
+          <div class="story-name">${s.caption ? s.caption.slice(0,8)+'…' : `Story ${i+1}`}</div>
+        </div>`).join('')}
+    </div>`;
 }
 
 function openAddStory() {

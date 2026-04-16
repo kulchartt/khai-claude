@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260419m"/>
+  <link rel="stylesheet" href="css/style.css?v=20260419n"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -318,10 +318,10 @@
 </div>
 
 <!-- Story Viewer Overlay -->
-<div class="overlay" id="storyOverlay" style="background:rgba(0,0,0,.95)">
-  <div style="position:relative;width:100%;max-width:420px;margin:auto;height:100vh;display:flex;flex-direction:column;justify-content:center">
-    <button onclick="closeOverlay('storyOverlay')" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer">✕</button>
-    <div id="storyViewerContent" style="text-align:center;padding:20px"></div>
+<div class="overlay" id="storyOverlay" style="background:#000;padding:0">
+  <div class="story-fullscreen">
+    <button onclick="closeStoryViewer()" class="story-close-btn">✕</button>
+    <div id="storyViewerContent" style="display:flex;flex-direction:column;height:100%"></div>
   </div>
 </div>
 
@@ -881,8 +881,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260419m"></script>
-<script src="js/app.js?v=20260419m"></script>
+<script src="js/api.js?v=20260419n"></script>
+<script src="js/app.js?v=20260419n"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

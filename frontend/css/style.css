@@ -565,3 +565,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .community-cats{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
 .community-cats::-webkit-scrollbar{display:none}
 .community-cat-badge{font-size:11px;background:var(--green-light);color:var(--green);border-radius:99px;padding:2px 8px;font-weight:600;white-space:nowrap}
+/* Story Viewer */
+.story-fullscreen{position:relative;width:100%;max-width:420px;height:100vh;margin:auto;display:flex;flex-direction:column;padding:16px 12px;box-sizing:border-box}
+.story-close-btn{position:absolute;top:14px;right:14px;background:rgba(255,255,255,.18);border:none;color:#fff;font-size:18px;width:34px;height:34px;border-radius:50%;cursor:pointer;z-index:10;line-height:1}
+.story-progress-track{display:flex;gap:3px;margin-bottom:12px;padding-right:44px}
+.story-progress-bar{flex:1;height:3px;background:rgba(255,255,255,.3);border-radius:2px;overflow:hidden}
+.story-progress-fill{height:100%;background:#fff;border-radius:2px;width:0%}
+.story-user-row{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.story-media-area{flex:1;display:flex;flex-direction:column;justify-content:center;cursor:pointer;position:relative;user-select:none}
+.story-viewed .story-ring{background:linear-gradient(135deg,#9ca3af,#d1d5db)}
+/* Seller profile mini-story strip */
+.seller-story-strip{display:flex;gap:10px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none}
+.seller-story-strip::-webkit-scrollbar{display:none}
