@@ -29,7 +29,14 @@ router.post('/register-challenge', authMiddleware, async (req, res) => {
     await db.query('DELETE FROM webauthn_challenges WHERE user_id = $1 AND type = $2', [user.id, 'registration']);
     await db.query('INSERT INTO webauthn_challenges (user_id, challenge, type) VALUES ($1,$2,$3)', [user.id, options.challenge, 'registration']);
 
-    res.json(options);
+    // SimpleWebAuthn v9 returns user.id as a Buffer — convert to base64url string for JSON transport
+    const safeOptions = JSON.parse(JSON.stringify(options, (key, val) => {
+      if (val && val.type === 'Buffer' && Array.isArray(val.data)) {
+        return Buffer.from(val.data).toString('base64url');
+      }
+      return val;
+    }));
+    res.json(safeOptions);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -84,7 +91,11 @@ router.post('/login-challenge', async (req, res) => {
     await db.query('DELETE FROM webauthn_challenges WHERE user_id = $1 AND type = $2', [user.id, 'authentication']);
     await db.query('INSERT INTO webauthn_challenges (user_id, challenge, type) VALUES ($1,$2,$3)', [user.id, options.challenge, 'authentication']);
 
-    res.json({ options, userId: user.id });
+    const safeOpts = JSON.parse(JSON.stringify(options, (key, val) => {
+      if (val && val.type === 'Buffer' && Array.isArray(val.data)) return Buffer.from(val.data).toString('base64url');
+      return val;
+    }));
+    res.json({ options: safeOpts, userId: user.id });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
