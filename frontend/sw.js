@@ -1,5 +1,5 @@
 // sw.js — network-first for everything, cache only as offline fallback
-const CACHE = 'mueasong-v9';
+const CACHE = 'mueasong-v10';
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -24,8 +24,11 @@ self.addEventListener('fetch', e => {
   if (url.pathname.startsWith('/api/')) return;
 
   // Never cache HTML — always fetch fresh so new version strings load new JS/CSS
-  if (url.pathname === '/' || url.pathname.endsWith('.html')) {
-    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+  // Covers: '/', any .html file, and GitHub Pages subpaths like '/khai-claude/'
+  if (url.pathname === '/' || url.pathname.endsWith('.html') || url.pathname.endsWith('/')) {
+    e.respondWith(
+      fetch(e.request, { cache: 'no-store' }).catch(() => caches.match(e.request))
+    );
     return;
   }
 
