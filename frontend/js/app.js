@@ -995,18 +995,22 @@ function previewImages(input) {
   const grid = document.getElementById('imgPreviewGrid');
   const wrap = document.getElementById('imgUploadWrap');
   grid.innerHTML = '';
-  if (!input.files.length) return;
+  if (!input.files.length) {
+    wrap.innerHTML = `<div style="font-size:48px;margin-bottom:8px">📸</div><div style="font-size:15px;font-weight:600;color:var(--green);margin-bottom:4px">กดที่นี่เพื่อเลือกรูป</div><div style="font-size:12px;color:var(--text-hint)">เลือกได้สูงสุด 10 รูป · JPG, PNG ไม่เกิน 5MB/รูป</div>`;
+    return;
+  }
+  wrap.innerHTML = `<div style="font-size:15px;font-weight:600;color:var(--green)">📷 เลือกแล้ว ${input.files.length} รูป</div><div style="font-size:12px;color:var(--text-hint);margin-top:4px">กดเพื่อเพิ่มรูปอีก</div>`;
   Array.from(input.files).forEach((file, i) => {
     const reader = new FileReader();
     reader.onload = e => {
       const div = document.createElement('div');
       div.className = 'img-preview-item' + (i === 0 ? ' main-img' : '');
-      div.innerHTML = `<img src="${e.target.result}" alt="preview"/><button class="remove-img" onclick="removePreviewImg(${i})">×</button>`;
+      div.style.cssText = 'position:relative';
+      div.innerHTML = `<img src="${e.target.result}" alt="preview"/><button class="remove-img" onclick="removePreviewImg(${i})" title="ลบรูปนี้">×</button>`;
       grid.appendChild(div);
     };
     reader.readAsDataURL(file);
   });
-  wrap.querySelector('.img-upload-placeholder').innerHTML = `📷 เลือกแล้ว ${input.files.length} รูป <span style="font-size:12px;color:var(--green)">กดเพื่อเพิ่ม</span>`;
 }
 
 function removePreviewImg(index) {
@@ -1015,6 +1019,31 @@ function removePreviewImg(index) {
   Array.from(input.files).forEach((f, i) => { if (i !== index) dt.items.add(f); });
   input.files = dt.files;
   previewImages(input);
+}
+
+function previewEditImages(input) {
+  const preview = document.getElementById('eImgNewPreview');
+  preview.innerHTML = '';
+  if (!input.files.length) return;
+  Array.from(input.files).forEach((file, i) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const div = document.createElement('div');
+      div.className = 'edit-img-item';
+      div.id = `enew-${i}`;
+      div.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover"/><button class="edit-img-del" onclick="removeEditNewImg(${i})" title="ลบรูปนี้">✕</button>`;
+      preview.appendChild(div);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeEditNewImg(index) {
+  const input = document.getElementById('eImgNew');
+  const dt = new DataTransfer();
+  Array.from(input.files).forEach((f, i) => { if (i !== index) dt.items.add(f); });
+  input.files = dt.files;
+  previewEditImages(input);
 }
 
 function buildGallery(product) {
