@@ -2307,7 +2307,7 @@ function toggleMeetupBtn(src) {
   const sel = document.getElementById(src === 's' ? 'sDel' : 'eDel');
   const row = document.getElementById(src === 's' ? 'sMeetupRow' : 'eMeetupRow');
   if (!sel || !row) return;
-  row.style.display = sel.value !== 'shipping' ? '' : 'none';
+  row.style.display = sel.value !== 'shipping' ? 'block' : 'none';
 }
 
 function _initGMap(container, lat, lng, draggable, onPick) {
