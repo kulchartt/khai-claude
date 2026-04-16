@@ -695,11 +695,10 @@ async function openNotifications(){if(!state.user){openOverlay('loginOverlay');r
 async function readAllNotifs(){try{await api.readAllNotifications();state.notifCount=0;updateBadge('notifBadge',0);openNotifications();}catch(e){toast(e.message);}}
 async function delNotif(id){try{await api.deleteNotification(id);openNotifications();}catch(e){toast(e.message);}}
 function clickNotif(id,link,type){
-  if(link&&link.includes('chat')){openChatList();return;}
-  if(type==='order'||type==='payment'||(link&&link.includes('order'))){openProfile();profileTab('buying');return;}
-  if(type==='chat'){openChatList();return;}
+  if(type==='chat'||(link&&link.includes('chat'))){openChatList();return;}
+  if(type==='order'||type==='payment'||(link&&link.includes('order'))){openProfile();profileTab('orders');return;}
   if(link&&link.match(/product[/-](\d+)/)){const m=link.match(/product[/-](\d+)/);if(m)openDetail(parseInt(m[1]));return;}
-  if(type==='system'||type==='promo'||!type){openProfile();profileTab('notifications');return;}
+  goPage('notifications');
 }
 
 async function openAdmin(){if(!state.user?.is_admin){toast('ไม่มีสิทธิ์เข้าถึง');return;}try{const stats=await api.adminStats();document.getElementById('adminContent').innerHTML=`<h2 style="font-size:20px;font-weight:700;margin-bottom:20px">🛡️ Admin Panel</h2><div class="stat-cards"><div class="stat-card"><div class="stat-card-n">${stats.users}</div><div class="stat-card-l">ผู้ใช้ทั้งหมด</div></div><div class="stat-card"><div class="stat-card-n">${stats.products}</div><div class="stat-card-l">สินค้าทั้งหมด</div></div><div class="stat-card"><div class="stat-card-n">${stats.available}</div><div class="stat-card-l">วางขายอยู่</div></div><div class="stat-card"><div class="stat-card-n">${stats.sold}</div><div class="stat-card-l">ขายแล้ว</div></div><div class="stat-card"><div class="stat-card-n">${stats.orders}</div><div class="stat-card-l">คำสั่งซื้อ</div></div><div class="stat-card"><div class="stat-card-n">฿${Number(stats.revenue).toLocaleString()}</div><div class="stat-card-l">ยอดขายรวม</div></div></div><div class="admin-tabs"><div class="admin-tab on" id="atab-users" onclick="adminTab('users')">👤 ผู้ใช้งาน</div><div class="admin-tab" id="atab-products" onclick="adminTab('products')">📦 สินค้า</div><div class="admin-tab" id="atab-disputes" onclick="adminTab('disputes')">🚨 ข้อพิพาท</div><div class="admin-tab" id="atab-verify-requests" onclick="adminTab('verify-requests')">📋 คำขอ Verified</div><div class="admin-tab" id="atab-feedback" onclick="adminTab('feedback')">💬 Feedback</div><div class="admin-tab" id="atab-reports" onclick="adminTab('reports')">🚩 รายงาน</div></div><div id="adminTabContent"></div>`;goPage('admin');adminTab('users');}catch(e){toast(e.message);}}
@@ -1001,7 +1000,7 @@ async function doSellerCancel(id){
 
 async function doShipOrder(id, shipping_status){
   if(shipping_status==='preparing'){
-    try{const res=await api.shipOrder(id,'preparing',null);toast(res.message,'#1D9E75');profileTab('selling');}catch(e){toast(e.message);}
+    try{const res=await api.shipOrder(id,'preparing');toast(res.message,'#1D9E75');profileTab('selling');}catch(e){toast(e.message);}
     return;
   }
   window._shipOrderId=id;
@@ -1046,7 +1045,7 @@ function _trackingUrl(carrier, trackingNumber){
     'DHL':'https://www.dhl.com/th-th/home/tracking/tracking-parcel.html?submit=1&tracking-id='+t,
     'SCG':'https://scgexpress.co.th/'+t,
   };
-  return map[carrier]||'https://track.thailandpost.co.th/tracking/?barcode='+t;
+  return map[carrier]||'https://www.google.com/search?q='+encodeURIComponent((carrier||'tracking')+' '+trackingNumber);
 }
 
 // ===== AI Features =====

@@ -10,7 +10,8 @@ const getAI = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 // POST /api/ai/description — AI ช่วยเขียนรายละเอียดสินค้า
 router.post('/description', authMiddleware, async (req, res) => {
   try {
-    const { title, category, condition, existing } = req.body;
+    const { title, category, condition } = req.body;
+    const existing = (req.body.existing || '').slice(0, 500);
     if (!title) return res.status(400).json({ error: 'กรุณาระบุชื่อสินค้า' });
 
     const ai = getAI();
@@ -72,10 +73,10 @@ router.get('/price-suggest', authMiddleware, async (req, res) => {
     const avg = Math.round(prices.reduce((s, p) => s + p, 0) / prices.length);
     const median = prices[Math.floor(prices.length / 2)];
 
-    // แนะนำราคาตามสภาพ
+    // แนะนำราคาตามสภาพ (ตรงกับ option ใน sell/edit form)
     let suggested = avg;
-    if (condition === 'มือสองใหม่') suggested = Math.round(avg * 1.1);
-    else if (condition === 'สภาพดี') suggested = avg;
+    if (['มือหนึ่ง (ใหม่)', 'เหมือนใหม่'].includes(condition)) suggested = Math.round(avg * 1.15);
+    else if (condition === 'สภาพดี') suggested = Math.round(avg * 1.0);
     else if (condition === 'สภาพพอใช้') suggested = Math.round(avg * 0.8);
     else if (condition === 'ต้องซ่อม') suggested = Math.round(avg * 0.5);
 
