@@ -176,4 +176,50 @@ router.patch('/verify-requests/:id', adminOnly, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /api/admin/backup — export all critical tables as downloadable JSON
+router.get('/backup', adminOnly, async (req, res) => {
+  try {
+    const db = getDB();
+
+    const [
+      usersResult,
+      productsResult,
+      ordersResult,
+      orderItemsResult,
+      reviewsResult,
+      webauthnResult,
+      offersResult,
+      addressesResult,
+    ] = await Promise.all([
+      db.query('SELECT id, name, email, rating, review_count, is_admin, is_banned, is_verified, avatar, created_at FROM users'),
+      db.query('SELECT * FROM products'),
+      db.query('SELECT * FROM orders'),
+      db.query('SELECT * FROM order_items'),
+      db.query('SELECT * FROM reviews'),
+      db.query('SELECT id, user_id, credential_id, counter, created_at FROM webauthn_credentials'),
+      db.query('SELECT * FROM offers'),
+      db.query('SELECT * FROM addresses'),
+    ]);
+
+    const backup = {
+      exported_at: new Date().toISOString(),
+      tables: {
+        users: usersResult.rows,
+        products: productsResult.rows,
+        orders: ordersResult.rows,
+        order_items: orderItemsResult.rows,
+        reviews: reviewsResult.rows,
+        webauthn_credentials: webauthnResult.rows,
+        offers: offersResult.rows,
+        addresses: addressesResult.rows,
+      },
+    };
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Disposition', `attachment; filename="backup_${dateStr}.json"`);
+    res.setHeader('Content-Type', 'application/json');
+    res.json(backup);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;

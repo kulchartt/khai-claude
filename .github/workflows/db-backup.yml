@@ -1,0 +1,54 @@
+# GitHub Actions: Automated PostgreSQL Backup
+# Runs nightly at 2:00 AM Bangkok time (19:00 UTC)
+#
+# SETUP REQUIRED:
+#   Add DATABASE_URL to GitHub repo secrets:
+#   Settings → Secrets and variables → Actions → New repository secret
+#   Name: DATABASE_URL
+#   Value: postgresql://user:pass@host:5432/dbname  (copy from Railway dashboard)
+
+name: DB Backup
+
+on:
+  schedule:
+    - cron: '0 19 * * *'   # 02:00 Bangkok (UTC+7) = 19:00 UTC
+  workflow_dispatch:         # Allow manual trigger from GitHub Actions UI
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install postgresql-client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+
+      - name: Run pg_dump and compress
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          DATE=$(date -u +%Y%m%d)
+          FILENAME="backup_$(date -u +%Y%m%d_%H%M%S).sql.gz"
+          echo "BACKUP_FILE=$FILENAME" >> $GITHUB_ENV
+          echo "BACKUP_DATE=$DATE" >> $GITHUB_ENV
+          pg_dump "$DATABASE_URL" --no-owner --no-privileges -Fp | gzip > "$FILENAME"
+          echo "Backup created: $FILENAME"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ env.BACKUP_DATE }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 90
+
+      - name: Summary
+        run: |
+          SIZE=$(du -sh "$BACKUP_FILE" | cut -f1)
+          echo "## DB Backup Complete" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| File | \`$BACKUP_FILE\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Size | $SIZE |" >> $GITHUB_STEP_SUMMARY
+          echo "| Time (UTC) | $(date -u '+%Y-%m-%d %H:%M:%S') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Retention | 90 days |" >> $GITHUB_STEP_SUMMARY
