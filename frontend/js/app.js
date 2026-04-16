@@ -1868,22 +1868,17 @@ async function loadCommunity() {
     if (!posts.length) { list.innerHTML = '<div class="empty-state"><span class="empty-state-icon">📋</span><h3>ยังไม่มีโพสต์</h3><p>เป็นคนแรกที่โพสต์ในหมวดนี้!</p></div>'; return; }
     list.innerHTML = posts.map(p => `
       <div class="community-card" onclick="openPost(${p.id})">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <div class="story-avatar" style="width:28px;height:28px;font-size:11px">${(p.author_name||'?').slice(0,2).toUpperCase()}</div>
-          <div style="flex:1;font-size:12px;font-weight:600">${p.author_name}</div>
-          <span style="font-size:10px;color:var(--text-hint)">${new Date(p.created_at).toLocaleDateString('th',{month:'short',day:'numeric'})}</span>
-          <span class="community-cat-badge">${p.category}</span>
-        </div>
-        <div style="display:flex;gap:8px;align-items:flex-start">
+        <div style="display:flex;align-items:center;gap:10px">
+          ${p.image_url ? `<img src="${p.image_url}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0"/>` : `<div style="width:48px;height:48px;border-radius:6px;background:var(--bg-sec);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">💬</div>`}
           <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:14px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.title}</div>
-            <div style="font-size:12px;color:var(--text-sec);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">${p.content}</div>
-            <div style="display:flex;gap:12px;font-size:11px;color:var(--text-hint);margin-top:5px">
-              <span>❤️ ${p.like_count}</span>
-              <span>💬 ${p.comment_count}</span>
+            <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">${p.title}</div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="community-cat-badge">${p.category}</span>
+              <span style="font-size:11px;color:var(--text-hint)">${p.author_name}</span>
+              <span style="font-size:11px;color:var(--text-hint)">· ❤️ ${p.like_count} · 💬 ${p.comment_count}</span>
+              <span style="font-size:11px;color:var(--text-hint);margin-left:auto">${new Date(p.created_at).toLocaleDateString('th',{month:'short',day:'numeric'})}</span>
             </div>
           </div>
-          ${p.image_url ? `<img src="${p.image_url}" style="width:60px;height:60px;border-radius:6px;object-fit:cover;flex-shrink:0"/>` : ''}
         </div>
       </div>`).join('');
   } catch(e) { toast(e.message); }

@@ -559,8 +559,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .story-text-thumb{width:54px;height:54px;border-radius:50%;background:var(--bg-sec);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;border:2px solid var(--bg-card)}
 .story-avatar{width:38px;height:38px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
 .story-name{font-size:10px;color:var(--text-sec);max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
-.community-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
-.community-card{background:var(--bg-card);border-radius:var(--radius-lg);padding:10px 12px;border:1px solid var(--border);cursor:pointer;transition:.15s}
+.community-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.community-card{background:var(--bg-card);border-radius:var(--radius);padding:8px 10px;border:1px solid var(--border);cursor:pointer;transition:.15s}
 .community-card:hover{border-color:var(--green);box-shadow:0 2px 12px rgba(0,0,0,.08)}
 .community-cats{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
 .community-cats::-webkit-scrollbar{display:none}
