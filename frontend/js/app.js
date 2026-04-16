@@ -1868,24 +1868,22 @@ async function loadCommunity() {
     if (!posts.length) { list.innerHTML = '<div class="empty-state"><span class="empty-state-icon">📋</span><h3>ยังไม่มีโพสต์</h3><p>เป็นคนแรกที่โพสต์ในหมวดนี้!</p></div>'; return; }
     list.innerHTML = posts.map(p => `
       <div class="community-card" onclick="openPost(${p.id})">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <div class="story-avatar">${(p.author_name||'?').slice(0,2).toUpperCase()}</div>
-          <div style="flex:1">
-            <div style="font-weight:600;font-size:13px">${p.author_name}</div>
-            <div style="font-size:11px;color:var(--text-hint)">${new Date(p.created_at).toLocaleDateString('th',{year:'numeric',month:'short',day:'numeric'})}</div>
-          </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div class="story-avatar" style="width:28px;height:28px;font-size:11px">${(p.author_name||'?').slice(0,2).toUpperCase()}</div>
+          <div style="flex:1;font-size:12px;font-weight:600">${p.author_name}</div>
+          <span style="font-size:10px;color:var(--text-hint)">${new Date(p.created_at).toLocaleDateString('th',{month:'short',day:'numeric'})}</span>
           <span class="community-cat-badge">${p.category}</span>
         </div>
-        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px">
+        <div style="display:flex;gap:8px;align-items:flex-start">
           <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:15px;margin-bottom:4px">${p.title}</div>
-            <div style="font-size:13px;color:var(--text-sec);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${p.content}</div>
+            <div style="font-weight:700;font-size:14px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.title}</div>
+            <div style="font-size:12px;color:var(--text-sec);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">${p.content}</div>
+            <div style="display:flex;gap:12px;font-size:11px;color:var(--text-hint);margin-top:5px">
+              <span>❤️ ${p.like_count}</span>
+              <span>💬 ${p.comment_count}</span>
+            </div>
           </div>
-          ${p.image_url ? `<img src="${p.image_url}" style="width:72px;height:72px;border-radius:8px;object-fit:cover;flex-shrink:0"/>` : ''}
-        </div>
-        <div style="display:flex;gap:16px;font-size:12px;color:var(--text-hint)">
-          <span>❤️ ${p.like_count} ถูกใจ</span>
-          <span>💬 ${p.comment_count} ความคิดเห็น</span>
+          ${p.image_url ? `<img src="${p.image_url}" style="width:60px;height:60px;border-radius:6px;object-fit:cover;flex-shrink:0"/>` : ''}
         </div>
       </div>`).join('');
   } catch(e) { toast(e.message); }
