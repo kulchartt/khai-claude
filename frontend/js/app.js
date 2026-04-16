@@ -484,7 +484,7 @@ async function openEditModal(id){
     if (p.meetup_lat && p.meetup_lng) {
       _meetupData.e = { lat: p.meetup_lat, lng: p.meetup_lng, note: p.meetup_note||'' };
       const info = document.getElementById('eMeetupInfo');
-      if (info) { info.style.display=''; info.textContent=`📍 ${Number(p.meetup_lat).toFixed(5)}, ${Number(p.meetup_lng).toFixed(5)}${p.meetup_note?' · '+p.meetup_note:''}`; }
+      if (info) { info.style.display='block'; info.textContent=`📍 ${Number(p.meetup_lat).toFixed(5)}, ${Number(p.meetup_lng).toFixed(5)}${p.meetup_note?' · '+p.meetup_note:''}`; }
     } else {
       const info = document.getElementById('eMeetupInfo');
       if (info) { info.style.display='none'; info.textContent=''; }
@@ -606,7 +606,7 @@ async function doLogin(){const email=document.getElementById('loginEmail').value
 async function doRegister(){const name=document.getElementById('regName').value.trim(),email=document.getElementById('regEmail').value.trim(),pass=document.getElementById('regPass').value;if(!name||!email||!pass){toast('กรุณากรอกข้อมูลให้ครบ');return;}try{const res=await api.register(name,email,pass);localStorage.setItem('token',res.token);localStorage.setItem('user',JSON.stringify(res.user));state.user=res.user;state.token=res.token;closeOverlay('loginOverlay');updateNav();toast('สมัครสำเร็จ! ยินดีต้อนรับ 🎉','#1D9E75');connectSocket();}catch(e){toast(e.message);}}
 function doLogout(){if(socket){socket.disconnect();socket=null;}localStorage.removeItem('token');localStorage.removeItem('user');state.user=null;state.token=null;state.cartCount=0;state.wlCount=0;state.notifCount=0;state.chatCount=0;state.wlIds=[];['cartBadge','wlBadge','notifBadge','chatBadge'].forEach(id=>updateBadge(id,0));updateNav();goPage('home');toast('ออกจากระบบแล้ว');}
 function openSell(){if(!state.user){toast('กรุณาเข้าสู่ระบบก่อน');openOverlay('loginOverlay');return;}_clearAccFiles('sImg');_meetupData.s=null;const si=document.getElementById('sMeetupInfo');if(si){si.style.display='none';si.textContent='';}const sDel=document.getElementById('sDel');if(sDel)sDel.value='both';const sr=document.getElementById('sMeetupRow');if(sr)sr.style.display='block';openOverlay('sellOverlay');}
-async function doSell(){const title=document.getElementById('sTitle').value.trim(),price=document.getElementById('sPrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}const fd=new FormData();fd.append('title',title);fd.append('price',price);fd.append('category',document.getElementById('sCat').value);fd.append('condition',document.getElementById('sCond').value);fd.append('description',document.getElementById('sDesc').value);fd.append('location',document.getElementById('sLoc').value);fd.append('delivery_method',document.getElementById('sDel').value);const isDraft=document.getElementById('sellDraft')?.checked;const publishAt=document.getElementById('sellPublishAt')?.value;if(isDraft)fd.append('is_draft','1');if(publishAt)fd.append('publish_at',publishAt);const watermark=document.getElementById('sellWatermark')?.checked?'1':'0';fd.append('watermark',watermark);if(_meetupData.s){fd.append('meetup_lat',_meetupData.s.lat);fd.append('meetup_lng',_meetupData.s.lng);fd.append('meetup_note',_meetupData.s.note||'');}const imgs=document.getElementById('sImg').files;for(const img of imgs)fd.append('images',img);try{
+async function doSell(){const title=document.getElementById('sTitle').value.trim(),price=document.getElementById('sPrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}const delMethod=document.getElementById('sDel').value;if(delMethod==='pickup'&&!_meetupData.s){toast('กรุณาเลือกจุดนัดรับบนแผนที่ก่อน 📍');return;}const fd=new FormData();fd.append('title',title);fd.append('price',price);fd.append('category',document.getElementById('sCat').value);fd.append('condition',document.getElementById('sCond').value);fd.append('description',document.getElementById('sDesc').value);fd.append('location',document.getElementById('sLoc').value);fd.append('delivery_method',document.getElementById('sDel').value);const isDraft=document.getElementById('sellDraft')?.checked;const publishAt=document.getElementById('sellPublishAt')?.value;if(isDraft)fd.append('is_draft','1');if(publishAt)fd.append('publish_at',publishAt);const watermark=document.getElementById('sellWatermark')?.checked?'1':'0';fd.append('watermark',watermark);if(_meetupData.s){fd.append('meetup_lat',_meetupData.s.lat);fd.append('meetup_lng',_meetupData.s.lng);fd.append('meetup_note',_meetupData.s.note||'');}const imgs=document.getElementById('sImg').files;for(const img of imgs)fd.append('images',img);try{
     await api.createProduct(fd);
     closeOverlay('sellOverlay');
     ['sTitle','sPrice','sDesc','sLoc'].forEach(i=>document.getElementById(i).value='');
@@ -2423,7 +2423,7 @@ async function confirmMeetupLocation() {
   // แสดง address จาก Geocoding API
   const info = document.getElementById(src + 'MeetupInfo');
   if (info) {
-    info.style.display = '';
+    info.style.display = 'block';
     info.textContent = '📍 กำลังโหลดที่อยู่...';
     const addr = await _reverseGeocode(_meetupLatLng.lat, _meetupLatLng.lng);
     info.textContent = `📍 ${addr || `${_meetupLatLng.lat.toFixed(5)}, ${_meetupLatLng.lng.toFixed(5)}`}${note ? ' · ' + note : ''}`;
