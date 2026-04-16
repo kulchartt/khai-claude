@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260419w"/>
+  <link rel="stylesheet" href="css/style.css?v=20260419x"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -553,8 +553,9 @@
       </label>
       <input type="file" id="eImgNew" accept="image/*" multiple style="display:none" onchange="previewEditImages(this)"/>
       <div id="eImgNewPreview" class="img-preview-grid" style="margin-top:8px"></div>
-      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-sec);margin-top:8px;cursor:pointer">
-        <input type="checkbox" id="eWatermark"/> 🔏 ใส่ลายน้ำรูปที่เพิ่มใหม่
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-sec);margin-top:8px;cursor:pointer;user-select:none">
+        <input type="checkbox" id="eWatermark" style="width:14px;height:14px;margin:0;flex-shrink:0;accent-color:var(--green);cursor:pointer"/>
+        <span>🔏 ใส่ลายน้ำรูปที่เพิ่มใหม่</span>
       </label>
     </div>
 
@@ -905,8 +906,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260419w"></script>
-<script src="js/app.js?v=20260419w"></script>
+<script src="js/api.js?v=20260419x"></script>
+<script src="js/app.js?v=20260419x"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
