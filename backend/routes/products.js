@@ -158,10 +158,16 @@ router.put('/:id', authMiddleware, uploadMiddleware, async (req, res) => {
     if (req.files && req.files.length > 0) {
       const { rows: mo } = await db.query('SELECT MAX(sort_order) as m FROM product_images WHERE product_id = $1', [req.params.id]);
       const maxOrder = mo[0].m || 0;
+      const uploadOptions = { folder: 'mueasong/products' };
+      if (req.body.watermark === '1') {
+        uploadOptions.transformation = [
+          { overlay: { font_family: 'Arial', font_size: 13, font_weight: 'normal', text: 'PloiKhong' },
+            gravity: 'south_east', x: 6, y: 6, opacity: 35, color: 'white' }
+        ];
+      }
       for (let i = 0; i < req.files.length; i++) {
-        const result = await uploadToCloudinary(req.files[i].buffer);
+        const result = await uploadToCloudinary(req.files[i].buffer, uploadOptions);
         const url = result.secure_url;
-        if (i === 0 && !product.image_url) firstImage = url;
         if (i === 0) firstImage = url;
         await db.query('INSERT INTO product_images (product_id, url, sort_order) VALUES ($1,$2,$3)', [req.params.id, url, maxOrder + i + 1]);
       }

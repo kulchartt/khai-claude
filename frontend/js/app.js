@@ -531,6 +531,8 @@ async function doEditProduct(){
       fd.append('location',document.getElementById('eLoc').value);
       fd.append('status',document.getElementById('eStatus').value);
       fd.append('delivery_method',document.getElementById('eDel').value);
+      const wm = document.getElementById('eWatermark')?.checked ? '1' : '0';
+      fd.append('watermark', wm);
       Array.from(newFiles).forEach(f => fd.append('images',f));
       await api.req('PUT','/api/products/'+id,fd,true);
     } else {
