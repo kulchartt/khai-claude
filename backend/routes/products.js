@@ -168,7 +168,7 @@ router.put('/:id', authMiddleware, uploadMiddleware, async (req, res) => {
       for (let i = 0; i < req.files.length; i++) {
         const result = await uploadToCloudinary(req.files[i].buffer, uploadOptions);
         const url = result.secure_url;
-        if (i === 0) firstImage = url;
+        if (i === 0 && !firstImage) firstImage = url; // อัปเดต cover เฉพาะตอนยังไม่มีรูปเดิม
         await db.query('INSERT INTO product_images (product_id, url, sort_order) VALUES ($1,$2,$3)', [req.params.id, url, maxOrder + i + 1]);
       }
     }
