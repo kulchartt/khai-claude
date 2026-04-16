@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260419u"/>
+  <link rel="stylesheet" href="css/style.css?v=20260419v"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -257,8 +257,8 @@
   </div>
 
   <div id="page-community" class="page">
-    <div style="padding:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="max-width:680px;margin:0 auto;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <h2 style="font-size:20px;font-weight:700">📋 ชุมชน</h2>
         <button class="btn btn-g btn-sm" onclick="openNewPost()">✏️ โพสต์ใหม่</button>
       </div>
@@ -902,8 +902,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260419u"></script>
-<script src="js/app.js?v=20260419u"></script>
+<script src="js/api.js?v=20260419v"></script>
+<script src="js/app.js?v=20260419v"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
