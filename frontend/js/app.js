@@ -2507,11 +2507,15 @@ async function loginWithBiometric() {
   if (!email) { toast('กรุณากรอก Email ก่อน'); emailInput?.focus(); return; }
   try {
     toast('กำลังตรวจสอบ Biometric...');
-    const { options, userId } = await api.webauthnLoginChallenge(email);
+    const raw = await api.webauthnLoginChallenge(email);
+    console.log('[WebAuthn login] raw:', JSON.stringify(raw));
+    const options = { ...raw.options };
+    const userId = raw.userId;
     options.challenge = _base64urlToBuffer(options.challenge);
     if (options.allowCredentials) {
       options.allowCredentials = options.allowCredentials.map(c => ({ ...c, id: _base64urlToBuffer(c.id) }));
     }
+    console.log('[WebAuthn login] converted — challenge.len:', options.challenge.length, 'creds:', options.allowCredentials?.length);
     const assertion = await navigator.credentials.get({ publicKey: options });
     const assertionJSON = {
       id: assertion.id,
@@ -2524,6 +2528,7 @@ async function loginWithBiometric() {
         userHandle: assertion.response.userHandle ? _bufferToBase64url(assertion.response.userHandle) : null,
       },
     };
+    console.log('[WebAuthn login] assertionJSON.id:', assertionJSON.id);
     const result = await api.webauthnLogin(assertionJSON, userId);
     localStorage.setItem('token', result.token);
     localStorage.setItem('user', JSON.stringify(result.user));
@@ -2532,8 +2537,8 @@ async function loginWithBiometric() {
     toast('✅ เข้าสู่ระบบสำเร็จ!', '#1D9E75');
     location.reload();
   } catch (e) {
-    if (e.name === 'NotAllowedError') toast('ยกเลิก');
-    else toast(e.message || 'เกิดข้อผิดพลาด');
+    console.error('[WebAuthn login] error:', e);
+    toast('Biometric login: ' + e.name + ' — ' + (e.message || ''));
   }
 }
 
