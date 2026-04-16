@@ -2216,9 +2216,9 @@ async function doUploadCSV() {
   } catch(e) { toast(e.message); }
 }
 
-// ============ ROUND 4: Map Meetup ============
+// ============ ROUND 4: Map Meetup (Google Maps) ============
 let _meetupMap = null, _meetupMarker = null, _meetupLatLng = null, _meetupSource = null;
-const _meetupData = { s: null, e: null }; // เก็บ meetup แยกต่อ form
+const _meetupData = { s: null, e: null };
 
 function toggleMeetupBtn(src) {
   const sel = document.getElementById(src === 's' ? 'sDel' : 'eDel');
@@ -2227,57 +2227,91 @@ function toggleMeetupBtn(src) {
   row.style.display = sel.value !== 'shipping' ? '' : 'none';
 }
 
-function openMeetupMap(src = 's', defaultLat=13.7563, defaultLng=100.5018) {
+function _initGMap(container, lat, lng, draggable, onPick) {
+  const map = new google.maps.Map(container, {
+    center: { lat, lng },
+    zoom: 15,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+  });
+  const marker = new google.maps.Marker({
+    position: { lat, lng },
+    map,
+    draggable,
+    animation: google.maps.Animation.DROP,
+  });
+  if (draggable && onPick) {
+    marker.addListener('dragend', e => onPick(e.latLng.lat(), e.latLng.lng(), marker));
+    map.addListener('click', e => {
+      marker.setPosition(e.latLng);
+      onPick(e.latLng.lat(), e.latLng.lng(), marker);
+    });
+  }
+  return { map, marker };
+}
+
+async function _reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=AIzaSyDdJGqjObnrJtqIoK-9TUjYdIwIMo77MvY&language=th`);
+    const data = await res.json();
+    if (data.results && data.results[0]) return data.results[0].formatted_address;
+  } catch {}
+  return null;
+}
+
+function openMeetupMap(src = 's') {
   _meetupSource = src;
-  // ถ้ามีข้อมูลเดิมให้เปิดที่จุดนั้น
   const prev = _meetupData[src];
-  if (prev) { defaultLat = prev.lat; defaultLng = prev.lng; }
+  const lat = prev?.lat || 13.7563, lng = prev?.lng || 100.5018;
   openOverlay('mapOverlay');
   document.getElementById('meetupNote').value = prev?.note || '';
+  document.getElementById('meetupNote').readOnly = false;
+  const confirmBtn = document.querySelector('#mapOverlay .btn-g');
+  if (confirmBtn) confirmBtn.style.display = '';
   setTimeout(() => {
     const container = document.getElementById('meetupMap');
-    if (!container) return;
-    if (_meetupMap) { _meetupMap.remove(); _meetupMap = null; }
-    _meetupMap = L.map('meetupMap').setView([defaultLat, defaultLng], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(_meetupMap);
-    _meetupMarker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(_meetupMap);
-    _meetupLatLng = { lat: defaultLat, lng: defaultLng };
-    _meetupMarker.on('dragend', e => { _meetupLatLng = e.target.getLatLng(); });
-    _meetupMap.on('click', e => {
-      _meetupLatLng = e.latlng;
-      _meetupMarker.setLatLng(e.latlng);
+    if (!container || !window.google) return;
+    container.innerHTML = '';
+    _meetupLatLng = { lat, lng };
+    const { map, marker } = _initGMap(container, lat, lng, true, (la, lo) => {
+      _meetupLatLng = { lat: la, lng: lo };
     });
+    _meetupMap = map; _meetupMarker = marker;
   }, 300);
 }
 
-function confirmMeetupLocation() {
+async function confirmMeetupLocation() {
   if (!_meetupLatLng) { toast('กรุณาเลือกจุดบนแผนที่'); return; }
   const note = document.getElementById('meetupNote').value.trim();
   const src = _meetupSource || 's';
   _meetupData[src] = { lat: _meetupLatLng.lat, lng: _meetupLatLng.lng, note };
-  // อัปเดต UI indicator
+  closeOverlay('mapOverlay');
+  // แสดง address จาก Geocoding API
   const info = document.getElementById(src + 'MeetupInfo');
   if (info) {
     info.style.display = '';
-    info.textContent = `📍 ${_meetupLatLng.lat.toFixed(5)}, ${_meetupLatLng.lng.toFixed(5)}${note ? ' · ' + note : ''}`;
+    info.textContent = '📍 กำลังโหลดที่อยู่...';
+    const addr = await _reverseGeocode(_meetupLatLng.lat, _meetupLatLng.lng);
+    info.textContent = `📍 ${addr || `${_meetupLatLng.lat.toFixed(5)}, ${_meetupLatLng.lng.toFixed(5)}`}${note ? ' · ' + note : ''}`;
   }
-  closeOverlay('mapOverlay');
-  toast(`📍 บันทึกจุดนัดรับแล้ว`, '#1D9E75');
+  toast('📍 บันทึกจุดนัดรับแล้ว', '#1D9E75');
 }
 
 function openProductMap(lat, lng, note) {
   openOverlay('mapOverlay');
   document.getElementById('meetupNote').value = note || '';
   document.getElementById('meetupNote').readOnly = true;
-  document.querySelector('#mapOverlay .btn-g').style.display = 'none';
+  const confirmBtn = document.querySelector('#mapOverlay .btn-g');
+  if (confirmBtn) confirmBtn.style.display = 'none';
   setTimeout(() => {
     const container = document.getElementById('meetupMap');
-    if (!container) return;
-    if (_meetupMap) { _meetupMap.remove(); _meetupMap = null; }
-    _meetupMap = L.map('meetupMap').setView([lat, lng], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(_meetupMap);
-    L.marker([lat, lng]).addTo(_meetupMap).bindPopup(note || 'จุดนัดรับ').openPopup();
+    if (!container || !window.google) return;
+    container.innerHTML = '';
+    const { map, marker } = _initGMap(container, Number(lat), Number(lng), false);
+    if (note) {
+      const infoWindow = new google.maps.InfoWindow({ content: `<div style="font-size:13px;padding:4px">${note}</div>` });
+      infoWindow.open(map, marker);
+    }
   }, 300);
 }
