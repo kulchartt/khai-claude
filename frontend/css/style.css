@@ -584,3 +584,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .edit-img-del{position:absolute;top:2px;right:2px;width:20px;height:20px;background:rgba(220,38,38,.85);color:#fff;border:none;border-radius:50%;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
 .edit-img-add{display:inline-flex;align-items:center;justify-content:center;width:80px;height:80px;border:2px dashed var(--border);border-radius:8px;font-size:22px;color:var(--text-sec);cursor:pointer;transition:.15s}
 .edit-img-add:hover{border-color:var(--green);color:var(--green)}
+.edit-img-item[draggable]{cursor:grab}
+.edit-img-item[draggable]:active{cursor:grabbing}
+.edit-img-item.drag-over{outline:2px solid var(--green);outline-offset:2px;opacity:.6}
+.edit-img-item.dragging{opacity:.35}
+.edit-img-first-badge{position:absolute;bottom:2px;left:2px;background:var(--green);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;line-height:1.4}

@@ -253,6 +253,26 @@ router.post('/:id/bump', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// PATCH /api/products/:id/images/reorder
+router.patch('/:id/images/reorder', authMiddleware, async (req, res) => {
+  try {
+    const { ids } = req.body; // array of image IDs in new order
+    if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids must be array' });
+    const db = getDB();
+    const { rows: pr } = await db.query('SELECT * FROM products WHERE id=$1', [req.params.id]);
+    if (!pr[0] || pr[0].seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+    for (let i = 0; i < ids.length; i++) {
+      await db.query('UPDATE product_images SET sort_order=$1 WHERE id=$2 AND product_id=$3', [i, ids[i], req.params.id]);
+    }
+    // sync image_url → รูปแรกในลำดับใหม่
+    const { rows: first } = await db.query(
+      'SELECT url FROM product_images WHERE product_id=$1 ORDER BY sort_order ASC LIMIT 1', [req.params.id]
+    );
+    if (first[0]) await db.query('UPDATE products SET image_url=$1 WHERE id=$2', [first[0].url, req.params.id]);
+    res.json({ message: 'อัปเดตลำดับรูปแล้ว' });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 router.delete('/:id/images/:imageId', authMiddleware, async (req, res) => {
   try {
     const db = getDB();

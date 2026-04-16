@@ -478,14 +478,11 @@ async function openEditModal(id){
     document.getElementById('eImgNew').value = '';
     document.getElementById('eImgNewPreview').innerHTML = '';
 
-    // แสดงรูปปัจจุบัน
+    // แสดงรูปปัจจุบัน พร้อม drag & drop
     const grid = document.getElementById('eImgGrid');
     const imgs = p.images && p.images.length ? p.images : (p.image_url ? [{id:null,url:p.image_url}] : []);
-    grid.innerHTML = imgs.map(img => `
-      <div class="edit-img-item" id="eimg-${img.id||'main'}">
-        <img src="${imgSrc(img.url)}" />
-        ${img.id ? `<button class="edit-img-del" onclick="deleteProductImage(${p.id},${img.id})" title="ลบรูปนี้">✕</button>` : ''}
-      </div>`).join('');
+    window._editProductId = p.id;
+    renderEditImgGrid(imgs, p.id);
 
     openOverlay('editOverlay');
   }catch(e){toast(e.message);}
@@ -496,13 +493,9 @@ async function deleteProductImage(productId, imageId){
   try{
     await api.deleteProductImage(productId, imageId);
     toast('ลบรูปแล้ว');
-    const el = document.getElementById(`eimg-${imageId}`);
-    if(el) el.remove();
-    // ถ้าไม่มีรูปเหลือเลย บอกผู้ใช้
-    const grid = document.getElementById('eImgGrid');
-    if(grid && !grid.children.length){
-      grid.innerHTML = '<div style="font-size:12px;color:var(--text-hint);padding:8px 0">ไม่มีรูปภาพ — กดเพิ่มรูปใหม่ด้านล่าง</div>';
-    }
+    // อัปเดต array แล้ว re-render
+    _editImgs = _editImgs.filter(img => img.id !== imageId);
+    renderEditImgGrid(_editImgs, productId);
   }catch(e){toast(e.message);}
 }
 
@@ -1049,6 +1042,73 @@ function removeEditNewImg(index) {
   Array.from(input.files).forEach((f, i) => { if (i !== index) dt.items.add(f); });
   input.files = dt.files;
   previewEditImages(input);
+}
+
+// ── Edit Image Grid with Drag & Drop ──────────────────────
+let _editImgs = [];
+
+function renderEditImgGrid(imgs, productId) {
+  _editImgs = imgs.filter(img => img.id); // เฉพาะรูปที่มี id (จาก DB)
+  const grid = document.getElementById('eImgGrid');
+  if (!_editImgs.length) {
+    grid.innerHTML = '<div style="font-size:12px;color:var(--text-hint);padding:8px 0">ไม่มีรูปภาพ — กดเพิ่มรูปใหม่ด้านล่าง</div>';
+    return;
+  }
+  grid.innerHTML = _editImgs.map((img, i) => `
+    <div class="edit-img-item" id="eimg-${img.id}" draggable="true"
+      data-id="${img.id}"
+      ondragstart="editImgDragStart(event)"
+      ondragover="editImgDragOver(event)"
+      ondrop="editImgDrop(event,${productId})"
+      ondragend="editImgDragEnd(event)">
+      <img src="${imgSrc(img.url)}" style="width:100%;height:100%;object-fit:cover"/>
+      ${i === 0 ? '<span class="edit-img-first-badge">หน้าปก</span>' : ''}
+      <button class="edit-img-del" onclick="deleteProductImage(${productId},${img.id})" title="ลบรูปนี้">✕</button>
+      <div style="position:absolute;bottom:2px;right:2px;font-size:14px;opacity:.5;pointer-events:none">⠿</div>
+    </div>`).join('');
+}
+
+let _dragSrcId = null;
+
+function editImgDragStart(e) {
+  _dragSrcId = e.currentTarget.dataset.id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function editImgDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.edit-img-item').forEach(el => el.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+
+async function editImgDrop(e, productId) {
+  e.preventDefault();
+  const targetId = e.currentTarget.dataset.id;
+  if (!_dragSrcId || _dragSrcId === targetId) return;
+
+  // สลับตำแหน่งใน array
+  const srcIdx = _editImgs.findIndex(img => String(img.id) === String(_dragSrcId));
+  const tgtIdx = _editImgs.findIndex(img => String(img.id) === String(targetId));
+  if (srcIdx === -1 || tgtIdx === -1) return;
+  const moved = _editImgs.splice(srcIdx, 1)[0];
+  _editImgs.splice(tgtIdx, 0, moved);
+
+  renderEditImgGrid(_editImgs, productId);
+
+  // บันทึกลำดับใหม่ไปยัง server
+  try {
+    await api.reorderProductImages(productId, _editImgs.map(img => img.id));
+    toast('เรียงลำดับรูปแล้ว ✅', '#1D9E75');
+  } catch(err) { toast(err.message); }
+}
+
+function editImgDragEnd(e) {
+  document.querySelectorAll('.edit-img-item').forEach(el => {
+    el.classList.remove('dragging', 'drag-over');
+  });
+  _dragSrcId = null;
 }
 
 function buildGallery(product) {

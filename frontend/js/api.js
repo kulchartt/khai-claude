@@ -143,6 +143,7 @@ const api = {
   setHolidayMode(holiday_mode, holiday_message, holiday_until) { return this.patch('/api/shop/me', {holiday_mode, holiday_message, holiday_until}); },
   getPoints() { return this.get('/api/users/me/points'); },
   deleteProductImage(productId, imageId) { return this.delete('/api/products/'+productId+'/images/'+imageId); },
+  reorderProductImages(productId, ids) { return this.patch('/api/products/'+productId+'/images/reorder', {ids}); },
   getPosts(category) {
     const q = category && category !== 'ทั้งหมด' ? '?category='+encodeURIComponent(category) : '';
     return this.get('/api/community/posts'+q);
