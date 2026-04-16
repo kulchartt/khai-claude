@@ -28,6 +28,7 @@ const savedSearchRoutes = require('./routes/saved-searches');
 const disputeRoutes = require('./routes/disputes');
 const promoRoutes = require('./routes/promo');
 const feedbackRoutes = require('./routes/feedback');
+const bundleRoutes = require('./routes/bundles');
 
 const { initDB, getDB } = require('./db');
 
@@ -63,6 +64,7 @@ app.use('/api/saved-searches', savedSearchRoutes);
 app.use('/api/disputes', disputeRoutes);
 app.use('/api/promo', promoRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/bundles', bundleRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/health/cloudinary', async (req, res) => {

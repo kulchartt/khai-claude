@@ -19,6 +19,7 @@ function goPage(p){
     history.replaceState(null,'',window.location.pathname+window.location.search);
     loadProducts();
     loadTrending();
+    loadBundleSection();
   }
 }
 function openOverlay(id){document.getElementById(id).classList.add('open');}
@@ -43,7 +44,7 @@ function productImg(p){
   return `<span class="emoji">${emoji}</span>`;
 }
 const DELIVERY_ICON={pickup:'🤝',shipping:'📦',both:'📦🤝'};
-function renderCards(list,cid){const g=document.getElementById(cid);if(!g)return;if(!list.length){g.innerHTML='<div class="empty-msg">ไม่พบสินค้า</div>';return;}g.innerHTML=list.map(p=>{const priceHtml=p.original_price?`<div class="card-price">฿${Number(p.price).toLocaleString()} <span class="original-price">฿${Number(p.original_price).toLocaleString()}</span></div>`:`<div class="card-price">฿${Number(p.price).toLocaleString()}</div>`;const dropBadge=p.original_price?'<span class="price-drop-badge">ลดราคา</span>':'';const reservedBadge=p.status==='reserved'?'<span class="reserved-badge">รอยืนยัน</span>':'';const delIcon=p.delivery_method&&p.delivery_method!=='both'?`<span class="delivery-icon">${DELIVERY_ICON[p.delivery_method]||''}</span>`:'';return `<div class="card" onclick="openDetail(${p.id})"><div class="card-img">${productImg(p)}${dropBadge}${reservedBadge}</div><div class="card-body"><div class="card-title">${p.title}</div>${priceHtml}<div class="card-foot"><span class="cond ${CMAP[p.condition||p.cond]||''}">${p.condition||p.cond}</span><span class="seller-nm">${p.seller_name||p.location||''}</span>${delIcon}</div></div></div>`;}).join('');}
+function renderCards(list,cid){const g=document.getElementById(cid);if(!g)return;if(!list.length){g.innerHTML='<div class="empty-msg">ไม่พบสินค้า</div>';return;}const now=Date.now();g.innerHTML=list.map(p=>{const flashActive=p.flash_price&&p.flash_end&&new Date(p.flash_end)>now;const priceHtml=flashActive?`<div class="card-price">฿${Number(p.flash_price).toLocaleString()} <span class="original-price">฿${Number(p.price).toLocaleString()}</span></div>`:(p.original_price?`<div class="card-price">฿${Number(p.price).toLocaleString()} <span class="original-price">฿${Number(p.original_price).toLocaleString()}</span></div>`:`<div class="card-price">฿${Number(p.price).toLocaleString()}</div>`);const flashBadge=flashActive?`<span class="flash-badge">⚡</span>`:'';const dropBadge=(!flashActive&&p.original_price)?'<span class="price-drop-badge">ลดราคา</span>':'';const reservedBadge=p.status==='reserved'?'<span class="reserved-badge">กำลังถูกจอง</span>':'';const delIcon=p.delivery_method&&p.delivery_method!=='both'?`<span class="delivery-icon">${DELIVERY_ICON[p.delivery_method]||''}</span>`:'';const flashTimer=flashActive?`<div class="flash-timer" data-flash-end="${p.flash_end}"></div>`:'';return `<div class="card" onclick="openDetail(${p.id})"><div class="card-img">${productImg(p)}${flashBadge}${dropBadge}${reservedBadge}</div><div class="card-body"><div class="card-title">${p.title}</div>${priceHtml}${flashTimer}<div class="card-foot"><span class="cond ${CMAP[p.condition||p.cond]||''}">${p.condition||p.cond}</span><span class="seller-nm">${p.seller_name||p.location||''}</span>${delIcon}</div></div></div>`;}).join('');startFlashCountdowns();}
 
 async function loadProducts(){
   const q=document.getElementById('searchQ').value,minPrice=document.getElementById('minP').value,maxPrice=document.getElementById('maxP').value,sort=document.getElementById('sortSel').value,condition=document.getElementById('condSel').value,location=document.getElementById('locationSel').value;
@@ -65,15 +66,17 @@ async function openDetail(id){
         <div>${buildGallery(p)}</div>
         <div class="detail-info">
           <h1 class="detail-title">${p.title}</h1>
-          <div class="detail-price">฿${Number(p.price).toLocaleString()}${p.original_price?` <span class="original-price" style="font-size:16px">฿${Number(p.original_price).toLocaleString()}</span> <span class="price-drop-badge">ลดราคา</span>`:''}</div>
+          ${(()=>{const now=Date.now();const flashActive=p.flash_price&&p.flash_end&&new Date(p.flash_end)>now;if(flashActive)return `<div class="detail-price" style="color:#dc2626">฿${Number(p.flash_price).toLocaleString()} <span class="original-price" style="font-size:16px">฿${Number(p.price).toLocaleString()}</span> <span class="flash-badge">⚡ Flash Sale</span></div><div class="flash-timer" data-flash-end="${p.flash_end}" style="font-size:13px;color:#dc2626;margin:-8px 0 8px"></div>`;if(p.original_price)return `<div class="detail-price">฿${Number(p.price).toLocaleString()} <span class="original-price" style="font-size:16px">฿${Number(p.original_price).toLocaleString()}</span> <span class="price-drop-badge">ลดราคา</span></div>`;return `<div class="detail-price">฿${Number(p.price).toLocaleString()}</div>`;})()}
+          ${p.seller_holiday_mode&&!isOwner?`<div class="holiday-notice">🏖️ ร้านปิดชั่วคราว — ไม่สามารถสั่งซื้อได้ในขณะนี้</div>`:''}
           <div class="detail-actions">
-            ${!isOwner&&p.status==='available'?`<button class="btn btn-g" onclick="addToCart(${p.id})">🛒 ใส่ตะกร้า</button>`:''}
-            ${!isOwner&&p.status==='reserved'?`<span style="font-size:13px;color:#d97706;font-weight:600;padding:8px 0;display:block">⏳ สินค้านี้กำลังรอยืนยันการชำระเงิน</span>`:''}
+            ${!isOwner&&p.status==='available'&&!p.seller_holiday_mode?`<button class="btn btn-g" onclick="addToCart(${p.id})">🛒 ใส่ตะกร้า</button>`:''}
+            ${!isOwner&&p.status==='available'&&!p.seller_holiday_mode?`<button class="btn btn-reserve" onclick="doReserve(${p.id})">🔖 จอง</button>`:''}
+            ${!isOwner&&p.status==='reserved'?`<span style="font-size:13px;color:#d97706;font-weight:600;padding:8px 0;display:block">⏳ กำลังถูกจอง</span>`:''}
             ${!isOwner?`<button class="btn" onclick="startChat(${p.seller_id},${p.id})">💬 แชทผู้ขาย</button>`:''}
             ${!isOwner&&p.status==='available'?`<button class="btn btn-available" onclick="askAvailable(${p.seller_id},${p.id},'${p.title.replace(/'/g,"\\'")}')">🙋 ยังมีอยู่ไหม?</button>`:''}
             <button class="btn wl-btn ${inWl?'liked':''}" id="wlBtn_${p.id}" onclick="toggleWl(${p.id})">${inWl?'❤️':'🤍'}</button>
             ${!isOwner&&p.status==='available'?`<button class="btn btn-offer" onclick="openOfferModal(${p.id},'${p.title.replace(/'/g,"\\'")}',${p.price})">💰 เสนอราคา</button>`:''}
-            ${isOwner?`<button class="btn" onclick="openEditModal(${p.id})">✏️ แก้ไข</button><button class="btn btn-danger" onclick="confirmDeleteProduct(${p.id})">🗑️ ลบสินค้า</button>`:''}
+            ${isOwner?`<button class="btn" onclick="openEditModal(${p.id})">✏️ แก้ไข</button><button class="btn btn-danger" onclick="confirmDeleteProduct(${p.id})">🗑️ ลบสินค้า</button>${p.status==='available'?`<button class="btn" style="background:#fef9c3;color:#854d0e;border-color:#fcd34d" onclick="openFlashModal(${p.id},${p.price})">⚡ Flash Sale</button>`:''}`:'' }
             <button class="share-btn" onclick="shareProduct(${p.id},'${p.title.replace(/'/g,"\\'")}')">🔗 แชร์</button>
             ${!isOwner?`<button class="report-btn" onclick="openReportModal(${p.id})">🚩 แจ้ง</button>`:''}
           </div>
@@ -168,7 +171,7 @@ async function doCheckout(){
   }catch(e){toast(e.message);}
 }
 
-async function openProfile(){if(!state.user){openOverlay('loginOverlay');return;}try{const[me,myItems]=await Promise.all([api.getMe(),api.getMyProducts()]);const avatarHtml=me.avatar?`<img src="${imgSrc(me.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${me.name.slice(0,2).toUpperCase()}`;document.getElementById('profileContent').innerHTML=`<div class="profile-header"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="p-avatar" onclick="document.getElementById('avatarInput').click()" style="cursor:pointer;overflow:hidden">${avatarHtml}</div><div style="font-size:11px;color:var(--text-hint)">กดเพื่อเปลี่ยน</div><input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="doUploadAvatar(this)"/></div><div style="flex:1"><div class="p-name">${me.name}${me.is_verified?'<span class="verified-badge" style="margin-left:6px">✅ Verified</span>':''}</div><div class="p-email">${me.email}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${myItems.length}</div><div class="stat-l">สินค้าลงขาย</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${state.wlCount}</div><div class="stat-l">รายการโปรด</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${me.rating||5.0}★</div><div class="stat-l">คะแนน</div></div></div></div></div><div class="profile-tabs"><div class="profile-tab on" id="ptab-products" onclick="profileTab('products')">สินค้าของฉัน</div><div class="profile-tab" id="ptab-orders" onclick="profileTab('orders')">ซื้อ</div><div class="profile-tab" id="ptab-my-reports" onclick="profileTab('my-reports')">🚩 แจ้งปัญหา</div><div class="profile-tab" id="ptab-selling" onclick="profileTab('selling')">📦 ขาย</div><div class="profile-tab" id="ptab-offers" onclick="profileTab('offers')">💰 ข้อเสนอ</div><div class="profile-tab" id="ptab-analytics" onclick="profileTab('analytics')">📊 สถิติ</div><button class="profile-tab" id="ptab-addresses" onclick="profileTab('addresses')">📍 ที่อยู่</button><button class="profile-tab" id="ptab-transactions" onclick="profileTab('transactions')">💰 ธุรกรรม</button><button class="profile-tab" id="ptab-promo" onclick="profileTab('promo')">🎁 โปร</button><button class="profile-tab" id="ptab-saved-searches" onclick="profileTab('saved-searches')">🔔 แจ้งเตือน</button><button class="profile-tab" id="ptab-verified-status" onclick="profileTab('verified-status')">✅ Verified</button></div><div id="profileTabContent"></div><div style="margin-top:24px;padding:0 4px;display:flex;flex-direction:column;gap:8px"><button class="btn" onclick="openShopEdit()">✏️ แก้ไขร้านค้า</button><button class="btn" onclick="openBankModal()">🏦 บัญชีธนาคาร</button><button class="btn" onclick="profileTab('verified-status');document.getElementById('ptab-verified-status').scrollIntoView({behavior:'smooth',block:'nearest'})">✅ ขอ Verified Badge</button><button class="btn btn-danger" onclick="doLogout()">ออกจากระบบ</button></div>`;window._myItems=myItems;profileTab('products');goPage('profile');}catch(e){toast(e.message);}}
+async function openProfile(){if(!state.user){openOverlay('loginOverlay');return;}try{const[me,myItems]=await Promise.all([api.getMe(),api.getMyProducts()]);const avatarHtml=me.avatar?`<img src="${imgSrc(me.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${me.name.slice(0,2).toUpperCase()}`;document.getElementById('profileContent').innerHTML=`<div class="profile-header"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="p-avatar" onclick="document.getElementById('avatarInput').click()" style="cursor:pointer;overflow:hidden">${avatarHtml}</div><div style="font-size:11px;color:var(--text-hint)">กดเพื่อเปลี่ยน</div><input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="doUploadAvatar(this)"/></div><div style="flex:1"><div class="p-name">${me.name}${me.is_verified?'<span class="verified-badge" style="margin-left:6px">✅ Verified</span>':''}</div><div class="p-email">${me.email}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${myItems.length}</div><div class="stat-l">สินค้าลงขาย</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${state.wlCount}</div><div class="stat-l">รายการโปรด</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${me.rating||5.0}★</div><div class="stat-l">คะแนน</div></div></div></div></div><div class="profile-tabs"><div class="profile-tab on" id="ptab-products" onclick="profileTab('products')">สินค้าของฉัน</div><div class="profile-tab" id="ptab-orders" onclick="profileTab('orders')">ซื้อ</div><div class="profile-tab" id="ptab-my-reports" onclick="profileTab('my-reports')">🚩 แจ้งปัญหา</div><div class="profile-tab" id="ptab-selling" onclick="profileTab('selling')">📦 ขาย</div><div class="profile-tab" id="ptab-offers" onclick="profileTab('offers')">💰 ข้อเสนอ</div><div class="profile-tab" id="ptab-analytics" onclick="profileTab('analytics')">📊 สถิติ</div><button class="profile-tab" id="ptab-addresses" onclick="profileTab('addresses')">📍 ที่อยู่</button><button class="profile-tab" id="ptab-transactions" onclick="profileTab('transactions')">💰 ธุรกรรม</button><button class="profile-tab" id="ptab-promo" onclick="profileTab('promo')">🎁 โปร</button><button class="profile-tab" id="ptab-saved-searches" onclick="profileTab('saved-searches')">🔔 แจ้งเตือน</button><button class="profile-tab" id="ptab-verified-status" onclick="profileTab('verified-status')">✅ Verified</button></div><div id="profileTabContent"></div><div style="margin-top:24px;padding:0 4px;display:flex;flex-direction:column;gap:8px"><button class="btn" onclick="openShopEdit()">✏️ แก้ไขร้านค้า</button><button class="btn" onclick="openBankModal()">🏦 บัญชีธนาคาร</button><button class="btn" onclick="profileTab('verified-status');document.getElementById('ptab-verified-status').scrollIntoView({behavior:'smooth',block:'nearest'})">✅ ขอ Verified Badge</button><button class="btn" onclick="toggleHolidayMode()">${me.holiday_mode?'🏖️ ปิด Holiday Mode':'🏖️ เปิด Holiday Mode'}</button><button class="btn btn-danger" onclick="doLogout()">ออกจากระบบ</button></div>`;window._myItems=myItems;profileTab('products');goPage('profile');}catch(e){toast(e.message);}}
 
 function profileTab(tab){
   document.querySelectorAll('.profile-tab').forEach(t=>t.classList.toggle('on',t.id==='ptab-'+tab));
@@ -177,6 +180,14 @@ function profileTab(tab){
     c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px"><span style="font-weight:600">สินค้าของฉัน</span><button class="btn btn-sm btn-g" onclick="openSell()">+ ลงขายเพิ่ม</button></div><div class="product-grid" id="myProductsGrid"></div><div class="promptpay-settings" id="promptpaySettings"><div style="font-weight:600;margin-bottom:8px">💳 PromptPay ของฉัน <span style="font-size:12px;color:var(--text-hint);font-weight:400">(ผู้ซื้อจะเห็นเมื่อ checkout — ไม่แสดงในโปรไฟล์)</span></div><div style="display:flex;gap:8px"><input type="text" id="promptpayInput" placeholder="เบอร์มือถือ หรือ เลขบัตรประชาชน" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text);font-size:14px"/><button class="btn btn-g btn-sm" onclick="savePromptpay()">บันทึก</button></div></div>`;
     renderMyCards(window._myItems||[],'myProductsGrid');
     api.getPromptpay().then(r=>{if(r.promptpay)document.getElementById('promptpayInput').value=r.promptpay;}).catch(()=>{});
+    // Show pending reservations for seller
+    api.getMyReservations().then(reservations=>{
+      if(!reservations.length)return;
+      const grid=document.getElementById('myProductsGrid');
+      if(!grid)return;
+      const html=`<div style="margin-bottom:16px;padding:12px;background:var(--bg-sec);border-radius:var(--radius-lg)"><div style="font-weight:600;margin-bottom:10px">🔖 รอยืนยันการจอง (${reservations.length})</div>${reservations.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg-card);border-radius:var(--radius);margin-bottom:6px"><div style="flex:1"><div style="font-size:13px;font-weight:500">${p.title}</div><div style="font-size:12px;color:var(--text-sec)">จองโดย: <b>${p.reserved_by_name||'?'}</b></div></div><button class="btn btn-sm btn-g" onclick="respondReserve(${p.id},'accept')">✅</button><button class="btn btn-sm btn-danger" onclick="respondReserve(${p.id},'reject')">❌</button></div>`).join('')}</div>`;
+      grid.insertAdjacentHTML('beforebegin',html);
+    }).catch(()=>{});
   } else if(tab==='selling'){
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
     api.getSellerOrders().then(orders=>{
@@ -339,7 +350,7 @@ function canBump(bumpedAt){
   const now=new Date();
   return last.toDateString()!==now.toDateString();
 }
-function renderMyCards(list,cid){const g=document.getElementById(cid);if(!g)return;if(!list.length){g.innerHTML='<div class="empty-msg">ยังไม่มีสินค้า<br><br><button class="btn btn-g" onclick="openSell()">+ ลงขายเลย</button></div>';return;}g.innerHTML=list.map(p=>{const bumpable=p.status==='available'&&canBump(p.bumped_at);const bumpBtn=p.status==='available'?`<button class="btn btn-sm btn-bump" onclick="doBump(${p.id})" ${bumpable?'':'disabled title="ดันได้พรุ่งนี้"'}>⬆️ ${bumpable?'ดัน':'ดันแล้ว'}</button>`:'';return `<div class="card"><div class="card-img" onclick="openDetail(${p.id})">${productImg(p)}</div><div class="card-body" onclick="openDetail(${p.id})"><div class="card-title">${p.title}</div><div class="card-price">฿${Number(p.price).toLocaleString()}</div><div class="card-foot"><span class="cond ${CMAP[p.condition||p.cond]||''}">${p.condition||p.cond}</span><span class="seller-nm" style="color:${p.status==='sold'?'#dc2626':p.status==='reserved'?'#d97706':'var(--green)'}">${p.status==='sold'?'ขายแล้ว':p.status==='reserved'?'รอยืนยัน':'วางขาย'}</span></div></div><div class="card-actions">${bumpBtn}<button class="btn btn-sm" onclick="openEditModal(${p.id})">✏️ แก้ไข</button><button class="btn btn-sm btn-danger" onclick="confirmDeleteProduct(${p.id})">🗑️ ลบ</button></div></div>`;}).join('');}
+function renderMyCards(list,cid){const g=document.getElementById(cid);if(!g)return;if(!list.length){g.innerHTML='<div class="empty-msg">ยังไม่มีสินค้า<br><br><button class="btn btn-g" onclick="openSell()">+ ลงขายเลย</button></div>';return;}g.innerHTML=list.map(p=>{const bumpable=p.status==='available'&&canBump(p.bumped_at);const bumpBtn=p.status==='available'?`<button class="btn btn-sm btn-bump" onclick="doBump(${p.id})" ${bumpable?'':'disabled title="ดันได้พรุ่งนี้"'}>⬆️ ${bumpable?'ดัน':'ดันแล้ว'}</button>`:'';const flashBtn=p.status==='available'?`<button class="btn btn-sm" style="background:#fef9c3;color:#854d0e;border-color:#fcd34d" onclick="openFlashModal(${p.id},${p.price})">⚡</button>`:'';return `<div class="card"><div class="card-img" onclick="openDetail(${p.id})">${productImg(p)}</div><div class="card-body" onclick="openDetail(${p.id})"><div class="card-title">${p.title}</div><div class="card-price">฿${Number(p.price).toLocaleString()}</div><div class="card-foot"><span class="cond ${CMAP[p.condition||p.cond]||''}">${p.condition||p.cond}</span><span class="seller-nm" style="color:${p.status==='sold'?'#dc2626':p.status==='reserved'?'#d97706':'var(--green)'}">${p.status==='sold'?'ขายแล้ว':p.status==='reserved'?'กำลังถูกจอง':'วางขาย'}</span></div></div><div class="card-actions">${bumpBtn}${flashBtn}<button class="btn btn-sm" onclick="openEditModal(${p.id})">✏️ แก้ไข</button><button class="btn btn-sm btn-danger" onclick="confirmDeleteProduct(${p.id})">🗑️ ลบ</button></div></div>`;}).join('');}
 
 async function doBump(id){
   try{
@@ -1248,6 +1259,131 @@ async function doSubmitFeedback(){
     const res=await api.submitFeedback(category,message,sender_name||null,sender_email||null);
     closeOverlay('feedbackOverlay');
     toast(res.message,'#6366f1');
+  }catch(e){toast(e.message);}
+}
+
+// ===== FLASH SALE =====
+function startFlashCountdowns(){
+  document.querySelectorAll('[data-flash-end]').forEach(el=>{
+    const end=new Date(el.dataset.flashEnd);
+    if(el._flashTimer)return;
+    el._flashTimer=true;
+    function tick(){
+      const diff=end-Date.now();
+      if(diff<=0){el.textContent='หมดเวลา';return;}
+      const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+      el.textContent=`⏱ ${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      setTimeout(tick,1000);
+    }
+    tick();
+  });
+}
+function openFlashModal(id,price){
+  if(!state.user){openOverlay('loginOverlay');return;}
+  openOverlay('flashOverlay');
+  document.getElementById('flashProductId').value=id;
+  document.getElementById('flashProductPrice').textContent='฿'+Number(price).toLocaleString();
+  document.getElementById('flashPrice').value='';
+  document.getElementById('flashHours').value='2';
+}
+async function doSetFlash(){
+  const id=document.getElementById('flashProductId').value;
+  const flash_price=document.getElementById('flashPrice').value;
+  const duration_hours=document.getElementById('flashHours').value;
+  if(!flash_price||flash_price<=0){toast('กรุณาใส่ราคา Flash Sale');return;}
+  try{const r=await api.setFlashSale(id,Number(flash_price),Number(duration_hours));toast(r.message,'#dc2626');closeOverlay('flashOverlay');openDetail(id);}
+  catch(e){toast(e.message);}
+}
+async function doCancelFlash(id){
+  try{const r=await api.cancelFlashSale(id);toast(r.message,'#1D9E75');openDetail(id);}
+  catch(e){toast(e.message);}
+}
+
+// ===== RESERVE =====
+async function doReserve(id){
+  if(!state.user){openOverlay('loginOverlay');return;}
+  if(!confirm('ต้องการจองสินค้านี้ไหม? ผู้ขายจะได้รับการแจ้งเตือน'))return;
+  try{const r=await api.reserveProduct(id);toast(r.message,'#1D9E75');openDetail(id);}
+  catch(e){toast(e.message);}
+}
+async function respondReserve(id,action){
+  try{const r=await api.respondReservation(id,action);toast(r.message,'#1D9E75');profileTab('products');}
+  catch(e){toast(e.message);}
+}
+
+// ===== BUNDLE =====
+async function loadBundleSection(){
+  try{
+    const bundles=await api.getBundles();
+    const wrap=document.getElementById('bundleSection');
+    if(!wrap)return;
+    if(!bundles.length){wrap.style.display='none';return;}
+    wrap.style.display='';
+    wrap.innerHTML=`<div class="section-title" style="padding:0 0 8px"><span>🎁 Bundle Deal</span></div>
+      <div class="bundle-scroll">${bundles.map(b=>{
+        const ids=JSON.parse(b.product_ids||'[]');
+        return `<div class="bundle-card" onclick="openBundleDetail(${b.id})">
+          <div class="bundle-tag">🎁 ${ids.length} ชิ้น</div>
+          <div class="bundle-title">${b.title}</div>
+          <div class="bundle-price">฿${Number(b.bundle_price).toLocaleString()}</div>
+          <div class="bundle-seller">${b.seller_name}</div>
+        </div>`;}).join('')}</div>`;
+  }catch{}
+}
+async function openBundleDetail(id){
+  try{
+    const b=await api.getBundleDetail(id);
+    const savings=b.total_original-Number(b.bundle_price);
+    openOverlay('bundleOverlay');
+    document.getElementById('bundleOverlayContent').innerHTML=`
+      <h2>🎁 ${b.title}</h2>
+      <div style="font-size:13px;color:var(--text-sec);margin-bottom:12px">โดย ${b.seller_name}</div>
+      <div style="margin-bottom:12px">${(b.products||[]).map(p=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg-sec);border-radius:var(--radius);margin-bottom:6px">
+          <div style="font-size:20px">${EMOJIS[p.category]||'📦'}</div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:500">${p.title}</div>
+          <div style="font-size:12px;color:var(--text-sec)">฿${Number(p.price).toLocaleString()}</div></div>
+        </div>`).join('')}</div>
+      <div style="background:#fef9c3;border-radius:var(--radius);padding:12px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:13px;color:var(--text-sec)">ราคาปกติรวม</span>
+          <span style="font-size:13px;text-decoration:line-through">฿${Number(b.total_original).toLocaleString()}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:15px;font-weight:700;color:#16a34a">ราคา Bundle</span>
+          <span style="font-size:18px;font-weight:700;color:#16a34a">฿${Number(b.bundle_price).toLocaleString()}</span>
+        </div>
+        <div style="font-size:12px;color:#16a34a;text-align:right">ประหยัด ฿${Number(savings).toLocaleString()}</div>
+      </div>
+      <button class="btn btn-g" style="width:100%" onclick="buyBundle(${JSON.stringify(b.products||[]).replace(/"/g,'&quot;')})">🛒 ซื้อ Bundle</button>`;
+  }catch(e){toast(e.message);}
+}
+async function buyBundle(products){
+  if(!state.user){closeOverlay('bundleOverlay');openOverlay('loginOverlay');return;}
+  try{
+    for(const p of products) await api.addCart(p.id).catch(()=>{});
+    closeOverlay('bundleOverlay');
+    state.cartCount+=products.length;updateBadge('cartBadge',state.cartCount);
+    toast('เพิ่ม Bundle ในตะกร้าแล้ว! 🎁','#1D9E75');
+    openCart();
+  }catch(e){toast(e.message);}
+}
+
+// ===== HOLIDAY MODE =====
+async function toggleHolidayMode(){
+  const current=state.user?.holiday_mode;
+  const newMode=!current;
+  let msg='',until='';
+  if(newMode){
+    msg=prompt('ข้อความสำหรับลูกค้า (กด OK เว้นว่างไว้ก็ได้)','ร้านปิดชั่วคราว กลับมาเร็วๆนี้')??'';
+    until=prompt('วันที่กลับมา (YYYY-MM-DD) กด OK เว้นว่างถ้าไม่แน่ใจ','')||'';
+  }
+  try{
+    await api.setHolidayMode(newMode,msg||null,until||null);
+    if(state.user)state.user.holiday_mode=newMode?1:0;
+    localStorage.setItem('user',JSON.stringify(state.user));
+    toast(newMode?'เปิด Holiday Mode แล้ว 🏖️':'ปิด Holiday Mode แล้ว ✅','#1D9E75');
+    openProfile();
   }catch(e){toast(e.message);}
 }
 

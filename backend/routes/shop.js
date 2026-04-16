@@ -20,7 +20,8 @@ router.get('/:userId', async (req, res) => {
   try {
     const { rows } = await getDB().query(
       `SELECT id, name, avatar, rating, review_count, is_verified,
-              shop_name, shop_bio, shop_banner, created_at
+              shop_name, shop_bio, shop_banner, created_at,
+              holiday_mode, holiday_message, holiday_until
        FROM users WHERE id = $1`,
       [req.params.userId]
     );
@@ -29,13 +30,13 @@ router.get('/:userId', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// PATCH /api/shop/me — update shop_name + shop_bio
+// PATCH /api/shop/me — update shop info + holiday mode
 router.patch('/me', authMiddleware, async (req, res) => {
   try {
-    const { shop_name, shop_bio } = req.body;
+    const { shop_name, shop_bio, holiday_mode, holiday_message, holiday_until } = req.body;
     await getDB().query(
-      'UPDATE users SET shop_name = $1, shop_bio = $2 WHERE id = $3',
-      [shop_name || null, shop_bio || null, req.user.id]
+      'UPDATE users SET shop_name=$1, shop_bio=$2, holiday_mode=$3, holiday_message=$4, holiday_until=$5 WHERE id=$6',
+      [shop_name||null, shop_bio||null, holiday_mode?1:0, holiday_message||null, holiday_until||null, req.user.id]
     );
     res.json({ message: 'อัปเดตข้อมูลร้านค้าแล้ว' });
   } catch (e) { res.status(500).json({ error: e.message }); }

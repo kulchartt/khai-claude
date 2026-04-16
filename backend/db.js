@@ -136,6 +136,23 @@ async function initDB() {
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_account TEXT DEFAULT NULL`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_account_name TEXT DEFAULT NULL`);
 
+  // Round 2 features
+  await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS flash_price NUMERIC DEFAULT NULL`);
+  await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS flash_end TIMESTAMPTZ DEFAULT NULL`);
+  await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS reserved_for_id INTEGER DEFAULT NULL`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS holiday_mode INTEGER DEFAULT 0`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS holiday_message TEXT DEFAULT NULL`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS holiday_until DATE DEFAULT NULL`);
+  await db.query(`CREATE TABLE IF NOT EXISTS bundles (
+    id SERIAL PRIMARY KEY,
+    seller_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    product_ids JSONB NOT NULL DEFAULT '[]',
+    bundle_price NUMERIC NOT NULL,
+    is_active INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+
   // Address book
   await db.query(`CREATE TABLE IF NOT EXISTS addresses (
     id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -184,6 +201,17 @@ async function initDB() {
     is_active INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT NOW(),
     UNIQUE(seller_id, code)
+  )`);
+
+  await db.query(`CREATE TABLE IF NOT EXISTS verify_requests (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    reason TEXT NOT NULL,
+    id_card_url TEXT DEFAULT NULL,
+    status TEXT DEFAULT 'pending',
+    admin_note TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(user_id)
   )`);
 
   await db.query(`CREATE TABLE IF NOT EXISTS reports (

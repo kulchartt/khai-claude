@@ -71,7 +71,8 @@ router.get('/:id', async (req, res) => {
     const db = getDB();
     const { rows: pr } = await db.query(`
       SELECT p.*, u.name as seller_name, u.email as seller_email,
-             u.rating as seller_rating, u.review_count as seller_reviews, u.avatar as seller_avatar
+             u.rating as seller_rating, u.review_count as seller_reviews, u.avatar as seller_avatar,
+             u.holiday_mode as seller_holiday_mode
       FROM products p JOIN users u ON p.seller_id = u.id WHERE p.id = $1
     `, [req.params.id]);
     const product = pr[0];
@@ -176,6 +177,25 @@ router.put('/:id', authMiddleware, uploadMiddleware, async (req, res) => {
        description!==undefined?description:product.description, location!==undefined?location:product.location,
        firstImage, status||product.status, delivery_method||product.delivery_method||'both', newOriginalPrice, req.params.id]
     );
+
+    // Price drop alert: notify wishlist users
+    if (price && Number(price) < product.price) {
+      try {
+        const newP = Number(price), oldP = product.price;
+        const { rows: wishers } = await db.query('SELECT user_id FROM wishlist_items WHERE product_id = $1', [req.params.id]);
+        const io = req.app.get('io'); const onlineUsers = req.app.get('onlineUsers');
+        for (const { user_id } of wishers) {
+          if (user_id === req.user.id) continue;
+          await db.query(
+            "INSERT INTO notifications (user_id, type, title, body) VALUES ($1,'system','💰 ราคาลดแล้ว!',$2)",
+            [user_id, `${title||product.title} ลดจาก ฿${Number(oldP).toLocaleString()} เป็น ฿${Number(newP).toLocaleString()}`]
+          );
+          const sock = onlineUsers?.get(user_id);
+          if (sock) io?.to(sock).emit('notification', { type: 'system' });
+        }
+      } catch (notifErr) { console.error('price drop notify:', notifErr); }
+    }
+
     res.json({ message: 'อัปเดตสินค้าแล้ว' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -254,6 +274,97 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     await db.query('DELETE FROM product_images WHERE product_id = $1', [req.params.id]);
     await db.query('DELETE FROM products WHERE id = $1', [req.params.id]);
     res.json({ message: 'ลบสินค้าแล้ว' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ===== FLASH SALE =====
+router.post('/:id/flash', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows: pr } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
+    const product = pr[0];
+    if (!product) return res.status(404).json({ error: 'ไม่พบสินค้า' });
+    if (product.seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+    const { flash_price, duration_hours } = req.body;
+    if (!flash_price || !duration_hours) return res.status(400).json({ error: 'กรุณาระบุราคาและระยะเวลา' });
+    if (Number(flash_price) >= product.price) return res.status(400).json({ error: 'ราคา Flash Sale ต้องน้อยกว่าราคาปัจจุบัน' });
+    const flash_end = new Date(Date.now() + Number(duration_hours) * 3600 * 1000);
+    await db.query('UPDATE products SET flash_price=$1, flash_end=$2 WHERE id=$3', [Number(flash_price), flash_end, req.params.id]);
+    res.json({ message: 'เปิด Flash Sale แล้ว! ⚡' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/:id/flash', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows: pr } = await db.query('SELECT seller_id FROM products WHERE id = $1', [req.params.id]);
+    if (!pr[0]) return res.status(404).json({ error: 'ไม่พบสินค้า' });
+    if (pr[0].seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+    await db.query('UPDATE products SET flash_price=NULL, flash_end=NULL WHERE id=$1', [req.params.id]);
+    res.json({ message: 'ยกเลิก Flash Sale แล้ว' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ===== RESERVE =====
+router.post('/:id/reserve', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows: pr } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
+    const product = pr[0];
+    if (!product) return res.status(404).json({ error: 'ไม่พบสินค้า' });
+    if (product.seller_id === req.user.id) return res.status(400).json({ error: 'ไม่สามารถจองสินค้าของตัวเองได้' });
+    if (product.status !== 'available') return res.status(400).json({ error: 'สินค้านี้ไม่พร้อมจอง' });
+    await db.query("UPDATE products SET status='reserved', reserved_for_id=$1 WHERE id=$2", [req.user.id, req.params.id]);
+    const { rows: buyerRow } = await db.query('SELECT name FROM users WHERE id=$1', [req.user.id]);
+    const buyerName = buyerRow[0]?.name || 'ผู้ซื้อ';
+    await db.query("INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'system','มีคนจองสินค้า 🔖',$2)",
+      [product.seller_id, `${buyerName} ขอจอง "${product.title}"`]);
+    const io = req.app.get('io'); const onlineUsers = req.app.get('onlineUsers');
+    const sock = onlineUsers?.get(product.seller_id);
+    if (sock) io?.to(sock).emit('notification', { type: 'system' });
+    res.json({ message: 'ส่งคำขอจองแล้ว! รอผู้ขายยืนยัน ⏳' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.patch('/:id/reserve', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { action } = req.body;
+    const { rows: pr } = await db.query('SELECT * FROM products WHERE id=$1', [req.params.id]);
+    const product = pr[0];
+    if (!product) return res.status(404).json({ error: 'ไม่พบสินค้า' });
+    if (product.seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+    if (product.status !== 'reserved') return res.status(400).json({ error: 'สินค้านี้ไม่ได้ถูกจอง' });
+    const io = req.app.get('io'); const onlineUsers = req.app.get('onlineUsers');
+    if (action === 'accept') {
+      await db.query("INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'system','การจองได้รับการยืนยัน ✅',$2)",
+        [product.reserved_for_id, `ผู้ขายยืนยันการจอง "${product.title}" แล้ว!`]);
+      const sock = onlineUsers?.get(product.reserved_for_id);
+      if (sock) io?.to(sock).emit('notification', { type: 'system' });
+      res.json({ message: 'ยืนยันการจองแล้ว ✅' });
+    } else if (action === 'reject') {
+      await db.query("UPDATE products SET status='available', reserved_for_id=NULL WHERE id=$1", [req.params.id]);
+      await db.query("INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'system','การจองถูกปฏิเสธ',$2)",
+        [product.reserved_for_id, `ผู้ขายไม่ยืนยันการจอง "${product.title}"`]);
+      const sock = onlineUsers?.get(product.reserved_for_id);
+      if (sock) io?.to(sock).emit('notification', { type: 'system' });
+      res.json({ message: 'ปฏิเสธการจองแล้ว' });
+    } else {
+      res.status(400).json({ error: 'action ต้องเป็น accept หรือ reject' });
+    }
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/my/reservations', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await getDB().query(
+      `SELECT p.id, p.title, p.price, p.image_url, p.status, p.reserved_for_id,
+              u.name as reserved_by_name
+       FROM products p LEFT JOIN users u ON u.id = p.reserved_for_id
+       WHERE p.seller_id=$1 AND p.status='reserved' ORDER BY p.created_at DESC`,
+      [req.user.id]
+    );
+    res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="มือสองmarket"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260419g"/>
+  <link rel="stylesheet" href="css/style.css?v=20260419h"/>
 </head>
 <body>
 
@@ -172,6 +172,7 @@
         </select>
       </div>
     </section>
+    <div id="bundleSection" class="trending-section" style="display:none"></div>
     <div id="trendingSection" class="trending-section" style="display:none">
       <div class="section-title" style="padding:0"><span>🔥 กำลังฮิต</span></div>
       <div class="trending-scroll" id="trendingScroll"></div>
@@ -261,6 +262,39 @@
     </div>
   </div>
 </main>
+
+<!-- Flash Sale Modal -->
+<div class="overlay" id="flashOverlay">
+  <div class="modal">
+    <button class="mclose" onclick="closeOverlay('flashOverlay')">×</button>
+    <h2>⚡ ตั้ง Flash Sale</h2>
+    <input type="hidden" id="flashProductId"/>
+    <p style="font-size:13px;color:var(--text-sec);margin-bottom:4px">ราคาปัจจุบัน: <span id="flashProductPrice" style="font-weight:600"></span></p>
+    <div class="form-group">
+      <label>ราคา Flash Sale (บาท)</label>
+      <input type="number" id="flashPrice" placeholder="ราคาที่ลดแล้ว" min="1"/>
+    </div>
+    <div class="form-group">
+      <label>ระยะเวลา</label>
+      <select id="flashHours" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text);font-size:14px">
+        <option value="1">1 ชั่วโมง</option>
+        <option value="2" selected>2 ชั่วโมง</option>
+        <option value="4">4 ชั่วโมง</option>
+        <option value="8">8 ชั่วโมง</option>
+        <option value="24">24 ชั่วโมง</option>
+      </select>
+    </div>
+    <button class="btn btn-g" style="width:100%;margin-top:8px" onclick="doSetFlash()">⚡ เปิด Flash Sale</button>
+  </div>
+</div>
+
+<!-- Bundle Detail Modal -->
+<div class="overlay" id="bundleOverlay">
+  <div class="modal">
+    <button class="mclose" onclick="closeOverlay('bundleOverlay')">×</button>
+    <div id="bundleOverlayContent"></div>
+  </div>
+</div>
 
 <!-- Product Share QR Modal -->
 <div class="overlay" id="shareQrOverlay">
@@ -730,8 +764,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260419g"></script>
-<script src="js/app.js?v=20260419g"></script>
+<script src="js/api.js?v=20260419h"></script>
+<script src="js/app.js?v=20260419h"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
