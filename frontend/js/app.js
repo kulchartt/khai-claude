@@ -1000,11 +1000,26 @@ async function doShipOrder(id, shipping_status){
   }
   window._shipOrderId=id;
   document.getElementById('trackingInput').value='';
+  document.getElementById('trackingCarrier').value='';
+  document.getElementById('trackingCarrierCustom').style.display='none';
+  document.getElementById('trackingCarrierCustom').value='';
   openOverlay('trackingOverlay');
 }
+function toggleCarrierCustom(){
+  const sel=document.getElementById('trackingCarrier');
+  const inp=document.getElementById('trackingCarrierCustom');
+  if(sel.value==='__custom__'){inp.style.display='block';inp.focus();}
+  else{inp.style.display='none';inp.value='';}
+}
+function _getTrackingCarrier(){
+  const sel=document.getElementById('trackingCarrier');
+  if(sel.value==='__custom__') return document.getElementById('trackingCarrierCustom').value.trim()||null;
+  return sel.value||null;
+}
+
 async function confirmShipWithTracking(){
   const tracking=document.getElementById('trackingInput').value.trim()||null;
-  const carrier=document.getElementById('trackingCarrier').value||null;
+  const carrier=_getTrackingCarrier();
   closeOverlay('trackingOverlay');
   try{
     const res=await api.shipOrder(window._shipOrderId,'shipped',tracking,carrier);

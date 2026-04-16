@@ -720,7 +720,7 @@
     <h2>🚚 ส่งพัสดุแล้ว</h2>
     <div class="field">
       <label>ขนส่ง <span style="color:var(--text-hint);font-weight:400;font-size:13px">(ไม่บังคับ)</span></label>
-      <select id="trackingCarrier" style="font-size:15px">
+      <select id="trackingCarrier" style="font-size:15px" onchange="toggleCarrierCustom()">
         <option value="">— เลือกขนส่ง —</option>
         <option value="EMS">📮 EMS (ไปรษณีย์ไทย)</option>
         <option value="Kerry">🟡 Kerry Express</option>
@@ -729,8 +729,9 @@
         <option value="Ninja Van">🥷 Ninja Van</option>
         <option value="DHL">🔴 DHL</option>
         <option value="SCG">🟦 SCG Express</option>
-        <option value="อื่นๆ">📦 อื่นๆ</option>
+        <option value="__custom__">✏️ พิมพ์เอง...</option>
       </select>
+      <input type="text" id="trackingCarrierCustom" placeholder="ชื่อขนส่ง เช่น Best Express" style="display:none;margin-top:8px;font-size:15px"/>
     </div>
     <div class="field">
       <label>เลข Tracking <span style="color:var(--text-hint);font-weight:400;font-size:13px">(ไม่บังคับ)</span></label>
