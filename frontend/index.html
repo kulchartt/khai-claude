@@ -689,6 +689,14 @@
 <script src="js/config.js"></script>
 <script src="js/api.js?v=20260419d"></script>
 <script src="js/app.js?v=20260419d"></script>
-<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  // Auto-reload when new SW version activates
+  navigator.serviceWorker.addEventListener('message', e => {
+    if(e.data?.type === 'SW_UPDATED') window.location.reload();
+  });
+}
+</script>
 </body>
 </html>

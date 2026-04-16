@@ -1,5 +1,5 @@
 // sw.js — network-first for everything, cache only as offline fallback
-const CACHE = 'mueasong-v7';
+const CACHE = 'mueasong-v8';
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -8,6 +8,8 @@ self.addEventListener('activate', e => {
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window' }))
+      .then(clients => clients.forEach(client => client.postMessage({ type: 'SW_UPDATED' })))
   );
 });
 
@@ -26,7 +28,7 @@ self.addEventListener('fetch', e => {
     fetch(e.request)
       .then(res => {
         if (res.ok) {
-          const cloned = res.clone(); // clone ก่อน return เพื่อป้องกัน body already used
+          const cloned = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, cloned));
         }
         return res;
