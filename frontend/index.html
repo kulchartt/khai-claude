@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260419z"/>
+  <link rel="stylesheet" href="css/style.css?v=20260420a"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -355,7 +355,7 @@
 </div>
 
 <!-- Map Meetup Overlay -->
-<div class="overlay" id="mapOverlay">
+<div class="overlay" id="mapOverlay" style="z-index:400">
   <div class="sheet">
     <div class="sheet-header"><span>🗺️ จุดนัดรับสินค้า</span><button class="close-btn" onclick="closeOverlay('mapOverlay')">✕</button></div>
     <div style="padding:16px">
@@ -918,8 +918,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260419z"></script>
-<script src="js/app.js?v=20260419z"></script>
+<script src="js/api.js?v=20260420a"></script>
+<script src="js/app.js?v=20260420a"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
