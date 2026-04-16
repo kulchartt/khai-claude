@@ -2285,20 +2285,22 @@ function openMeetupMap(src = 's') {
     const { map, marker } = _initGMap(container, lat, lng, true, onPick);
     _meetupMap = map; _meetupMarker = marker;
 
-    // Places Autocomplete
+    // Places Autocomplete (ถ้า Places API enable อยู่เท่านั้น)
     const searchInput = document.getElementById('meetupSearch');
-    const ac = new google.maps.places.Autocomplete(searchInput, {
-      componentRestrictions: { country: 'th' },
-      fields: ['geometry', 'name', 'formatted_address'],
-    });
-    ac.addListener('place_changed', () => {
-      const place = ac.getPlace();
-      if (!place.geometry) return;
-      const loc = place.geometry.location;
-      map.panTo(loc); map.setZoom(16);
-      marker.setPosition(loc);
-      _meetupLatLng = { lat: loc.lat(), lng: loc.lng() };
-    });
+    if (google.maps.places?.Autocomplete) {
+      const ac = new google.maps.places.Autocomplete(searchInput, {
+        componentRestrictions: { country: 'th' },
+        fields: ['geometry', 'name', 'formatted_address'],
+      });
+      ac.addListener('place_changed', () => {
+        const place = ac.getPlace();
+        if (!place.geometry) return;
+        const loc = place.geometry.location;
+        map.panTo(loc); map.setZoom(16);
+        marker.setPosition(loc);
+        _meetupLatLng = { lat: loc.lat(), lng: loc.lng() };
+      });
+    }
   }, 300);
 }
 
