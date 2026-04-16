@@ -2554,14 +2554,29 @@ async function deleteBiometric(id) {
 
 function _base64urlToBuffer(b64url) {
   if (!b64url) return new Uint8Array(0);
+  // Replace base64url chars → base64, then add padding
   const b64 = b64url.replace(/-/g,'+').replace(/_/g,'/');
   const padded = b64.padEnd(b64.length + (4 - b64.length % 4) % 4, '=');
-  const bin = atob(padded);
-  return Uint8Array.from(bin, c => c.charCodeAt(0));
+  // Use fetch/TextDecoder-free pure-JS decode (no atob) for reliability
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let result = [], i = 0;
+  const clean = padded.replace(/=+$/, '');
+  while (i < clean.length) {
+    const a = chars.indexOf(clean[i++] || ''), b = chars.indexOf(clean[i++] || '');
+    const c = chars.indexOf(clean[i++] || ''), d = chars.indexOf(clean[i++] || '');
+    const n = (a << 18) | (b << 12) | (c << 6) | d;
+    result.push((n >> 16) & 255);
+    if (c !== -1) result.push((n >> 8) & 255);
+    if (d !== -1) result.push(n & 255);
+  }
+  return new Uint8Array(result);
 }
 function _bufferToBase64url(buf) {
-  const bytes = new Uint8Array(buf instanceof ArrayBuffer ? buf : buf.buffer || buf);
-  let b64 = btoa(String.fromCharCode(...bytes));
+  // Use chunk-based btoa to avoid call stack limit on large buffers
+  const bytes = new Uint8Array(buf instanceof ArrayBuffer ? buf : (buf.buffer ? buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) : buf));
+  let b64 = '', chunk = 8192;
+  for (let i = 0; i < bytes.length; i += chunk) b64 += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  b64 = btoa(b64);
   return b64.replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
 }
 
