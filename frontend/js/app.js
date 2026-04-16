@@ -995,52 +995,57 @@ let _newImgDragIdx = null;
 function _renderNewImgGrid(files, gridEl, inputId, isEdit) {
   gridEl.innerHTML = '';
   if (!files.length) return;
+  const hasExisting = isEdit && _editImgs.length > 0;
+  // สร้าง div ตามลำดับก่อน เพื่อให้ DOM order ถูกต้องเสมอ
+  const divs = Array.from(files).map((file, i) => {
+    const div = document.createElement('div');
+    div.className = 'edit-img-item';
+    div.draggable = true;
+    div.dataset.idx = i;
+    div.style.cssText = 'position:relative;cursor:grab';
+    const showCover = i === 0 && !hasExisting;
+    div.innerHTML = `
+      <img data-idx="${i}" style="width:100%;height:100%;object-fit:cover"/>
+      ${showCover ? '<span class="edit-img-first-badge">หน้าปก</span>' : ''}
+      <span style="position:absolute;top:3px;left:4px;font-size:10px;font-weight:700;color:#fff;background:rgba(0,0,0,.45);border-radius:3px;padding:1px 5px;pointer-events:none">${i+1}</span>
+      <button class="${isEdit?'edit-img-del':'remove-img'}" onclick="removeNewImg(${i},'${inputId}')" title="ลบรูปนี้">${isEdit?'✕':'×'}</button>
+      <div style="position:absolute;bottom:2px;right:2px;font-size:13px;opacity:.4;pointer-events:none">⠿</div>`;
+    div.addEventListener('dragstart', ev => {
+      _newImgDragIdx = i;
+      div.classList.add('dragging');
+      ev.dataTransfer.effectAllowed = 'move';
+    });
+    div.addEventListener('dragover', ev => {
+      ev.preventDefault();
+      gridEl.querySelectorAll('.edit-img-item').forEach(el => el.classList.remove('drag-over'));
+      div.classList.add('drag-over');
+    });
+    div.addEventListener('drop', ev => {
+      ev.preventDefault();
+      const targetIdx = parseInt(div.dataset.idx);
+      if (_newImgDragIdx === null || _newImgDragIdx === targetIdx) return;
+      const input = document.getElementById(inputId);
+      const arr = Array.from(input.files);
+      const moved = arr.splice(_newImgDragIdx, 1)[0];
+      arr.splice(targetIdx, 0, moved);
+      const dt = new DataTransfer();
+      arr.forEach(f => dt.items.add(f));
+      input.files = dt.files;
+      if (isEdit) previewEditImages(input);
+      else previewImages(input);
+    });
+    div.addEventListener('dragend', () => {
+      gridEl.querySelectorAll('.edit-img-item,.img-preview-item').forEach(el => el.classList.remove('dragging','drag-over'));
+      _newImgDragIdx = null;
+    });
+    gridEl.appendChild(div); // append ตามลำดับทันที
+    return div;
+  });
+  // โหลด src แยกต่างหาก ไม่กระทบลำดับ DOM
   Array.from(files).forEach((file, i) => {
     const reader = new FileReader();
     reader.onload = e => {
-      const div = document.createElement('div');
-      div.className = 'edit-img-item';
-      div.draggable = true;
-      div.dataset.idx = i;
-      div.style.cssText = 'position:relative;cursor:grab';
-      const hasExisting = isEdit && _editImgs.length > 0;
-      const showCover = i === 0 && !hasExisting;
-      div.innerHTML = `
-        <img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover"/>
-        ${showCover ? '<span class="edit-img-first-badge">หน้าปก</span>' : ''}
-        <span style="position:absolute;top:3px;left:4px;font-size:10px;font-weight:700;color:#fff;background:rgba(0,0,0,.45);border-radius:3px;padding:1px 5px;pointer-events:none">${i+1}</span>
-        <button class="${isEdit?'edit-img-del':'remove-img'}" onclick="removeNewImg(${i},'${inputId}')" title="ลบรูปนี้">${isEdit?'✕':'×'}</button>
-        <div style="position:absolute;bottom:2px;right:2px;font-size:13px;opacity:.4;pointer-events:none">⠿</div>`;
-      div.addEventListener('dragstart', ev => {
-        _newImgDragIdx = i;
-        div.classList.add('dragging');
-        ev.dataTransfer.effectAllowed = 'move';
-      });
-      div.addEventListener('dragover', ev => {
-        ev.preventDefault();
-        gridEl.querySelectorAll('.edit-img-item').forEach(el => el.classList.remove('drag-over'));
-        div.classList.add('drag-over');
-      });
-      div.addEventListener('drop', ev => {
-        ev.preventDefault();
-        const targetIdx = parseInt(div.dataset.idx);
-        if (_newImgDragIdx === null || _newImgDragIdx === targetIdx) return;
-        // reorder files
-        const input = document.getElementById(inputId);
-        const arr = Array.from(input.files);
-        const moved = arr.splice(_newImgDragIdx, 1)[0];
-        arr.splice(targetIdx, 0, moved);
-        const dt = new DataTransfer();
-        arr.forEach(f => dt.items.add(f));
-        input.files = dt.files;
-        if (isEdit) previewEditImages(input);
-        else previewImages(input);
-      });
-      div.addEventListener('dragend', () => {
-        gridEl.querySelectorAll('.edit-img-item,.img-preview-item').forEach(el => el.classList.remove('dragging','drag-over'));
-        _newImgDragIdx = null;
-      });
-      gridEl.appendChild(div);
+      divs[i].querySelector('img').src = e.target.result;
     };
     reader.readAsDataURL(file);
   });
