@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260419n"/>
+  <link rel="stylesheet" href="css/style.css?v=20260419o"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -457,6 +457,16 @@
   <div class="modal">
     <button class="mclose" onclick="closeOverlay('sellOverlay')">×</button>
     <h2>ลงขายสินค้า</h2>
+    <div class="field">
+      <label style="font-size:15px;font-weight:700">📷 รูปภาพสินค้า <span style="color:var(--green)">(สำคัญ!)</span></label>
+      <div class="img-upload-wrap" id="imgUploadWrap" onclick="document.getElementById('sImg').click()" style="padding:32px 16px;border-color:var(--green);border-width:2.5px">
+        <div style="font-size:48px;margin-bottom:8px">📸</div>
+        <div style="font-size:15px;font-weight:600;color:var(--green);margin-bottom:4px">กดที่นี่เพื่อเลือกรูป</div>
+        <div style="font-size:12px;color:var(--text-hint)">เลือกได้สูงสุด 10 รูป · JPG, PNG ไม่เกิน 5MB/รูป</div>
+      </div>
+      <input type="file" id="sImg" accept="image/*" multiple style="display:none" onchange="previewImages(this)"/>
+      <div class="img-preview-grid" id="imgPreviewGrid"></div>
+    </div>
     <div class="field"><label>ชื่อสินค้า *</label><input type="text" id="sTitle" placeholder="เช่น iPhone 14 Pro Max"/></div>
     <div class="field"><label>ราคา (บาท) *</label><input type="number" id="sPrice" placeholder="0"/></div>
     <div class="field"><label>หมวดหมู่</label>
@@ -474,7 +484,6 @@
         <option value="pickup">🤝 นัดรับเท่านั้น</option>
       </select>
     </div>
-    <div class="field"><label>รูปภาพ (เลือกได้สูงสุด 10 รูป)</label><div class="img-upload-wrap" id="imgUploadWrap" onclick="document.getElementById('sImg').click()"><div class="img-upload-placeholder">📷 กดเพื่อเลือกรูปภาพ<br><span style="font-size:12px;color:var(--text-hint)">JPG, PNG ขนาดไม่เกิน 5MB ต่อรูป</span></div></div><input type="file" id="sImg" accept="image/*" multiple style="display:none" onchange="previewImages(this)"/><div class="img-preview-grid" id="imgPreviewGrid"></div></div>
     <div class="field" style="background:var(--bg-sec);border-radius:var(--radius);padding:12px">
       <label style="font-weight:600;margin-bottom:8px;display:block">⚙️ ตัวเลือกการโพสต์</label>
       <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer">
@@ -881,8 +890,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260419n"></script>
-<script src="js/app.js?v=20260419n"></script>
+<script src="js/api.js?v=20260419o"></script>
+<script src="js/app.js?v=20260419o"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
