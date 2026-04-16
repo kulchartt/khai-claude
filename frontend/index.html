@@ -6,20 +6,20 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <meta http-equiv="Expires" content="0"/>
-  <title>มือสองmarket</title>
-  <meta name="description" content="ซื้อ-ขายของมือสองคุณภาพดี ราคาคุ้มค่า ส่งทั่วประเทศ"/>
+  <title>PloiKhong — ซื้อ-ขายของทุกประเภท</title>
+  <meta name="description" content="PloiKhong ตลาดออนไลน์ ของมือหนึ่งก็มี มือสองก็ดี ราคาคุ้มค่า ส่งทั่วประเทศ"/>
   <meta name="theme-color" content="#1D9E75"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-  <meta name="apple-mobile-web-app-title" content="มือสองmarket"/>
+  <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260419i"/>
+  <link rel="stylesheet" href="css/style.css?v=20260419j"/>
 </head>
 <body>
 
 <header class="navbar">
-  <div class="logo" onclick="goPage('home')">มือสอง<span>market</span></div>
+  <div class="logo" onclick="goPage('home')">Ploi<span>Khong</span></div>
   <div class="search-wrap" style="position:relative">
     <input type="text" id="searchQ" placeholder="ค้นหาสินค้า..." oninput="applyFilter();showSuggestions(this.value)" onfocus="showSuggestions(this.value)" onblur="hideSuggestions()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
     <button onclick="openAdvSearch()">🔍</button>
@@ -52,8 +52,8 @@
 <main>
   <div id="page-home" class="page active">
     <section class="hero">
-      <h1>ของดี ราคาคุ้ม ทุกวัน</h1>
-      <p>ซื้อ-ขายของมือสองคุณภาพดี ส่งทั่วประเทศ</p>
+      <h1>ของดี ราคาโดน ทุกวัน</h1>
+      <p>มือหนึ่งก็มี มือสองก็ดี — ส่งทั่วประเทศ</p>
       <div class="hero-btns">
         <button class="btn btn-g" onclick="openSell()">+ ลงขายของฉัน</button>
         <button class="btn" onclick="document.getElementById('products-section').scrollIntoView({behavior:'smooth'})">ดูสินค้าทั้งหมด</button>
@@ -86,9 +86,10 @@
         </select>
         <select id="condSel" onchange="applyFilter()">
           <option value="">สภาพทั้งหมด</option>
-          <option value="มือสองใหม่">มือสองใหม่</option>
-          <option value="สภาพดี">สภาพดี</option>
-          <option value="สภาพพอใช้">สภาพพอใช้</option>
+          <option value="มือหนึ่ง">🆕 มือหนึ่ง (ใหม่)</option>
+          <option value="เหมือนใหม่">✨ เหมือนใหม่</option>
+          <option value="สภาพดี">👍 สภาพดี</option>
+          <option value="สภาพพอใช้">🔧 สภาพพอใช้</option>
         </select>
         <select id="locationSel" onchange="applyFilter()">
           <option value="">📍 ทุกจังหวัด</option>
@@ -360,7 +361,7 @@
       <select id="sCat"><option>มือถือ</option><option>เสื้อผ้า</option><option>หนังสือ</option><option>กีฬา</option><option>ของแต่งบ้าน</option><option>กล้อง</option></select>
     </div>
     <div class="field"><label>สภาพสินค้า</label>
-      <select id="sCond"><option>มือสองใหม่</option><option>สภาพดี</option><option>สภาพพอใช้</option></select>
+      <select id="sCond"><option>มือหนึ่ง (ใหม่)</option><option>เหมือนใหม่</option><option>สภาพดี</option><option>สภาพพอใช้</option></select>
     </div>
     <div class="field"><label>รายละเอียด</label><textarea id="sDesc" placeholder="อธิบายสินค้า..."></textarea></div>
     <div class="field"><label>จังหวัด</label><input type="text" id="sLoc" placeholder="เช่น กรุงเทพฯ"/></div>
@@ -434,7 +435,7 @@
       <select id="eCat"><option>มือถือ</option><option>เสื้อผ้า</option><option>หนังสือ</option><option>กีฬา</option><option>ของแต่งบ้าน</option><option>กล้อง</option></select>
     </div>
     <div class="field"><label>สภาพสินค้า</label>
-      <select id="eCond"><option>มือสองใหม่</option><option>สภาพดี</option><option>สภาพพอใช้</option></select>
+      <select id="eCond"><option>มือหนึ่ง (ใหม่)</option><option>เหมือนใหม่</option><option>สภาพดี</option><option>สภาพพอใช้</option></select>
     </div>
     <div class="field"><label>รายละเอียด</label><textarea id="eDesc" placeholder="อธิบายสินค้า..."></textarea></div>
     <div class="field"><label>จังหวัด</label><input type="text" id="eLoc" placeholder="เช่น กรุงเทพฯ"/></div>
@@ -775,8 +776,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260419i"></script>
-<script src="js/app.js?v=20260419i"></script>
+<script src="js/api.js?v=20260419j"></script>
+<script src="js/app.js?v=20260419j"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

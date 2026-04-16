@@ -1,6 +1,6 @@
 console.log('%c app.js v20260418b ', 'background:#16a34a;color:#fff;padding:2px 6px;border-radius:4px');
 const EMOJIS={มือถือ:'📱',เสื้อผ้า:'👗',หนังสือ:'📚',กีฬา:'⚽',ของแต่งบ้าน:'🏠',กล้อง:'📷'};
-const CMAP={'มือสองใหม่':'cond-new','สภาพดี':'cond-good','สภาพพอใช้':'cond-fair'};
+const CMAP={'มือหนึ่ง (ใหม่)':'cond-brand-new','เหมือนใหม่':'cond-new','สภาพดี':'cond-good','สภาพพอใช้':'cond-fair','มือสองใหม่':'cond-new'};
 const NICONS={chat:'💬',review:'⭐',order:'📦',system:'📢'};
 const QUICK_REPLIES=['ยังมีอยู่ไหมครับ?','ลดราคาได้ไหมครับ?','นัดรับได้ไหมครับ?','ส่งพัสดุได้ไหมครับ?','รีวิวดีไหมครับ?','สภาพจริงเป็นยังไงครับ?'];
 
@@ -435,7 +435,7 @@ function downloadInvoice(order){
     doc.setFontSize(18);doc.setTextColor(29,158,117);
     doc.text('INVOICE',105,20,{align:'center'});
     doc.setFontSize(10);doc.setTextColor(100);
-    doc.text('มือสองmarket',105,28,{align:'center'});
+    doc.text('PloiKhong',105,28,{align:'center'});
     doc.setDrawColor(29,158,117);doc.setLineWidth(0.5);
     doc.line(14,33,196,33);
     doc.setFontSize(11);doc.setTextColor(30);
@@ -458,7 +458,7 @@ function downloadInvoice(order){
     doc.setFontSize(13);doc.setTextColor(29,158,117);
     doc.text(`รวมทั้งสิ้น: ฿${Number(order.total_price||0).toLocaleString()}`,196,y+12,{align:'right'});
     doc.setFontSize(9);doc.setTextColor(150);
-    doc.text('ขอบคุณที่ใช้บริการ มือสองmarket',105,285,{align:'center'});
+    doc.text('ขอบคุณที่ใช้บริการ PloiKhong',105,285,{align:'center'});
     doc.save(`invoice-order-${order.id}.pdf`);
   }catch(e){toast('ไม่สามารถสร้าง PDF ได้: '+e.message);}
 }
