@@ -127,4 +127,6 @@ const api = {
   submitFeedback(category, message, sender_name, sender_email) { return this.post('/api/feedback', {category, message, sender_name, sender_email}); },
   adminGetFeedback() { return this.get('/api/feedback/admin'); },
   adminUpdateFeedback(id, data) { return this.patch('/api/feedback/admin/'+id, data); },
+  adminGetReports() { return this.get('/api/reports'); },
+  adminUpdateReport(id, status) { return this.patch('/api/reports/'+id+'/status', {status}); },
 };
