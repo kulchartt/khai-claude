@@ -237,6 +237,47 @@ async function initDB() {
     created_at TIMESTAMP DEFAULT NOW(), UNIQUE(product_id, reporter_id)
   )`);
 
+  // Round 4 features
+
+  // Community Board
+  await db.query(`CREATE TABLE IF NOT EXISTS posts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    category TEXT DEFAULT 'ทั่วไป',
+    image_url TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+  await db.query(`CREATE TABLE IF NOT EXISTS post_comments (
+    id SERIAL PRIMARY KEY,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+  await db.query(`CREATE TABLE IF NOT EXISTS post_likes (
+    post_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    PRIMARY KEY (post_id, user_id)
+  )`);
+
+  // Story Feed
+  await db.query(`CREATE TABLE IF NOT EXISTS stories (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    image_url TEXT,
+    caption TEXT DEFAULT '',
+    expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '24 hours'),
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+
+  // Map Meetup fields on products
+  await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS meetup_lat FLOAT DEFAULT NULL`);
+  await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS meetup_lng FLOAT DEFAULT NULL`);
+  await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS meetup_note TEXT DEFAULT NULL`);
+  await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS watermark INTEGER DEFAULT 0`);
+
   const { rows } = await db.query('SELECT COUNT(*) as c FROM products');
   if (parseInt(rows[0].c) === 0) {
     const hash = await bcrypt.hash('demo1234', 10);

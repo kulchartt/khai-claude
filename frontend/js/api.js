@@ -142,4 +142,17 @@ const api = {
   deleteBundle(id) { return this.delete('/api/bundles/'+id); },
   setHolidayMode(holiday_mode, holiday_message, holiday_until) { return this.patch('/api/shop/me', {holiday_mode, holiday_message, holiday_until}); },
   getPoints() { return this.get('/api/users/me/points'); },
+  getPosts(category) {
+    const q = category && category !== 'ทั้งหมด' ? '?category='+encodeURIComponent(category) : '';
+    return this.get('/api/community/posts'+q);
+  },
+  getPost(id) { return this.get('/api/community/posts/'+id); },
+  createPost(fd) { return this.req('POST','/api/community/posts',fd,true); },
+  deletePost(id) { return this.delete('/api/community/posts/'+id); },
+  commentPost(id, content) { return this.post('/api/community/posts/'+id+'/comment', {content}); },
+  likePost(id) { return this.post('/api/community/posts/'+id+'/like', {}); },
+  getStories() { return this.get('/api/stories'); },
+  addStory(fd) { return this.req('POST','/api/stories',fd,true); },
+  deleteStory(id) { return this.delete('/api/stories/'+id); },
+  bulkCSV(products) { return this.post('/api/products/bulk-csv', {products}); },
 };

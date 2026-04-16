@@ -14,7 +14,9 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260419l"/>
+  <link rel="stylesheet" href="css/style.css?v=20260419m"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -28,6 +30,7 @@
   <nav class="nav-r">
     <button class="icon-btn" onclick="goPage('home')">🏠</button>
     <button class="icon-btn" onclick="openCategories()">🗂️</button>
+    <button class="icon-btn" onclick="goPage('community');loadCommunity()" title="ชุมชน">📋</button>
     <button class="icon-btn" onclick="openNotifications()" id="notifBtn">🔔<span class="badge hidden" id="notifBadge">0</span></button>
     <button class="icon-btn" onclick="openChatList()">💬<span class="badge hidden" id="chatBadge">0</span></button>
     <button class="icon-btn" onclick="openWishlist()">❤️<span class="badge hidden" id="wlBadge">0</span></button>
@@ -51,6 +54,14 @@
 
 <main>
   <div id="page-home" class="page active">
+    <!-- Story Strip -->
+    <div id="storyStrip" class="story-strip" style="display:none">
+      <div class="story-add" onclick="openAddStory()">
+        <div class="story-add-icon">＋</div>
+        <div class="story-add-label">เพิ่ม Story</div>
+      </div>
+      <div id="storyList" class="story-list"></div>
+    </div>
     <section class="hero">
       <h1>ของดี ราคาโดน ทุกวัน</h1>
       <p>มือหนึ่งก็มี มือสองก็ดี — ส่งทั่วประเทศ</p>
@@ -245,6 +256,24 @@
     </div>
   </div>
 
+  <div id="page-community" class="page">
+    <div style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-size:20px;font-weight:700">📋 ชุมชน</h2>
+        <button class="btn btn-g btn-sm" onclick="openNewPost()">✏️ โพสต์ใหม่</button>
+      </div>
+      <div class="community-cats" id="communityCats">
+        <div class="chip on" onclick="setCommunityCategory('ทั้งหมด',this)">ทั้งหมด</div>
+        <div class="chip" onclick="setCommunityCategory('ทั่วไป',this)">💬 ทั่วไป</div>
+        <div class="chip" onclick="setCommunityCategory('ถาม-ตอบ',this)">❓ ถาม-ตอบ</div>
+        <div class="chip" onclick="setCommunityCategory('แชร์ดีล',this)">🔥 แชร์ดีล</div>
+        <div class="chip" onclick="setCommunityCategory('รีวิวสินค้า',this)">⭐ รีวิว</div>
+        <div class="chip" onclick="setCommunityCategory('นัดแนะ',this)">📍 นัดแนะ</div>
+      </div>
+      <div id="communityList" class="community-list"><div class="loading">กำลังโหลด...</div></div>
+    </div>
+  </div>
+
   <!-- Swipe to Browse Page -->
   <div id="page-swipe" class="page">
     <div class="back-btn" onclick="goPage('home')">← กลับ</div>
@@ -263,6 +292,79 @@
     </div>
   </div>
 </main>
+
+<!-- New Post Overlay -->
+<div class="overlay" id="newPostOverlay">
+  <div class="sheet">
+    <div class="sheet-header"><span>✏️ โพสต์ใหม่</span><button class="close-btn" onclick="closeOverlay('newPostOverlay')">✕</button></div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <select id="postCategory" class="input">
+        <option>ทั่วไป</option><option>ถาม-ตอบ</option><option>แชร์ดีล</option><option>รีวิวสินค้า</option><option>นัดแนะ</option>
+      </select>
+      <input type="text" id="postTitle" class="input" placeholder="หัวข้อ *"/>
+      <textarea id="postContent" class="input" rows="5" placeholder="เนื้อหา *" style="resize:vertical"></textarea>
+      <input type="file" id="postImage" accept="image/*" style="font-size:13px"/>
+      <button class="btn btn-g" onclick="doCreatePost()">📤 โพสต์เลย</button>
+    </div>
+  </div>
+</div>
+
+<!-- Post Detail Overlay -->
+<div class="overlay" id="postDetailOverlay">
+  <div class="sheet">
+    <div class="sheet-header"><span>📋 โพสต์</span><button class="close-btn" onclick="closeOverlay('postDetailOverlay')">✕</button></div>
+    <div id="postDetailContent" style="padding:16px;overflow-y:auto;max-height:80vh"></div>
+  </div>
+</div>
+
+<!-- Story Viewer Overlay -->
+<div class="overlay" id="storyOverlay" style="background:rgba(0,0,0,.95)">
+  <div style="position:relative;width:100%;max-width:420px;margin:auto;height:100vh;display:flex;flex-direction:column;justify-content:center">
+    <button onclick="closeOverlay('storyOverlay')" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer">✕</button>
+    <div id="storyViewerContent" style="text-align:center;padding:20px"></div>
+  </div>
+</div>
+
+<!-- Add Story Overlay -->
+<div class="overlay" id="addStoryOverlay">
+  <div class="sheet">
+    <div class="sheet-header"><span>📖 เพิ่ม Story</span><button class="close-btn" onclick="closeOverlay('addStoryOverlay')">✕</button></div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <input type="file" id="storyImageInput" accept="image/*" style="font-size:13px"/>
+      <input type="text" id="storyCaption" class="input" placeholder="คำบรรยาย (ไม่บังคับ)"/>
+      <button class="btn btn-g" onclick="doAddStory()">📤 โพสต์ Story</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk CSV Overlay -->
+<div class="overlay" id="csvOverlay">
+  <div class="sheet">
+    <div class="sheet-header"><span>📊 อัปโหลดสินค้าจาก CSV</span><button class="close-btn" onclick="closeOverlay('csvOverlay')">✕</button></div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div style="background:var(--bg-sec);border-radius:8px;padding:12px;font-size:13px">
+        <b>รูปแบบ CSV ที่ถูกต้อง:</b><br/>
+        <code style="font-size:11px">title,price,category,condition,description,location</code><br/><br/>
+        <button class="btn btn-sm" onclick="downloadCSVTemplate()">⬇️ ดาวน์โหลด Template</button>
+      </div>
+      <input type="file" id="csvFileInput" accept=".csv" style="font-size:13px"/>
+      <div id="csvPreview" style="font-size:13px;color:var(--text-sec)"></div>
+      <button class="btn btn-g" onclick="doUploadCSV()">📤 อัปโหลด</button>
+    </div>
+  </div>
+</div>
+
+<!-- Map Meetup Overlay -->
+<div class="overlay" id="mapOverlay">
+  <div class="sheet">
+    <div class="sheet-header"><span>🗺️ จุดนัดรับสินค้า</span><button class="close-btn" onclick="closeOverlay('mapOverlay')">✕</button></div>
+    <div style="padding:16px">
+      <div id="meetupMap" style="height:300px;border-radius:12px;margin-bottom:12px"></div>
+      <input type="text" id="meetupNote" class="input" placeholder="หมายเหตุ เช่น หน้า 7-Eleven ตึก A" style="margin-bottom:12px"/>
+      <button class="btn btn-g" onclick="confirmMeetupLocation()">📍 ยืนยันจุดนัดรับ</button>
+    </div>
+  </div>
+</div>
 
 <!-- Flash Sale Modal -->
 <div class="overlay" id="flashOverlay">
@@ -377,6 +479,9 @@
       <label style="font-weight:600;margin-bottom:8px;display:block">⚙️ ตัวเลือกการโพสต์</label>
       <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer">
         <input type="checkbox" id="sellDraft"/> <span>บันทึกเป็น Draft (ยังไม่เผยแพร่)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer">
+        <input type="checkbox" id="sellWatermark"/> 🖼️ ใส่ลายน้ำ PloiKhong บนรูป
       </label>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px">
         <span style="white-space:nowrap">⏰ เผยแพร่วันที่:</span>
@@ -776,8 +881,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260419l"></script>
-<script src="js/app.js?v=20260419l"></script>
+<script src="js/api.js?v=20260419m"></script>
+<script src="js/app.js?v=20260419m"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

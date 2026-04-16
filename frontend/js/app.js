@@ -177,7 +177,7 @@ function profileTab(tab){
   document.querySelectorAll('.profile-tab').forEach(t=>t.classList.toggle('on',t.id==='ptab-'+tab));
   const c=document.getElementById('profileTabContent');
   if(tab==='products'){
-    c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px"><span style="font-weight:600">สินค้าของฉัน</span><button class="btn btn-sm btn-g" onclick="openSell()">+ ลงขายเพิ่ม</button></div><div class="product-grid" id="myProductsGrid"></div><div class="promptpay-settings" id="promptpaySettings"><div style="font-weight:600;margin-bottom:8px">💳 PromptPay ของฉัน <span style="font-size:12px;color:var(--text-hint);font-weight:400">(ผู้ซื้อจะเห็นเมื่อ checkout — ไม่แสดงในโปรไฟล์)</span></div><div style="display:flex;gap:8px"><input type="text" id="promptpayInput" placeholder="เบอร์มือถือ หรือ เลขบัตรประชาชน" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text);font-size:14px"/><button class="btn btn-g btn-sm" onclick="savePromptpay()">บันทึก</button></div></div>`;
+    c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px"><span style="font-weight:600">สินค้าของฉัน</span><div style="display:flex;gap:8px"><button class="btn btn-sm" onclick="openCSVUpload()">📊 อัปโหลด CSV</button><button class="btn btn-sm btn-g" onclick="openSell()">+ ลงขายเพิ่ม</button></div></div><div class="product-grid" id="myProductsGrid"></div><div class="promptpay-settings" id="promptpaySettings"><div style="font-weight:600;margin-bottom:8px">💳 PromptPay ของฉัน <span style="font-size:12px;color:var(--text-hint);font-weight:400">(ผู้ซื้อจะเห็นเมื่อ checkout — ไม่แสดงในโปรไฟล์)</span></div><div style="display:flex;gap:8px"><input type="text" id="promptpayInput" placeholder="เบอร์มือถือ หรือ เลขบัตรประชาชน" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text);font-size:14px"/><button class="btn btn-g btn-sm" onclick="savePromptpay()">บันทึก</button></div></div>`;
     renderMyCards(window._myItems||[],'myProductsGrid');
     api.getPromptpay().then(r=>{if(r.promptpay)document.getElementById('promptpayInput').value=r.promptpay;}).catch(()=>{});
     // Show pending reservations for seller
@@ -501,7 +501,7 @@ async function doLogin(){const email=document.getElementById('loginEmail').value
 async function doRegister(){const name=document.getElementById('regName').value.trim(),email=document.getElementById('regEmail').value.trim(),pass=document.getElementById('regPass').value;if(!name||!email||!pass){toast('กรุณากรอกข้อมูลให้ครบ');return;}try{const res=await api.register(name,email,pass);localStorage.setItem('token',res.token);localStorage.setItem('user',JSON.stringify(res.user));state.user=res.user;state.token=res.token;closeOverlay('loginOverlay');updateNav();toast('สมัครสำเร็จ! ยินดีต้อนรับ 🎉','#1D9E75');connectSocket();}catch(e){toast(e.message);}}
 function doLogout(){if(socket){socket.disconnect();socket=null;}localStorage.removeItem('token');localStorage.removeItem('user');state.user=null;state.token=null;state.cartCount=0;state.wlCount=0;state.notifCount=0;state.chatCount=0;state.wlIds=[];['cartBadge','wlBadge','notifBadge','chatBadge'].forEach(id=>updateBadge(id,0));updateNav();goPage('home');toast('ออกจากระบบแล้ว');}
 function openSell(){if(!state.user){toast('กรุณาเข้าสู่ระบบก่อน');openOverlay('loginOverlay');return;}openOverlay('sellOverlay');}
-async function doSell(){const title=document.getElementById('sTitle').value.trim(),price=document.getElementById('sPrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}const fd=new FormData();fd.append('title',title);fd.append('price',price);fd.append('category',document.getElementById('sCat').value);fd.append('condition',document.getElementById('sCond').value);fd.append('description',document.getElementById('sDesc').value);fd.append('location',document.getElementById('sLoc').value);fd.append('delivery_method',document.getElementById('sDel').value);const isDraft=document.getElementById('sellDraft')?.checked;const publishAt=document.getElementById('sellPublishAt')?.value;if(isDraft)fd.append('is_draft','1');if(publishAt)fd.append('publish_at',publishAt);const imgs=document.getElementById('sImg').files;for(const img of imgs)fd.append('images',img);try{
+async function doSell(){const title=document.getElementById('sTitle').value.trim(),price=document.getElementById('sPrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}const fd=new FormData();fd.append('title',title);fd.append('price',price);fd.append('category',document.getElementById('sCat').value);fd.append('condition',document.getElementById('sCond').value);fd.append('description',document.getElementById('sDesc').value);fd.append('location',document.getElementById('sLoc').value);fd.append('delivery_method',document.getElementById('sDel').value);const isDraft=document.getElementById('sellDraft')?.checked;const publishAt=document.getElementById('sellPublishAt')?.value;if(isDraft)fd.append('is_draft','1');if(publishAt)fd.append('publish_at',publishAt);const watermark=document.getElementById('sellWatermark')?.checked?'1':'0';fd.append('watermark',watermark);const imgs=document.getElementById('sImg').files;for(const img of imgs)fd.append('images',img);try{
     await api.createProduct(fd);
     closeOverlay('sellOverlay');
     ['sTitle','sPrice','sDesc','sLoc'].forEach(i=>document.getElementById(i).value='');
@@ -693,6 +693,7 @@ async function init(){
   }
 
   loadTrending();
+  loadStories();
 
   window.addEventListener('hashchange',()=>{
     const h=window.location.hash;
@@ -1630,3 +1631,294 @@ function initSwipeDrag(card){
     if(diff>80){const ov=e.target.closest('.overlay');if(ov)ov.classList.remove('open');}
   },{ passive:true });
 })();
+
+// ============ ROUND 4: Community Board ============
+let _communityCategory = 'ทั้งหมด';
+
+function setCommunityCategory(cat, el) {
+  _communityCategory = cat;
+  document.querySelectorAll('#communityCats .chip').forEach(c => c.classList.remove('on'));
+  if (el) el.classList.add('on');
+  loadCommunity();
+}
+
+async function loadCommunity() {
+  const list = document.getElementById('communityList');
+  if (!list) return;
+  list.innerHTML = '<div class="loading">กำลังโหลด...</div>';
+  try {
+    const posts = await api.getPosts(_communityCategory);
+    if (!posts.length) { list.innerHTML = '<div class="empty-state"><span class="empty-state-icon">📋</span><h3>ยังไม่มีโพสต์</h3><p>เป็นคนแรกที่โพสต์ในหมวดนี้!</p></div>'; return; }
+    list.innerHTML = posts.map(p => `
+      <div class="community-card" onclick="openPost(${p.id})">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <div class="story-avatar">${(p.author_name||'?').slice(0,2).toUpperCase()}</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:13px">${p.author_name}</div>
+            <div style="font-size:11px;color:var(--text-hint)">${new Date(p.created_at).toLocaleDateString('th',{year:'numeric',month:'short',day:'numeric'})}</div>
+          </div>
+          <span class="community-cat-badge">${p.category}</span>
+        </div>
+        ${p.image_url ? `<img src="${p.image_url}" style="width:100%;border-radius:8px;max-height:200px;object-fit:cover;margin-bottom:8px"/>` : ''}
+        <div style="font-weight:700;font-size:15px;margin-bottom:4px">${p.title}</div>
+        <div style="font-size:13px;color:var(--text-sec);margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${p.content}</div>
+        <div style="display:flex;gap:16px;font-size:12px;color:var(--text-hint)">
+          <span>❤️ ${p.like_count} ถูกใจ</span>
+          <span>💬 ${p.comment_count} ความคิดเห็น</span>
+        </div>
+      </div>`).join('');
+  } catch(e) { toast(e.message); }
+}
+
+function openNewPost() {
+  if (!state.user) { openOverlay('loginOverlay'); return; }
+  document.getElementById('postTitle').value = '';
+  document.getElementById('postContent').value = '';
+  document.getElementById('postImage').value = '';
+  openOverlay('newPostOverlay');
+}
+
+async function doCreatePost() {
+  const title = document.getElementById('postTitle').value.trim();
+  const content = document.getElementById('postContent').value.trim();
+  const category = document.getElementById('postCategory').value;
+  const imageFile = document.getElementById('postImage').files[0];
+  if (!title || !content) { toast('กรุณากรอกหัวข้อและเนื้อหา'); return; }
+  try {
+    const fd = new FormData();
+    fd.append('title', title); fd.append('content', content); fd.append('category', category);
+    if (imageFile) fd.append('image', imageFile);
+    await api.createPost(fd);
+    closeOverlay('newPostOverlay');
+    toast('โพสต์แล้ว ✅', '#1D9E75');
+    loadCommunity();
+  } catch(e) { toast(e.message); }
+}
+
+async function openPost(id) {
+  const c = document.getElementById('postDetailContent');
+  c.innerHTML = '<div class="loading">กำลังโหลด...</div>';
+  openOverlay('postDetailOverlay');
+  try {
+    const p = await api.getPost(id);
+    const canDelete = state.user && (state.user.id === p.user_id || state.user.is_admin);
+    c.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div class="story-avatar">${(p.author_name||'?').slice(0,2).toUpperCase()}</div>
+        <div style="flex:1">
+          <div style="font-weight:600">${p.author_name}</div>
+          <div style="font-size:11px;color:var(--text-hint)">${new Date(p.created_at).toLocaleDateString('th',{year:'numeric',month:'long',day:'numeric'})}</div>
+        </div>
+        <span class="community-cat-badge">${p.category}</span>
+        ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="doDeletePost(${p.id})">🗑️</button>` : ''}
+      </div>
+      ${p.image_url ? `<img src="${p.image_url}" style="width:100%;border-radius:10px;margin-bottom:12px;object-fit:cover"/>` : ''}
+      <h3 style="font-size:17px;font-weight:700;margin-bottom:8px">${p.title}</h3>
+      <p style="font-size:14px;color:var(--text-sec);white-space:pre-wrap;margin-bottom:16px">${p.content}</p>
+      <button class="btn btn-sm" onclick="doLikePost(${p.id},this)" style="margin-bottom:16px">❤️ ${p.like_count} ถูกใจ</button>
+      <div style="font-weight:600;margin-bottom:10px">💬 ความคิดเห็น (${p.comments.length})</div>
+      <div id="postComments">${p.comments.map(cm => `
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div class="story-avatar" style="width:32px;height:32px;font-size:12px">${(cm.author_name||'?').slice(0,2).toUpperCase()}</div>
+          <div style="flex:1;background:var(--bg-sec);border-radius:10px;padding:8px 12px">
+            <div style="font-weight:600;font-size:12px">${cm.author_name}</div>
+            <div style="font-size:13px">${cm.content}</div>
+          </div>
+        </div>`).join('')}
+      </div>
+      ${state.user ? `
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <input type="text" id="commentInput" class="input" placeholder="แสดงความคิดเห็น..." style="flex:1"/>
+          <button class="btn btn-g btn-sm" onclick="doComment(${p.id})">ส่ง</button>
+        </div>` : '<p style="color:var(--text-sec);font-size:13px;margin-top:12px">เข้าสู่ระบบเพื่อแสดงความคิดเห็น</p>'}`;
+  } catch(e) { toast(e.message); }
+}
+
+async function doLikePost(id, btn) {
+  if (!state.user) { openOverlay('loginOverlay'); return; }
+  try {
+    const res = await api.likePost(id);
+    toast(res.liked ? '❤️ ถูกใจแล้ว' : 'เอาถูกใจออกแล้ว');
+    openPost(id);
+  } catch(e) { toast(e.message); }
+}
+
+async function doComment(postId) {
+  const input = document.getElementById('commentInput');
+  const content = input.value.trim();
+  if (!content) return;
+  try {
+    await api.commentPost(postId, content);
+    input.value = '';
+    openPost(postId);
+  } catch(e) { toast(e.message); }
+}
+
+async function doDeletePost(id) {
+  if (!confirm('ลบโพสต์นี้?')) return;
+  try {
+    await api.deletePost(id);
+    closeOverlay('postDetailOverlay');
+    toast('ลบโพสต์แล้ว');
+    loadCommunity();
+  } catch(e) { toast(e.message); }
+}
+
+// ============ ROUND 4: Story Feed ============
+async function loadStories() {
+  try {
+    const stories = await api.getStories();
+    const strip = document.getElementById('storyStrip');
+    const list = document.getElementById('storyList');
+    if (!strip || !list) return;
+    strip.style.display = 'flex';
+    list.innerHTML = stories.map(s => `
+      <div class="story-item" onclick="viewStory(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+        <div class="story-ring">
+          ${s.image_url ? `<img src="${s.image_url}" class="story-thumb"/>` : `<div class="story-thumb story-text-thumb">${(s.author_name||'?').slice(0,2).toUpperCase()}</div>`}
+        </div>
+        <div class="story-name">${(s.author_name||'').split(' ')[0]}</div>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+function viewStory(s) {
+  const c = document.getElementById('storyViewerContent');
+  const timeLeft = Math.max(0, Math.floor((new Date(s.expires_at)-Date.now())/3600000));
+  c.innerHTML = `
+    <div style="font-size:13px;color:#aaa;margin-bottom:8px">${s.author_name} · เหลืออีก ${timeLeft} ชม.</div>
+    ${s.image_url ? `<img src="${s.image_url}" style="max-width:100%;max-height:60vh;border-radius:12px;object-fit:contain"/>` : ''}
+    ${s.caption ? `<p style="color:#fff;margin-top:12px;font-size:16px">${s.caption}</p>` : ''}
+    ${state.user && state.user.id === s.user_id ? `<button class="btn btn-danger btn-sm" style="margin-top:16px" onclick="doDeleteStory(${s.id})">🗑️ ลบ Story</button>` : ''}`;
+  openOverlay('storyOverlay');
+}
+
+function openAddStory() {
+  if (!state.user) { openOverlay('loginOverlay'); return; }
+  document.getElementById('storyImageInput').value = '';
+  document.getElementById('storyCaption').value = '';
+  openOverlay('addStoryOverlay');
+}
+
+async function doAddStory() {
+  const file = document.getElementById('storyImageInput').files[0];
+  const caption = document.getElementById('storyCaption').value.trim();
+  if (!file && !caption) { toast('ต้องมีรูปหรือข้อความ'); return; }
+  try {
+    const fd = new FormData();
+    if (file) fd.append('image', file);
+    fd.append('caption', caption);
+    await api.addStory(fd);
+    closeOverlay('addStoryOverlay');
+    toast('เพิ่ม Story แล้ว ✅', '#1D9E75');
+    loadStories();
+  } catch(e) { toast(e.message); }
+}
+
+async function doDeleteStory(id) {
+  if (!confirm('ลบ story นี้?')) return;
+  try {
+    await api.deleteStory(id);
+    closeOverlay('storyOverlay');
+    toast('ลบ story แล้ว');
+    loadStories();
+  } catch(e) { toast(e.message); }
+}
+
+// ============ ROUND 4: Bulk CSV Upload ============
+function openCSVUpload() {
+  document.getElementById('csvFileInput').value = '';
+  document.getElementById('csvPreview').innerHTML = '';
+  openOverlay('csvOverlay');
+}
+
+function downloadCSVTemplate() {
+  const header = 'title,price,category,condition,description,location';
+  const example = 'iPhone 14 สีดำ,15000,มือถือ,สภาพดี,ใช้งาน 6 เดือน แบตดี,กรุงเทพฯ';
+  const blob = new Blob([header+'\n'+example], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'ploikhong-template.csv'; a.click();
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,''));
+  return lines.slice(1).map(line => {
+    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g,''));
+    const obj = {};
+    headers.forEach((h,i) => obj[h] = vals[i]||'');
+    return obj;
+  }).filter(r => r.title && r.price);
+}
+
+document.addEventListener('change', e => {
+  if (e.target.id !== 'csvFileInput') return;
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const products = parseCSV(ev.target.result);
+    const preview = document.getElementById('csvPreview');
+    if (!products.length) { preview.innerHTML = '<span style="color:#dc2626">ไม่พบข้อมูล — ตรวจสอบรูปแบบ CSV</span>'; return; }
+    preview.innerHTML = `<b style="color:#16a34a">พบ ${products.length} รายการ</b><br/>${products.slice(0,3).map(p=>`• ${p.title} — ฿${p.price}`).join('<br/>')}${products.length>3?`<br/>...และอีก ${products.length-3} รายการ`:''}`;
+    window._csvProducts = products;
+  };
+  reader.readAsText(file, 'UTF-8');
+});
+
+async function doUploadCSV() {
+  const products = window._csvProducts;
+  if (!products || !products.length) { toast('กรุณาเลือกไฟล์ CSV ก่อน'); return; }
+  try {
+    const res = await api.bulkCSV(products);
+    closeOverlay('csvOverlay');
+    toast(`เพิ่มสินค้าแล้ว ${res.inserted} รายการ ✅`, '#1D9E75');
+    loadProducts();
+    window._csvProducts = null;
+  } catch(e) { toast(e.message); }
+}
+
+// ============ ROUND 4: Map Meetup ============
+let _meetupMap = null, _meetupMarker = null, _meetupLatLng = null;
+
+function openMeetupMap(defaultLat=13.7563, defaultLng=100.5018) {
+  openOverlay('mapOverlay');
+  setTimeout(() => {
+    const container = document.getElementById('meetupMap');
+    if (!container) return;
+    if (_meetupMap) { _meetupMap.remove(); _meetupMap = null; }
+    _meetupMap = L.map('meetupMap').setView([defaultLat, defaultLng], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(_meetupMap);
+    _meetupMarker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(_meetupMap);
+    _meetupLatLng = { lat: defaultLat, lng: defaultLng };
+    _meetupMarker.on('dragend', e => { _meetupLatLng = e.target.getLatLng(); });
+    _meetupMap.on('click', e => {
+      _meetupLatLng = e.latlng;
+      _meetupMarker.setLatLng(e.latlng);
+    });
+  }, 300);
+}
+
+function confirmMeetupLocation() {
+  if (!_meetupLatLng) { toast('กรุณาเลือกจุดบนแผนที่'); return; }
+  const note = document.getElementById('meetupNote').value.trim();
+  window._selectedMeetup = { lat: _meetupLatLng.lat, lng: _meetupLatLng.lng, note };
+  closeOverlay('mapOverlay');
+  toast(`📍 บันทึกจุดนัดรับแล้ว`, '#1D9E75');
+}
+
+function openProductMap(lat, lng, note) {
+  openOverlay('mapOverlay');
+  document.getElementById('meetupNote').value = note || '';
+  document.getElementById('meetupNote').readOnly = true;
+  document.querySelector('#mapOverlay .btn-g').style.display = 'none';
+  setTimeout(() => {
+    const container = document.getElementById('meetupMap');
+    if (!container) return;
+    if (_meetupMap) { _meetupMap.remove(); _meetupMap = null; }
+    _meetupMap = L.map('meetupMap').setView([lat, lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(_meetupMap);
+    L.marker([lat, lng]).addTo(_meetupMap).bindPopup(note || 'จุดนัดรับ').openPopup();
+  }, 300);
+}

@@ -87,7 +87,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', authMiddleware, uploadMiddleware, async (req, res) => {
   try {
-    const { title, price, category, condition, description, location, delivery_method, is_draft, publish_at } = req.body;
+    const { title, price, category, condition, description, location, delivery_method, is_draft, publish_at, meetup_lat, meetup_lng, meetup_note } = req.body;
     if (!title || !price || !category) return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     const db = getDB();
 
@@ -95,16 +95,23 @@ router.post('/', authMiddleware, uploadMiddleware, async (req, res) => {
     let firstImageUrl = '';
     const uploadedUrls = [];
     if (req.files && req.files.length > 0) {
+      const uploadOptions = { folder: 'mueasong/products' };
+      if (req.body.watermark === '1') {
+        uploadOptions.transformation = [
+          { overlay: { font_family: 'Arial', font_size: 24, font_weight: 'bold', text: 'PloiKhong' },
+            gravity: 'south_east', x: 10, y: 10, opacity: 60, color: 'white' }
+        ];
+      }
       for (const file of req.files) {
-        const result = await uploadToCloudinary(file.buffer);
+        const result = await uploadToCloudinary(file.buffer, uploadOptions);
         uploadedUrls.push(result.secure_url);
       }
       firstImageUrl = uploadedUrls[0];
     }
 
     const { rows } = await db.query(
-      'INSERT INTO products (title,price,category,condition,description,location,image_url,seller_id,delivery_method,is_draft,publish_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id',
-      [title, Number(price), category, condition || 'สภาพดี', description || '', location || '', firstImageUrl, req.user.id, delivery_method || 'both', is_draft ? 1 : 0, publish_at || null]
+      'INSERT INTO products (title,price,category,condition,description,location,image_url,seller_id,delivery_method,is_draft,publish_at,meetup_lat,meetup_lng,meetup_note,watermark) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id',
+      [title, Number(price), category, condition || 'สภาพดี', description || '', location || '', firstImageUrl, req.user.id, delivery_method || 'both', is_draft ? 1 : 0, publish_at || null, meetup_lat || null, meetup_lng || null, meetup_note || null, req.body.watermark === '1' ? 1 : 0]
     );
     const productId = rows[0].id;
 
@@ -145,7 +152,7 @@ router.put('/:id', authMiddleware, uploadMiddleware, async (req, res) => {
     if (!product) return res.status(404).json({ error: 'ไม่พบสินค้า' });
     if (product.seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์แก้ไข' });
 
-    const { title, price, category, condition, description, location, status, delivery_method } = req.body;
+    const { title, price, category, condition, description, location, status, delivery_method, meetup_lat, meetup_lng, meetup_note } = req.body;
     let firstImage = product.image_url;
 
     if (req.files && req.files.length > 0) {
@@ -172,10 +179,12 @@ router.put('/:id', authMiddleware, uploadMiddleware, async (req, res) => {
     }
 
     await db.query(
-      'UPDATE products SET title=$1,price=$2,category=$3,condition=$4,description=$5,location=$6,image_url=$7,status=$8,delivery_method=$9,original_price=$10 WHERE id=$11',
+      'UPDATE products SET title=$1,price=$2,category=$3,condition=$4,description=$5,location=$6,image_url=$7,status=$8,delivery_method=$9,original_price=$10,meetup_lat=$11,meetup_lng=$12,meetup_note=$13 WHERE id=$14',
       [title||product.title, price?Number(price):product.price, category||product.category, condition||product.condition,
        description!==undefined?description:product.description, location!==undefined?location:product.location,
-       firstImage, status||product.status, delivery_method||product.delivery_method||'both', newOriginalPrice, req.params.id]
+       firstImage, status||product.status, delivery_method||product.delivery_method||'both', newOriginalPrice,
+       meetup_lat!==undefined?meetup_lat:product.meetup_lat, meetup_lng!==undefined?meetup_lng:product.meetup_lng,
+       meetup_note!==undefined?meetup_note:product.meetup_note, req.params.id]
     );
 
     // Price drop alert: notify wishlist users
@@ -366,6 +375,26 @@ router.get('/my/reservations', authMiddleware, async (req, res) => {
     );
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/products/bulk-csv — insert multiple products from parsed CSV data
+router.post('/bulk-csv', authMiddleware, async (req, res) => {
+  try {
+    const { products } = req.body; // array of {title,price,category,condition,description,location}
+    if (!Array.isArray(products) || !products.length) return res.status(400).json({ error: 'ไม่มีข้อมูลสินค้า' });
+    if (products.length > 50) return res.status(400).json({ error: 'อัปโหลดได้สูงสุด 50 รายการ' });
+    const db = getDB();
+    let inserted = 0;
+    for (const p of products) {
+      if (!p.title || !p.price) continue;
+      await db.query(
+        'INSERT INTO products (title,price,category,condition,description,location,seller_id,delivery_method) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+        [p.title, Number(p.price)||0, p.category||'ทั่วไป', p.condition||'สภาพดี', p.description||'', p.location||'', req.user.id, p.delivery_method||'both']
+      );
+      inserted++;
+    }
+    res.json({ message: `เพิ่มสินค้าแล้ว ${inserted} รายการ`, inserted });
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 module.exports = router;
