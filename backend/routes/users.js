@@ -23,7 +23,10 @@ router.get('/me/orders', authMiddleware, async (req, res) => {
         MIN(p.seller_id) as seller_id,
         MIN(p.id) as product_id,
         MIN(s.name) as seller_name,
-        MIN(s.promptpay) as seller_promptpay
+        MIN(s.promptpay) as seller_promptpay,
+        MIN(s.bank_name) as seller_bank_name,
+        MIN(s.bank_account) as seller_bank_account,
+        MIN(s.bank_account_name) as seller_bank_account_name
       FROM orders o
       JOIN order_items oi ON o.id = oi.order_id
       JOIN products p ON oi.product_id = p.id

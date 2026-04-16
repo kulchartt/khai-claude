@@ -152,7 +152,7 @@ async function doCheckout(){
     const res=await api.checkout();
     state.cartCount=0;
     updateBadge('cartBadge',0);
-    showPaymentQR(res.order_id, res.total, res.seller_promptpay||null, res.seller_name||'ผู้ขาย');
+    showPaymentQR(res.order_id, res.total, res.seller_promptpay||null, res.seller_name||'ผู้ขาย', res.seller_bank_name||null, res.seller_bank_account||null, res.seller_bank_account_name||null);
   }catch(e){toast(e.message);}
 }
 
@@ -204,6 +204,7 @@ function profileTab(tab){
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
     api.getOrders().then(orders=>{
       if(!orders.length){c.innerHTML='<div class="empty-msg">ยังไม่มีประวัติการสั่งซื้อ</div>';return;}
+      window._payOrders={};orders.forEach(o=>window._payOrders[o.id]=o);
       const statusLabel={'awaiting_payment':'⏳ รอชำระเงิน','awaiting_confirmation':'🔍 รอผู้ขายยืนยัน','confirmed':'✅ ผู้ขายยืนยันแล้ว','completed':'🎉 รับสินค้าแล้ว','cancelled':'❌ ยกเลิกแล้ว','pending':'⏳ รอดำเนินการ'};
       const shipLabel={preparing:'📦 กำลังเตรียมของ',shipped:'🚚 ส่งพัสดุแล้ว — รอรับสินค้า',received:'✅ รับสินค้าแล้ว'};
       c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`
@@ -224,7 +225,7 @@ function profileTab(tab){
               ${o.tracking_number?`<div style="font-size:12px;color:var(--text-sec)">📮 Tracking: <b>${o.tracking_number}</b></div>`:''}
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
-              ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-g" onclick="showPaymentQR(${o.id},${o.total},'${o.seller_promptpay||''}','${(o.seller_name||'').replace(/'/g,"\\'")}')">💳 ดู QR ชำระเงิน</button>`:''}
+              ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-g" onclick="showPaymentFromOrder(${o.id})">💳 ช่องทางชำระเงิน</button>`:''}
               ${o.seller_id&&o.status!=='cancelled'?`<button class="btn btn-sm" onclick="startChat(${o.seller_id},${o.product_id||'null'})">💬 คุยกับผู้ขาย</button>`:''}
               ${o.status==='confirmed'&&o.shipping_status==='shipped'?`<button class="btn btn-sm btn-g" onclick="markOrderReceived(${o.id})">✅ ยืนยันรับสินค้า</button>`:''}
               ${o.status==='completed'&&o.product_id?`<button class="btn btn-sm btn-g" onclick="openReviewModal(${o.product_id})">⭐ รีวิวผู้ขาย</button>`:''}
@@ -580,27 +581,48 @@ function buildPromptPayPayload(phone,amount){
   return p+crc16(p);
 }
 
-function showPaymentQR(orderId, total, promptpay, sellerName){
+function showPaymentQR(orderId, total, promptpay, sellerName, bankName, bankAccount, bankAccountName){
   document.getElementById('paymentOrderId').value=orderId;
-  document.getElementById('paymentSellerName').textContent=sellerName;
+  document.getElementById('paymentSellerName').textContent=sellerName||'ผู้ขาย';
   document.getElementById('paymentAmount').textContent='฿'+Number(total).toLocaleString();
   document.getElementById('slipPreview').style.display='none';
   document.getElementById('slipImg').value='';
   document.getElementById('slipPlaceholder').style.display='';
+  // Bank transfer section
+  const bankSection=document.getElementById('paymentBankSection');
+  if(bankName&&bankAccount){
+    document.getElementById('paymentBankName').textContent=bankName;
+    document.getElementById('paymentBankAccount').textContent=bankAccount;
+    document.getElementById('paymentBankAccountName').textContent=bankAccountName||'';
+    bankSection.style.display='';
+  } else {
+    bankSection.style.display='none';
+  }
+  // PromptPay QR section
   const container=document.getElementById('qrContainer');
   container.innerHTML='';
   if(promptpay){
     document.getElementById('paymentPromptpay').textContent='PromptPay: '+promptpay;
+    document.getElementById('paymentQRSection').style.display='';
     try{
       const payload=buildPromptPayPayload(promptpay, total);
       new QRCode(container,{text:payload,width:200,height:200,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
     }catch(e){container.innerHTML='<div style="color:var(--text-hint);font-size:13px">ไม่สามารถสร้าง QR ได้</div>';}
   } else {
-    document.getElementById('paymentPromptpay').textContent='';
-    container.innerHTML=`<div style="text-align:center;padding:20px;background:var(--bg-sec);border-radius:var(--radius-lg);color:var(--text-sec);font-size:14px;line-height:1.6">ℹ️ ผู้ขายยังไม่ได้ตั้งค่า PromptPay<br><span style="font-size:13px">กรุณาติดต่อผู้ขายผ่าน 💬 Chat<br>เพื่อนัดชำระเงิน</span></div>`;
+    document.getElementById('paymentQRSection').style.display='none';
+  }
+  // ถ้าไม่มีทั้งคู่
+  if(!promptpay&&(!bankName||!bankAccount)){
+    document.getElementById('paymentQRSection').style.display='';
+    container.innerHTML=`<div style="text-align:center;padding:20px;background:var(--bg-sec);border-radius:var(--radius-lg);color:var(--text-sec);font-size:14px;line-height:1.6">ℹ️ ผู้ขายยังไม่ได้ตั้งค่าช่องทางรับเงิน<br><span style="font-size:13px">กรุณาติดต่อผู้ขายผ่าน 💬 Chat</span></div>`;
   }
   openOverlay('paymentOverlay');
   goPage('home');
+}
+function showPaymentFromOrder(id){
+  const o=(window._payOrders||{})[id];
+  if(!o)return;
+  showPaymentQR(o.id,o.total,o.seller_promptpay||null,o.seller_name||'ผู้ขาย',o.seller_bank_name||null,o.seller_bank_account||null,o.seller_bank_account_name||null);
 }
 function closePaymentModal(){
   closeOverlay('paymentOverlay');

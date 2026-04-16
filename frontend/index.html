@@ -394,15 +394,27 @@
 <div class="overlay" id="paymentOverlay">
   <div class="modal">
     <button class="mclose" onclick="closePaymentModal()">×</button>
-    <h2>💳 ชำระเงินผ่าน PromptPay</h2>
+    <h2>💳 ชำระเงิน</h2>
     <input type="hidden" id="paymentOrderId"/>
-    <div id="paymentInfo" style="text-align:center;margin-bottom:16px">
-      <div style="font-size:13px;color:var(--text-sec);margin-bottom:4px">โอนเงินให้</div>
-      <div id="paymentSellerName" style="font-weight:600;font-size:16px;margin-bottom:8px"></div>
-      <div id="paymentPromptpay" style="font-size:13px;color:var(--text-sec);margin-bottom:12px"></div>
-      <div id="qrContainer" style="display:flex;justify-content:center;margin-bottom:12px"></div>
-      <div id="paymentAmount" style="font-size:22px;font-weight:700;color:var(--green)"></div>
-      <div style="font-size:12px;color:var(--text-hint);margin-top:4px">กรุณาโอนให้ตรงจำนวน</div>
+    <div id="paymentInfo" style="margin-bottom:16px">
+      <div style="text-align:center;margin-bottom:12px">
+        <div style="font-size:13px;color:var(--text-sec);margin-bottom:4px">โอนเงินให้</div>
+        <div id="paymentSellerName" style="font-weight:600;font-size:16px;margin-bottom:4px"></div>
+        <div id="paymentAmount" style="font-size:24px;font-weight:700;color:var(--green)"></div>
+        <div style="font-size:12px;color:var(--text-hint);margin-top:2px">กรุณาโอนให้ตรงจำนวน</div>
+      </div>
+      <!-- Bank transfer section -->
+      <div id="paymentBankSection" style="display:none;background:var(--bg-sec);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px">
+        <div style="font-size:12px;color:var(--text-sec);margin-bottom:6px;font-weight:600">🏦 โอนผ่านธนาคาร</div>
+        <div id="paymentBankName" style="font-size:14px;color:var(--text);margin-bottom:4px;font-weight:600"></div>
+        <div id="paymentBankAccount" style="font-size:20px;font-weight:700;letter-spacing:2px;color:var(--text);margin-bottom:2px"></div>
+        <div id="paymentBankAccountName" style="font-size:13px;color:var(--text-sec)"></div>
+      </div>
+      <!-- PromptPay QR section -->
+      <div id="paymentQRSection">
+        <div id="paymentPromptpay" style="font-size:13px;color:var(--text-sec);margin-bottom:8px;text-align:center"></div>
+        <div id="qrContainer" style="display:flex;justify-content:center;margin-bottom:4px"></div>
+      </div>
     </div>
     <div class="field">
       <label>แนบ slip การโอนเงิน *</label>
@@ -675,8 +687,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260419a"></script>
-<script src="js/app.js?v=20260419a"></script>
+<script src="js/api.js?v=20260419b"></script>
+<script src="js/app.js?v=20260419b"></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
 </body>
 </html>

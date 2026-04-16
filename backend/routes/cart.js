@@ -72,11 +72,14 @@ router.post('/checkout', authMiddleware, async (req, res) => {
 
     // ดึง PromptPay ของผู้ขาย (ใช้ seller แรกในออเดอร์)
     const sellerId = items[0].seller_id;
-    const { rows: sr } = await db.query('SELECT promptpay, name FROM users WHERE id = $1', [sellerId]);
+    const { rows: sr } = await db.query('SELECT promptpay, name, bank_name, bank_account, bank_account_name FROM users WHERE id = $1', [sellerId]);
     const sellerPromptpay = sr[0]?.promptpay || null;
     const sellerName = sr[0]?.name || '';
+    const sellerBankName = sr[0]?.bank_name || null;
+    const sellerBankAccount = sr[0]?.bank_account || null;
+    const sellerBankAccountName = sr[0]?.bank_account_name || null;
 
-    res.json({ message: 'สร้างคำสั่งซื้อแล้ว', order_id: orderId, total, seller_promptpay: sellerPromptpay, seller_name: sellerName });
+    res.json({ message: 'สร้างคำสั่งซื้อแล้ว', order_id: orderId, total, seller_promptpay: sellerPromptpay, seller_name: sellerName, seller_bank_name: sellerBankName, seller_bank_account: sellerBankAccount, seller_bank_account_name: sellerBankAccountName });
   } catch (e) {
     await client.query('ROLLBACK');
     res.status(500).json({ error: e.message });
