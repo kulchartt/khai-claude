@@ -1876,9 +1876,13 @@ async function loadCommunity() {
           </div>
           <span class="community-cat-badge">${p.category}</span>
         </div>
-        ${p.image_url ? `<img src="${p.image_url}" style="width:100%;border-radius:8px;max-height:200px;object-fit:cover;margin-bottom:8px"/>` : ''}
-        <div style="font-weight:700;font-size:15px;margin-bottom:4px">${p.title}</div>
-        <div style="font-size:13px;color:var(--text-sec);margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${p.content}</div>
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:15px;margin-bottom:4px">${p.title}</div>
+            <div style="font-size:13px;color:var(--text-sec);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${p.content}</div>
+          </div>
+          ${p.image_url ? `<img src="${p.image_url}" style="width:72px;height:72px;border-radius:8px;object-fit:cover;flex-shrink:0"/>` : ''}
+        </div>
         <div style="display:flex;gap:16px;font-size:12px;color:var(--text-hint)">
           <span>❤️ ${p.like_count} ถูกใจ</span>
           <span>💬 ${p.comment_count} ความคิดเห็น</span>
