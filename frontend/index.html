@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260419y"/>
+  <link rel="stylesheet" href="css/style.css?v=20260419z"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -478,11 +478,16 @@
     <div class="field"><label>รายละเอียด</label><textarea id="sDesc" placeholder="อธิบายสินค้า..."></textarea></div>
     <div class="field"><label>จังหวัด</label><input type="text" id="sLoc" placeholder="เช่น กรุงเทพฯ"/></div>
     <div class="field"><label>วิธีส่งมอบ</label>
-      <select id="sDel">
+      <select id="sDel" onchange="toggleMeetupBtn('s')">
         <option value="both">📦🤝 ส่งพัสดุ / นัดรับได้</option>
         <option value="shipping">📦 ส่งพัสดุเท่านั้น</option>
         <option value="pickup">🤝 นัดรับเท่านั้น</option>
       </select>
+    </div>
+    <div id="sMeetupRow" class="field" style="display:none">
+      <label>📍 จุดนัดรับ</label>
+      <button type="button" class="btn btn-sm" style="width:100%" onclick="openMeetupMap('s')">🗺️ เลือกจุดนัดรับบนแผนที่</button>
+      <div id="sMeetupInfo" style="font-size:12px;color:var(--green);margin-top:6px;display:none"></div>
     </div>
     <div class="field" style="background:var(--bg-sec);border-radius:var(--radius);padding:12px">
       <label style="font-weight:600;margin-bottom:8px;display:block">⚙️ ตัวเลือกการโพสต์</label>
@@ -572,11 +577,16 @@
     <div class="field"><label>รายละเอียด</label><textarea id="eDesc" placeholder="อธิบายสินค้า..."></textarea></div>
     <div class="field"><label>จังหวัด</label><input type="text" id="eLoc" placeholder="เช่น กรุงเทพฯ"/></div>
     <div class="field"><label>วิธีส่งมอบ</label>
-      <select id="eDel">
+      <select id="eDel" onchange="toggleMeetupBtn('e')">
         <option value="both">📦🤝 ส่งพัสดุ / นัดรับได้</option>
         <option value="shipping">📦 ส่งพัสดุเท่านั้น</option>
         <option value="pickup">🤝 นัดรับเท่านั้น</option>
       </select>
+    </div>
+    <div id="eMeetupRow" class="field" style="display:none">
+      <label>📍 จุดนัดรับ</label>
+      <button type="button" class="btn btn-sm" style="width:100%" onclick="openMeetupMap('e')">🗺️ เลือกจุดนัดรับบนแผนที่</button>
+      <div id="eMeetupInfo" style="font-size:12px;color:var(--green);margin-top:6px;display:none"></div>
     </div>
     <div class="field"><label>สถานะ</label>
       <select id="eStatus"><option value="available">วางขาย</option><option value="sold">ขายแล้ว</option></select>
@@ -908,8 +918,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260419y"></script>
-<script src="js/app.js?v=20260419y"></script>
+<script src="js/api.js?v=20260419z"></script>
+<script src="js/app.js?v=20260419z"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
