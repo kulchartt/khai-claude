@@ -136,6 +136,23 @@ async function initDB() {
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_account TEXT DEFAULT NULL`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_account_name TEXT DEFAULT NULL`);
 
+  // Round 3 features
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 0`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT DEFAULT NULL`);
+  await db.query(`CREATE TABLE IF NOT EXISTS points_log (
+    id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    points INTEGER NOT NULL, reason TEXT NOT NULL, created_at TIMESTAMP DEFAULT NOW()
+  )`);
+  await db.query(`CREATE TABLE IF NOT EXISTS referrals (
+    id SERIAL PRIMARY KEY, referrer_id INTEGER NOT NULL REFERENCES users(id),
+    referee_id INTEGER NOT NULL REFERENCES users(id), rewarded INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW(), UNIQUE(referee_id)
+  )`);
+  await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_draft INTEGER DEFAULT 0`);
+  await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS publish_at TIMESTAMPTZ DEFAULT NULL`);
+  // Generate referral codes for existing users who don't have one
+  await db.query(`UPDATE users SET referral_code = UPPER(SUBSTRING(MD5(id::text||'mueasong') FROM 1 FOR 8)) WHERE referral_code IS NULL`);
+
   // Round 2 features
   await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS flash_price NUMERIC DEFAULT NULL`);
   await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS flash_end TIMESTAMPTZ DEFAULT NULL`);

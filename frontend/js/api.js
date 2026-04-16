@@ -141,4 +141,5 @@ const api = {
   createBundle(data) { return this.post('/api/bundles', data); },
   deleteBundle(id) { return this.delete('/api/bundles/'+id); },
   setHolidayMode(holiday_mode, holiday_message, holiday_until) { return this.patch('/api/shop/me', {holiday_mode, holiday_message, holiday_until}); },
+  getPoints() { return this.get('/api/users/me/points'); },
 };

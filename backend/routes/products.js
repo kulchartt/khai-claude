@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
   try {
     const db = getDB();
     const { cat, q, minPrice, maxPrice, sort, condition, location, page = 1, limit = 20 } = req.query;
-    let sql = `SELECT p.*, u.name as seller_name, u.rating as seller_rating FROM products p JOIN users u ON p.seller_id = u.id WHERE p.status IN ('available','reserved')`;
+    let sql = `SELECT p.*, u.name as seller_name, u.rating as seller_rating FROM products p JOIN users u ON p.seller_id = u.id WHERE p.status IN ('available','reserved') AND p.is_draft = 0 AND (p.publish_at IS NULL OR p.publish_at <= NOW())`;
     const params = [];
     let n = 0;
     const p = () => `$${++n}`;
@@ -87,7 +87,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', authMiddleware, uploadMiddleware, async (req, res) => {
   try {
-    const { title, price, category, condition, description, location, delivery_method } = req.body;
+    const { title, price, category, condition, description, location, delivery_method, is_draft, publish_at } = req.body;
     if (!title || !price || !category) return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     const db = getDB();
 
@@ -103,8 +103,8 @@ router.post('/', authMiddleware, uploadMiddleware, async (req, res) => {
     }
 
     const { rows } = await db.query(
-      'INSERT INTO products (title,price,category,condition,description,location,image_url,seller_id,delivery_method) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id',
-      [title, Number(price), category, condition || 'สภาพดี', description || '', location || '', firstImageUrl, req.user.id, delivery_method || 'both']
+      'INSERT INTO products (title,price,category,condition,description,location,image_url,seller_id,delivery_method,is_draft,publish_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id',
+      [title, Number(price), category, condition || 'สภาพดี', description || '', location || '', firstImageUrl, req.user.id, delivery_method || 'both', is_draft ? 1 : 0, publish_at || null]
     );
     const productId = rows[0].id;
 

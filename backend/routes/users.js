@@ -45,6 +45,15 @@ router.patch('/me/orders/:id/received', authMiddleware, async (req, res) => {
     const { rows } = await db.query('SELECT * FROM orders WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
     if (!rows[0]) return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อ' });
     await db.query("UPDATE orders SET shipping_status = 'received', status = 'completed' WHERE id = $1", [req.params.id]);
+    // Award points: 1 point per 10 baht
+    try {
+      const earnedPts = Math.floor(rows[0].total / 10);
+      if (earnedPts > 0) {
+        await db.query('UPDATE users SET points = points + $1 WHERE id = $2', [earnedPts, req.user.id]);
+        await db.query("INSERT INTO points_log (user_id, points, reason) VALUES ($1,$2,$3)",
+          [req.user.id, earnedPts, `ซื้อสินค้า ออเดอร์ #${String(req.params.id).padStart(4,'0')}`]);
+      }
+    } catch (ptsErr) { console.error('points award error:', ptsErr); }
     res.json({ message: 'ยืนยันรับสินค้าแล้ว ✅' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -96,6 +105,18 @@ router.get('/me/analytics', authMiddleware, async (req, res) => {
       ORDER BY p.view_count DESC NULLS LAST, p.created_at DESC
     `, [req.user.id]);
     res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/me/points', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows: u } = await db.query('SELECT points FROM users WHERE id = $1', [req.user.id]);
+    const { rows: log } = await db.query(
+      'SELECT points, reason, created_at FROM points_log WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20',
+      [req.user.id]
+    );
+    res.json({ balance: u[0]?.points || 0, log });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

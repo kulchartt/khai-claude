@@ -18,7 +18,8 @@ const bannerUpload = multer({
 // GET /api/shop/:userId — public shop profile
 router.get('/:userId', async (req, res) => {
   try {
-    const { rows } = await getDB().query(
+    const db = getDB();
+    const { rows } = await db.query(
       `SELECT id, name, avatar, rating, review_count, is_verified,
               shop_name, shop_bio, shop_banner, created_at,
               holiday_mode, holiday_message, holiday_until
@@ -26,7 +27,17 @@ router.get('/:userId', async (req, res) => {
       [req.params.userId]
     );
     if (!rows[0]) return res.status(404).json({ error: 'ไม่พบร้านค้า' });
-    res.json(rows[0]);
+    const shop = rows[0];
+    const { rows: tierRows } = await db.query(
+      `SELECT COUNT(DISTINCT o.id)::int as sales FROM orders o
+       JOIN order_items oi ON o.id = oi.order_id
+       JOIN products p ON oi.product_id = p.id
+       WHERE p.seller_id = $1 AND o.status = 'completed'`, [shop.id]
+    );
+    const sales = tierRows[0]?.sales || 0;
+    shop.sales_count = sales;
+    shop.shop_tier = sales >= 50 ? 'diamond' : sales >= 20 ? 'gold' : sales >= 5 ? 'silver' : 'bronze';
+    res.json(shop);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
