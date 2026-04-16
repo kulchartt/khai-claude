@@ -24,7 +24,7 @@ router.post('/description', authMiddleware, async (req, res) => {
     const existing = (req.body.existing || '').slice(0, 500);
     if (!title) return res.status(400).json({ error: 'กรุณาระบุชื่อสินค้า' });
 
-    const model = getAI().getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = getAI().getGenerativeModel({ model: 'gemini-2.0-flash' });
     const prompt = `เขียนรายละเอียดสินค้ามือสองภาษาไทยสำหรับตลาดออนไลน์ สั้น กระชับ น่าสนใจ ไม่เกิน 5 ประโยค
 
 ข้อมูลสินค้า:
@@ -98,7 +98,7 @@ router.post('/image-search', authMiddleware, (req, res) => {
     try {
       if (!req.file) return res.status(400).json({ error: 'กรุณาแนบรูปภาพ' });
 
-      const model = getAI().getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = getAI().getGenerativeModel({ model: 'gemini-2.0-flash' });
       const imagePart = {
         inlineData: {
           data: req.file.buffer.toString('base64'),
