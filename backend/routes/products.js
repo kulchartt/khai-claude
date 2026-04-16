@@ -66,6 +66,19 @@ router.get('/trending', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.get('/my/reservations', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await getDB().query(
+      `SELECT p.id, p.title, p.price, p.image_url, p.status, p.reserved_for_id,
+              u.name as reserved_by_name
+       FROM products p LEFT JOIN users u ON u.id = p.reserved_for_id
+       WHERE p.seller_id=$1 AND p.status='reserved' ORDER BY p.created_at DESC`,
+      [req.user.id]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const db = getDB();
@@ -240,17 +253,18 @@ router.post('/:id/bump', authMiddleware, async (req, res) => {
     if (product.seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
     if (product.status !== 'available') return res.status(400).json({ error: 'สินค้านี้ไม่ได้วางขาย' });
 
-    // เช็คว่า bump ไปแล้วในวันนี้หรือเปล่า
+    // เช็คว่า bump ไปแล้วในวันนี้หรือเปล่า (ใช้ UTC+7 สำหรับผู้ใช้ไทย)
     if (product.bumped_at) {
-      const lastBump = new Date(product.bumped_at);
-      const now = new Date();
-      const sameDay = lastBump.toDateString() === now.toDateString();
+      const TZ_OFFSET = 7 * 60 * 60 * 1000; // UTC+7
+      const lastBump = new Date(new Date(product.bumped_at).getTime() + TZ_OFFSET);
+      const now = new Date(Date.now() + TZ_OFFSET);
+      const sameDay = lastBump.toISOString().slice(0, 10) === now.toISOString().slice(0, 10);
       if (sameDay) {
-        // คำนวณเวลาที่ bump ได้อีก (เที่ยงคืนวันถัดไป)
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(0, 0, 0, 0);
-        const diff = tomorrow - now;
+        // คำนวณเวลาที่ bump ได้อีก (เที่ยงคืนวันถัดไป UTC+7)
+        const tomorrowUTC7 = new Date(now);
+        tomorrowUTC7.setUTCDate(tomorrowUTC7.getUTCDate() + 1);
+        tomorrowUTC7.setUTCHours(0, 0, 0, 0);
+        const diff = tomorrowUTC7 - now;
         const h = Math.floor(diff / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
         return res.status(400).json({ error: `ดันโพสต์ได้อีกครั้งใน ${h} ชม. ${m} นาที` });
@@ -403,19 +417,6 @@ router.patch('/:id/reserve', authMiddleware, async (req, res) => {
     } else {
       res.status(400).json({ error: 'action ต้องเป็น accept หรือ reject' });
     }
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-router.get('/my/reservations', authMiddleware, async (req, res) => {
-  try {
-    const { rows } = await getDB().query(
-      `SELECT p.id, p.title, p.price, p.image_url, p.status, p.reserved_for_id,
-              u.name as reserved_by_name
-       FROM products p LEFT JOIN users u ON u.id = p.reserved_for_id
-       WHERE p.seller_id=$1 AND p.status='reserved' ORDER BY p.created_at DESC`,
-      [req.user.id]
-    );
-    res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
