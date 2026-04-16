@@ -1,7 +1,7 @@
 # PloiKhong — Feature List
 
 > ตลาดออนไลน์ ของมือหนึ่งก็มี มือสองก็ดี — with AI  
-> อัปเดตล่าสุด: 2026-04-16
+> อัปเดตล่าสุด: **2026-04-16** — Round 3 complete (Points, Referral, Draft, Tier Badge, Invoice PDF)
 
 ---
 
