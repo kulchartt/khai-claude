@@ -678,9 +678,9 @@
     </div>
     <div class="field">
       <label>แนบ slip การโอนเงิน *</label>
-      <div class="img-upload-wrap" id="slipUploadWrap" onclick="document.getElementById('slipImg').click()" style="height:80px">
+      <div class="img-upload-wrap" id="slipUploadWrap" onclick="document.getElementById('slipImg').click()" style="height:80px;position:relative;overflow:hidden">
         <div class="img-upload-placeholder" id="slipPlaceholder">📎 กดเพื่อแนบ slip</div>
-        <img id="slipPreview" style="display:none;max-height:70px;border-radius:8px;object-fit:contain"/>
+        <img id="slipPreview" style="display:none;max-height:70px;max-width:100%;width:auto;border-radius:8px;object-fit:contain;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"/>
       </div>
       <input type="file" id="slipImg" accept="image/*" style="display:none" onchange="previewSlip(this)"/>
     </div>
