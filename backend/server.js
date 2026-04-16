@@ -33,6 +33,8 @@ const communityRoutes = require('./routes/community');
 const storyRoutes = require('./routes/stories');
 const aiRoutes = require('./routes/ai');
 const ekycRoutes = require('./routes/ekyc');
+const webauthnRoutes = require('./routes/webauthn');
+const liveRoutes = require('./routes/live');
 
 const { initDB, getDB } = require('./db');
 
@@ -73,6 +75,8 @@ app.use('/api/community', communityRoutes);
 app.use('/api/stories', storyRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/ekyc', ekycRoutes);
+app.use('/api/webauthn', webauthnRoutes);
+app.use('/api/live', liveRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/health/cloudinary', async (req, res) => {
@@ -86,6 +90,7 @@ app.get('/api/health/cloudinary', async (req, res) => {
 });
 
 const onlineUsers = new Map();
+const liveStreams = new Map(); // userId -> { sellerId, sellerName, avatar, title, viewerCount, startedAt }
 
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
@@ -121,11 +126,69 @@ io.on('connection', (socket) => {
     } catch (e) { console.error('send_message error:', e); }
   });
 
-  socket.on('disconnect', () => onlineUsers.delete(userId));
+  // Live Selling
+  socket.on('live:start', async (data) => {
+    const { title } = data;
+    const db = getDB();
+    const { rows } = await db.query('SELECT name, avatar FROM users WHERE id = $1', [userId]);
+    const seller = rows[0];
+    liveStreams.set(userId, { sellerId: userId, sellerName: seller?.name || 'ผู้ขาย', avatar: seller?.avatar || '', title: title || 'ไลฟ์ขายของ', viewerCount: 0, startedAt: new Date() });
+    io.emit('live:list', Array.from(liveStreams.values()));
+    socket.join(`live_${userId}`);
+    socket.data.isLiveSeller = userId;
+  });
+
+  socket.on('live:end', () => {
+    if (socket.data.isLiveSeller) {
+      liveStreams.delete(socket.data.isLiveSeller);
+      io.emit('live:list', Array.from(liveStreams.values()));
+      io.to(`live_${socket.data.isLiveSeller}`).emit('live:ended');
+      socket.data.isLiveSeller = null;
+    }
+  });
+
+  socket.on('live:join', (sellerId) => {
+    socket.join(`live_${sellerId}`);
+    const stream = liveStreams.get(sellerId);
+    if (stream) {
+      stream.viewerCount = (stream.viewerCount || 0) + 1;
+      io.emit('live:list', Array.from(liveStreams.values()));
+      // Notify seller a new viewer joined
+      const sellerSocket = onlineUsers.get(sellerId);
+      if (sellerSocket) io.to(sellerSocket).emit('live:viewer-joined', { viewerId: userId, viewerSocketId: socket.id });
+    }
+  });
+
+  socket.on('live:leave', (sellerId) => {
+    socket.leave(`live_${sellerId}`);
+    const stream = liveStreams.get(sellerId);
+    if (stream && stream.viewerCount > 0) {
+      stream.viewerCount--;
+      io.emit('live:list', Array.from(liveStreams.values()));
+    }
+  });
+
+  // WebRTC signaling
+  socket.on('live:offer', ({ to, offer }) => { io.to(to).emit('live:offer', { from: socket.id, offer }); });
+  socket.on('live:answer', ({ to, answer }) => { io.to(to).emit('live:answer', { from: socket.id, answer }); });
+  socket.on('live:ice', ({ to, candidate }) => { io.to(to).emit('live:ice', { from: socket.id, candidate }); });
+  socket.on('live:chat', ({ sellerId, message }) => {
+    const me = JSON.parse(JSON.stringify({ senderId: userId, senderName: socket.user.name, message, time: new Date() }));
+    io.to(`live_${sellerId}`).emit('live:chat', me);
+  });
+
+  socket.on('disconnect', () => {
+    onlineUsers.delete(userId);
+    if (socket.data.isLiveSeller) {
+      liveStreams.delete(socket.data.isLiveSeller);
+      io.emit('live:list', Array.from(liveStreams.values()));
+    }
+  });
 });
 
 app.set('io', io);
 app.set('onlineUsers', onlineUsers);
+app.set('liveStreams', liveStreams);
 
 initDB().then(() => {
   server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

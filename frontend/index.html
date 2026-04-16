@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260416r6b"/>
+  <link rel="stylesheet" href="css/style.css?v=20260416r6c"/>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDdJGqjObnrJtqIoK-9TUjYdIwIMo77MvY&libraries=places&language=th"></script>
 </head>
 <body>
@@ -198,6 +198,7 @@
       <div class="section-title" style="padding:0"><span>🔥 กำลังฮิต</span></div>
       <div class="trending-scroll" id="trendingScroll"></div>
     </div>
+    <div id="liveBanner" style="display:none;padding:16px 24px;border-bottom:1px solid var(--border)"></div>
     <section class="products-section" id="products-section">
       <div class="product-grid" id="productGrid"><div class="loading">กำลังโหลดสินค้า...</div></div>
       <div id="scrollSentinel" style="height:1px;width:100%;grid-column:1/-1"></div>
@@ -455,6 +456,7 @@
       <div class="field"><label>อีเมล</label><input type="email" id="loginEmail" placeholder="email@example.com"/></div>
       <div class="field"><label>รหัสผ่าน</label><input type="password" id="loginPass" placeholder="••••••"/></div>
       <button class="btn btn-g full" onclick="doLogin()">เข้าสู่ระบบ</button>
+      <button class="btn" style="background:var(--bg-sec);color:var(--text);border:1px solid var(--border);margin-top:8px;width:100%" onclick="loginWithBiometric()">🔑 เข้าสู่ระบบด้วย Biometric</button>
       <p class="hint">ยังไม่มีบัญชี? <a onclick="switchTab('reg')">สมัครสมาชิก</a></p>
     </div>
     <div id="regForm" class="hidden">
@@ -988,12 +990,43 @@
   </div>
 </div>
 
+<!-- Live Host Overlay -->
+<div class="overlay" id="liveHostOverlay">
+  <div class="modal" style="max-width:560px">
+    <h2>🔴 กำลังไลฟ์</h2>
+    <input type="hidden" id="liveHostSellerId"/>
+    <video id="liveHostVideo" autoplay muted playsinline style="width:100%;border-radius:12px;background:#000;aspect-ratio:16/9"></video>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <input type="text" id="liveChatInputHost" placeholder="พิมพ์ข้อความ..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text)" onkeydown="if(event.key==='Enter')sendLiveChat()"/>
+      <button class="btn btn-sm" onclick="sendLiveChat()">ส่ง</button>
+    </div>
+    <div id="liveChatBox" style="height:120px;overflow-y:auto;padding:8px;background:var(--bg-sec);border-radius:var(--radius);margin-top:8px;font-size:13px"></div>
+    <div style="text-align:center;margin-top:12px"><span id="liveBadge" style="display:none;background:#ef4444;color:#fff;border-radius:99px;padding:4px 14px;font-size:13px;font-weight:700">🔴 LIVE</span></div>
+    <button class="btn btn-danger" style="margin-top:12px;width:100%" onclick="stopLive()">⏹ จบไลฟ์</button>
+  </div>
+</div>
+
+<!-- Live View Overlay -->
+<div class="overlay" id="liveViewOverlay">
+  <div class="modal" style="max-width:560px">
+    <button class="mclose" onclick="leaveLive()">×</button>
+    <input type="hidden" id="liveViewSellerId"/>
+    <div id="liveViewLoading" style="text-align:center;padding:24px">🔄 กำลังเชื่อมต่อ...</div>
+    <video id="liveViewVideo" autoplay playsinline style="width:100%;border-radius:12px;background:#000;aspect-ratio:16/9"></video>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <input type="text" id="liveChatInput" placeholder="พิมพ์ข้อความ..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text)" onkeydown="if(event.key==='Enter')sendLiveChat()"/>
+      <button class="btn btn-sm" onclick="sendLiveChat()">ส่ง</button>
+    </div>
+    <div id="liveChatBox" style="height:120px;overflow-y:auto;padding:8px;background:var(--bg-sec);border-radius:var(--radius);margin-top:8px"></div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260416r6b"></script>
-<script src="js/app.js?v=20260416r6b"></script>
+<script src="js/api.js?v=20260416r6c"></script>
+<script src="js/app.js?v=20260416r6c"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

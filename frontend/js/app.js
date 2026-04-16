@@ -170,7 +170,7 @@ async function doCheckout(){
   }catch(e){toast(e.message);}
 }
 
-async function openProfile(){if(!state.user){openOverlay('loginOverlay');return;}try{const[me,myItems]=await Promise.all([api.getMe(),api.getMyProducts()]);const avatarHtml=me.avatar?`<img src="${imgSrc(me.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${me.name.slice(0,2).toUpperCase()}`;document.getElementById('profileContent').innerHTML=`<div class="profile-header"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="p-avatar" onclick="document.getElementById('avatarInput').click()" style="cursor:pointer;overflow:hidden">${avatarHtml}</div><div style="font-size:11px;color:var(--text-hint)">กดเพื่อเปลี่ยน</div><input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="doUploadAvatar(this)"/></div><div style="flex:1"><div class="p-name">${me.name}${me.is_verified?'<span class="verified-badge" style="margin-left:6px">✅ Verified</span>':''} <span class="tier-badge tier-${me.shop_tier||'bronze'}">${{bronze:'🥉 Bronze',silver:'🥈 Silver',gold:'🥇 Gold',diamond:'💎 Diamond'}[me.shop_tier||'bronze']}</span></div><div class="p-email">${me.email}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${myItems.length}</div><div class="stat-l">สินค้าลงขาย</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${state.wlCount}</div><div class="stat-l">รายการโปรด</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${me.rating||5.0}★</div><div class="stat-l">คะแนน</div></div></div></div></div><div class="profile-tabs"><div class="profile-tab on" id="ptab-products" onclick="profileTab('products')">สินค้าของฉัน</div><div class="profile-tab" id="ptab-orders" onclick="profileTab('orders')">ซื้อ</div><div class="profile-tab" id="ptab-my-reports" onclick="profileTab('my-reports')">🚩 แจ้งปัญหา</div><div class="profile-tab" id="ptab-selling" onclick="profileTab('selling')">📦 ขาย</div><div class="profile-tab" id="ptab-offers" onclick="profileTab('offers')">💰 ข้อเสนอ</div><div class="profile-tab" id="ptab-analytics" onclick="profileTab('analytics')">📊 สถิติ</div><button class="profile-tab" id="ptab-addresses" onclick="profileTab('addresses')">📍 ที่อยู่</button><button class="profile-tab" id="ptab-transactions" onclick="profileTab('transactions')">💰 ธุรกรรม</button><button class="profile-tab" id="ptab-promo" onclick="profileTab('promo')">🎁 โปร</button><button class="profile-tab" id="ptab-saved-searches" onclick="profileTab('saved-searches')">🔔 แจ้งเตือน</button><button class="profile-tab" id="ptab-verified-status" onclick="profileTab('verified-status')">✅ Verified</button><button class="profile-tab" id="ptab-points" onclick="profileTab('points')">⭐ แต้ม</button></div><div id="profileTabContent"></div><div style="margin-top:24px;padding:0 4px;display:flex;flex-direction:column;gap:8px"><div id="ekycSection" style="background:var(--bg-sec);border-radius:var(--radius);padding:12px;display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:600">🪪 eKYC ยืนยันตัวตน</span><span id="ekycBadge" class="ekyc-badge ekyc-unverified">กำลังโหลด...</span></div><button class="btn btn-sm" disabled style="opacity:.45;cursor:not-allowed">ยืนยันตัวตน (ยังไม่เปิดใช้งาน)</button></div><button class="btn" onclick="openShopEdit()">✏️ แก้ไขร้านค้า</button><button class="btn" onclick="openBankModal()">🏦 บัญชีธนาคาร</button><button class="btn" onclick="profileTab('verified-status');document.getElementById('ptab-verified-status').scrollIntoView({behavior:'smooth',block:'nearest'})">✅ ขอ Verified Badge</button><button class="btn" onclick="toggleHolidayMode()">${me.holiday_mode?'🏖️ ปิด Holiday Mode':'🏖️ เปิด Holiday Mode'}</button><button class="btn btn-danger" onclick="doLogout()">ออกจากระบบ</button></div>`;window._myItems=myItems;profileTab('products');goPage('profile');loadEkycStatus();}catch(e){toast(e.message);}}
+async function openProfile(){if(!state.user){openOverlay('loginOverlay');return;}try{const[me,myItems]=await Promise.all([api.getMe(),api.getMyProducts()]);const avatarHtml=me.avatar?`<img src="${imgSrc(me.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${me.name.slice(0,2).toUpperCase()}`;document.getElementById('profileContent').innerHTML=`<div class="profile-header"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="p-avatar" onclick="document.getElementById('avatarInput').click()" style="cursor:pointer;overflow:hidden">${avatarHtml}</div><div style="font-size:11px;color:var(--text-hint)">กดเพื่อเปลี่ยน</div><input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="doUploadAvatar(this)"/></div><div style="flex:1"><div class="p-name">${me.name}${me.is_verified?'<span class="verified-badge" style="margin-left:6px">✅ Verified</span>':''} <span class="tier-badge tier-${me.shop_tier||'bronze'}">${{bronze:'🥉 Bronze',silver:'🥈 Silver',gold:'🥇 Gold',diamond:'💎 Diamond'}[me.shop_tier||'bronze']}</span></div><div class="p-email">${me.email}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${myItems.length}</div><div class="stat-l">สินค้าลงขาย</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${state.wlCount}</div><div class="stat-l">รายการโปรด</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${me.rating||5.0}★</div><div class="stat-l">คะแนน</div></div></div></div></div><div class="profile-tabs"><div class="profile-tab on" id="ptab-products" onclick="profileTab('products')">สินค้าของฉัน</div><div class="profile-tab" id="ptab-orders" onclick="profileTab('orders')">ซื้อ</div><div class="profile-tab" id="ptab-my-reports" onclick="profileTab('my-reports')">🚩 แจ้งปัญหา</div><div class="profile-tab" id="ptab-selling" onclick="profileTab('selling')">📦 ขาย</div><div class="profile-tab" id="ptab-offers" onclick="profileTab('offers')">💰 ข้อเสนอ</div><div class="profile-tab" id="ptab-analytics" onclick="profileTab('analytics')">📊 สถิติ</div><button class="profile-tab" id="ptab-addresses" onclick="profileTab('addresses')">📍 ที่อยู่</button><button class="profile-tab" id="ptab-transactions" onclick="profileTab('transactions')">💰 ธุรกรรม</button><button class="profile-tab" id="ptab-promo" onclick="profileTab('promo')">🎁 โปร</button><button class="profile-tab" id="ptab-saved-searches" onclick="profileTab('saved-searches')">🔔 แจ้งเตือน</button><button class="profile-tab" id="ptab-verified-status" onclick="profileTab('verified-status')">✅ Verified</button><button class="profile-tab" id="ptab-points" onclick="profileTab('points')">⭐ แต้ม</button></div><div id="profileTabContent"></div><div style="margin-top:24px;padding:0 4px;display:flex;flex-direction:column;gap:8px"><div id="ekycSection" style="background:var(--bg-sec);border-radius:var(--radius);padding:12px;display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:600">🪪 eKYC ยืนยันตัวตน</span><span id="ekycBadge" class="ekyc-badge ekyc-unverified">กำลังโหลด...</span></div><button class="btn btn-sm" disabled style="opacity:.45;cursor:not-allowed">ยืนยันตัวตน (ยังไม่เปิดใช้งาน)</button></div><div style="background:var(--bg-sec);border-radius:var(--radius);padding:12px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:14px;font-weight:600">🔑 Biometric Login</span><button class="btn btn-sm btn-g" onclick="registerBiometric()">+ เพิ่ม</button></div><div id="biometricCredsBox"><div style="font-size:13px;color:var(--text-sec)">กำลังโหลด...</div></div></div><button class="btn" onclick="openShopEdit()">✏️ แก้ไขร้านค้า</button><button class="btn" onclick="openBankModal()">🏦 บัญชีธนาคาร</button><button class="btn" onclick="profileTab('verified-status');document.getElementById('ptab-verified-status').scrollIntoView({behavior:'smooth',block:'nearest'})">✅ ขอ Verified Badge</button><button class="btn btn-g" onclick="startLive()">🔴 เริ่มไลฟ์</button><button class="btn" onclick="toggleHolidayMode()">${me.holiday_mode?'🏖️ ปิด Holiday Mode':'🏖️ เปิด Holiday Mode'}</button><button class="btn btn-danger" onclick="doLogout()">ออกจากระบบ</button></div>`;window._myItems=myItems;profileTab('products');goPage('profile');loadEkycStatus();loadBiometricCredentials();}catch(e){toast(e.message);}}
 
 function profileTab(tab){
   document.querySelectorAll('.profile-tab').forEach(t=>t.classList.toggle('on',t.id==='ptab-'+tab));
@@ -1347,6 +1347,7 @@ async function loadProducts(){
   document.getElementById('productGrid').innerHTML=Array(8).fill('<div class="skeleton-card"><div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div></div></div>').join('');
   try{const params={page:1,limit:_productLimit};if(state.cat!=='ทั้งหมด')params.cat=state.cat;if(q)params.q=q;if(minPrice)params.minPrice=minPrice;if(maxPrice)params.maxPrice=maxPrice;if(sort)params.sort=sort;if(condition)params.condition=condition;if(location)params.location=location;const products=await api.getProducts(params);window._allProducts=(window._allProducts||[]);if(!q&&!minPrice&&!maxPrice&&!condition&&!location&&state.cat==='ทั้งหมด')window._allProducts=products;document.getElementById('statCount').textContent=products.length+'+';renderCards(products,'productGrid');renderRecentlyViewed();if(products.length<_productLimit)_productDone=true;}
   catch(e){document.getElementById('productGrid').innerHTML='<div class="empty-msg">โหลดไม่สำเร็จ</div>';}
+  loadLiveList();
 }
 
 async function _loadMoreProducts(){
@@ -2467,4 +2468,221 @@ function openProductMap(lat, lng, note) {
       infoWindow.open(map, marker);
     }
   }, 300);
+}
+
+// ===== BIOMETRIC / WEBAUTHN =====
+async function registerBiometric() {
+  try {
+    toast('กำลังตั้งค่า Biometric...');
+    const options = await api.webauthnRegisterChallenge();
+    // Convert challenge from base64url to Uint8Array
+    options.challenge = _base64urlToBuffer(options.challenge);
+    options.user.id = _base64urlToBuffer(options.user.id);
+    if (options.excludeCredentials) {
+      options.excludeCredentials = options.excludeCredentials.map(c => ({ ...c, id: _base64urlToBuffer(c.id) }));
+    }
+    const credential = await navigator.credentials.create({ publicKey: options });
+    const credJSON = {
+      id: credential.id,
+      rawId: _bufferToBase64url(credential.rawId),
+      type: credential.type,
+      response: {
+        clientDataJSON: _bufferToBase64url(credential.response.clientDataJSON),
+        attestationObject: _bufferToBase64url(credential.response.attestationObject),
+      },
+    };
+    await api.webauthnRegister(credJSON);
+    toast('✅ ลงทะเบียน Biometric สำเร็จ!', '#1D9E75');
+    loadBiometricCredentials();
+  } catch (e) {
+    if (e.name === 'NotAllowedError') toast('ยกเลิกการลงทะเบียน');
+    else toast('เกิดข้อผิดพลาด: ' + e.message);
+  }
+}
+
+async function loginWithBiometric() {
+  const emailInput = document.getElementById('loginEmail');
+  const email = emailInput?.value?.trim();
+  if (!email) { toast('กรุณากรอก Email ก่อน'); emailInput?.focus(); return; }
+  try {
+    toast('กำลังตรวจสอบ Biometric...');
+    const { options, userId } = await api.webauthnLoginChallenge(email);
+    options.challenge = _base64urlToBuffer(options.challenge);
+    if (options.allowCredentials) {
+      options.allowCredentials = options.allowCredentials.map(c => ({ ...c, id: _base64urlToBuffer(c.id) }));
+    }
+    const assertion = await navigator.credentials.get({ publicKey: options });
+    const assertionJSON = {
+      id: assertion.id,
+      rawId: _bufferToBase64url(assertion.rawId),
+      type: assertion.type,
+      response: {
+        clientDataJSON: _bufferToBase64url(assertion.response.clientDataJSON),
+        authenticatorData: _bufferToBase64url(assertion.response.authenticatorData),
+        signature: _bufferToBase64url(assertion.response.signature),
+        userHandle: assertion.response.userHandle ? _bufferToBase64url(assertion.response.userHandle) : null,
+      },
+    };
+    const result = await api.webauthnLogin(assertionJSON, userId);
+    localStorage.setItem('token', result.token);
+    localStorage.setItem('user', JSON.stringify(result.user));
+    state.user = result.user;
+    closeOverlay('loginOverlay');
+    toast('✅ เข้าสู่ระบบสำเร็จ!', '#1D9E75');
+    location.reload();
+  } catch (e) {
+    if (e.name === 'NotAllowedError') toast('ยกเลิก');
+    else toast(e.message || 'เกิดข้อผิดพลาด');
+  }
+}
+
+async function loadBiometricCredentials() {
+  try {
+    const creds = await api.webauthnCredentials();
+    const box = document.getElementById('biometricCredsBox');
+    if (!box) return;
+    if (!creds.length) { box.innerHTML = '<div style="font-size:13px;color:var(--text-sec)">ยังไม่มี Biometric ที่ลงทะเบียน</div>'; return; }
+    box.innerHTML = creds.map(c => `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px">🔑 ลงทะเบียนเมื่อ ${new Date(c.created_at).toLocaleDateString('th-TH')}</span><button class="btn btn-sm btn-danger" onclick="deleteBiometric(${c.id})">ลบ</button></div>`).join('');
+  } catch (e) {}
+}
+
+async function deleteBiometric(id) {
+  await api.webauthnDeleteCredential(id);
+  toast('ลบ Biometric แล้ว');
+  loadBiometricCredentials();
+}
+
+function _base64urlToBuffer(b64url) {
+  const b64 = b64url.replace(/-/g,'+').replace(/_/g,'/');
+  const bin = atob(b64);
+  return Uint8Array.from(bin, c => c.charCodeAt(0));
+}
+function _bufferToBase64url(buf) {
+  const bytes = new Uint8Array(buf instanceof ArrayBuffer ? buf : buf.buffer || buf);
+  let b64 = btoa(String.fromCharCode(...bytes));
+  return b64.replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+// ===== LIVE SELLING =====
+let _livePC = null; // RTCPeerConnection (seller side, per viewer)
+let _localStream = null;
+let _isLive = false;
+let _viewingPCs = {}; // viewer side connections by sellerId
+const STUN = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+async function startLive() {
+  if (!state.user) { openOverlay('loginOverlay'); return; }
+  const title = prompt('ชื่อไลฟ์ของคุณ (ไม่บังคับ)') || 'ไลฟ์ขายของ';
+  try {
+    _localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    openOverlay('liveHostOverlay');
+    const vid = document.getElementById('liveHostVideo');
+    if (vid) { vid.srcObject = _localStream; vid.play(); }
+    const hosId = document.getElementById('liveHostSellerId');
+    if (hosId) hosId.value = state.user.id;
+    socket.emit('live:start', { title });
+    _isLive = true;
+    const badge = document.getElementById('liveBadge');
+    if (badge) badge.style.display = 'inline-block';
+
+    // Handle new viewer joining
+    socket.on('live:viewer-joined', async ({ viewerSocketId }) => {
+      const pc = new RTCPeerConnection(STUN);
+      _livePC = pc;
+      _localStream.getTracks().forEach(t => pc.addTrack(t, _localStream));
+      pc.onicecandidate = e => { if (e.candidate) socket.emit('live:ice', { to: viewerSocketId, candidate: e.candidate }); };
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('live:offer', { to: viewerSocketId, offer });
+    });
+
+    socket.on('live:answer', async ({ answer }) => {
+      if (_livePC) await _livePC.setRemoteDescription(answer);
+    });
+
+    socket.on('live:ice', ({ candidate }) => {
+      if (_livePC) _livePC.addIceCandidate(candidate).catch(() => {});
+    });
+
+    socket.on('live:chat', renderLiveChatMsg);
+  } catch (e) {
+    toast('ไม่สามารถเข้าถึงกล้อง: ' + e.message);
+  }
+}
+
+function stopLive() {
+  socket.emit('live:end');
+  _localStream?.getTracks().forEach(t => t.stop());
+  _localStream = null;
+  _isLive = false;
+  _livePC?.close(); _livePC = null;
+  closeOverlay('liveHostOverlay');
+  toast('จบไลฟ์แล้ว');
+}
+
+async function joinLive(sellerId) {
+  openOverlay('liveViewOverlay');
+  const loading = document.getElementById('liveViewLoading');
+  if (loading) loading.style.display = 'block';
+  socket.emit('live:join', sellerId);
+
+  const pc = new RTCPeerConnection(STUN);
+  _viewingPCs[sellerId] = pc;
+
+  pc.ontrack = e => {
+    const vid = document.getElementById('liveViewVideo');
+    if (vid) { vid.srcObject = e.streams[0]; vid.play(); if (loading) loading.style.display = 'none'; }
+  };
+  pc.onicecandidate = e => { if (e.candidate) socket.emit('live:ice', { to: socket.id, candidate: e.candidate }); };
+
+  socket.on('live:offer', async ({ from, offer }) => {
+    await pc.setRemoteDescription(offer);
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socket.emit('live:answer', { to: from, answer });
+  });
+  socket.on('live:ice', ({ candidate }) => pc.addIceCandidate(candidate).catch(() => {}));
+  socket.on('live:ended', () => { toast('ไลฟ์จบแล้ว'); closeOverlay('liveViewOverlay'); });
+  socket.on('live:chat', renderLiveChatMsg);
+
+  const sellerIdInput = document.getElementById('liveViewSellerId');
+  if (sellerIdInput) sellerIdInput.value = sellerId;
+}
+
+function leaveLive() {
+  const sellerIdInput = document.getElementById('liveViewSellerId');
+  const sellerId = parseInt(sellerIdInput?.value);
+  if (sellerId) { socket.emit('live:leave', sellerId); _viewingPCs[sellerId]?.close(); delete _viewingPCs[sellerId]; }
+  closeOverlay('liveViewOverlay');
+}
+
+function sendLiveChat() {
+  const input = document.getElementById('liveChatInput') || document.getElementById('liveChatInputHost');
+  const sellerIdView = document.getElementById('liveViewSellerId');
+  const sellerIdHost = document.getElementById('liveHostSellerId');
+  const sellerId = parseInt(sellerIdView?.value || sellerIdHost?.value);
+  if (!input?.value.trim() || !sellerId) return;
+  socket.emit('live:chat', { sellerId, message: input.value.trim() });
+  input.value = '';
+}
+
+function renderLiveChatMsg(msg) {
+  const box = document.getElementById('liveChatBox');
+  if (!box) return;
+  const div = document.createElement('div');
+  div.style.cssText = 'padding:3px 0;font-size:13px';
+  div.innerHTML = `<strong>${msg.senderName}:</strong> ${msg.message}`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function loadLiveList() {
+  try {
+    const lives = await api.getLiveActive();
+    const banner = document.getElementById('liveBanner');
+    if (!banner) return;
+    if (!lives.length) { banner.style.display = 'none'; return; }
+    banner.style.display = 'block';
+    banner.innerHTML = `<div style="font-weight:700;margin-bottom:8px">🔴 กำลังไลฟ์</div><div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px">${lives.map(l=>`<div class="live-card" onclick="joinLive(${l.sellerId})" style="cursor:pointer;min-width:120px;background:var(--bg-sec);border-radius:12px;padding:10px;text-align:center;border:2px solid #ef4444"><div style="font-size:24px">📹</div><div style="font-size:13px;font-weight:600;margin:4px 0">${l.sellerName}</div><div style="font-size:11px;color:var(--text-sec)">${l.title}</div><div style="font-size:11px;color:#ef4444">👁 ${l.viewerCount} คน</div></div>`).join('')}</div>`;
+  } catch(e) {}
 }

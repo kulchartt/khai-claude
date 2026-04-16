@@ -285,6 +285,23 @@ async function initDB() {
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ekyc_verified INTEGER DEFAULT 0`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ekyc_name TEXT DEFAULT NULL`);
 
+  // Round 6B — WebAuthn (Biometric Login)
+  await db.query(`CREATE TABLE IF NOT EXISTS webauthn_credentials (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    credential_id TEXT NOT NULL UNIQUE,
+    public_key TEXT NOT NULL,
+    counter BIGINT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+  await db.query(`CREATE TABLE IF NOT EXISTS webauthn_challenges (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    challenge TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'registration',
+    expires_at TIMESTAMP DEFAULT NOW() + INTERVAL '5 minutes'
+  )`);
+
   const { rows } = await db.query('SELECT COUNT(*) as c FROM products');
   if (parseInt(rows[0].c) === 0) {
     const hash = await bcrypt.hash('demo1234', 10);

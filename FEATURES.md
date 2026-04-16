@@ -1,7 +1,7 @@
 # PloiKhong — Feature List
 
 > ตลาดออนไลน์ ของมือหนึ่งก็มี มือสองก็ดี — with AI  
-> อัปเดตล่าสุด: **2026-04-16** — Round 6A complete (Voice Message, Image Search, eKYC)
+> อัปเดตล่าสุด: **2026-04-16** — Round 6 complete (Voice Message, Image Search, eKYC, Biometric Login, Live Selling)
 
 ---
 
@@ -14,7 +14,7 @@
 | Referral Code | รหัสชวนเพื่อน สร้างอัตโนมัติตอนสมัคร | ✅ Done |
 | Referral Reward | ผู้ชวน +100 pt / คนใหม่ +50 pt | ✅ Done |
 | Avatar Upload | อัปโหลดรูปโปรไฟล์ผ่าน Cloudinary | ✅ Done |
-| Biometric Login | Face/Fingerprint (Web Auth API) | 🔲 Round 6 |
+| Biometric Login | Face/Fingerprint (WebAuthn API) | ✅ Done |
 
 ---
 
@@ -142,7 +142,7 @@
 | Holiday Mode | ปิดร้านชั่วคราว พร้อมข้อความแจ้ง | ✅ Done |
 | Seller Analytics | สถิติยอดขาย, สินค้าดู, รายได้ | ✅ Done |
 | Verified Badge | ✅ badge สำหรับร้านที่ admin verify แล้ว | ✅ Done |
-| Live Selling | ไลฟ์ขายของ realtime | 🔲 Round 6 |
+| Live Selling | ไลฟ์ขายของ realtime (WebRTC + Socket.io) | ✅ Done |
 
 ---
 
@@ -234,7 +234,7 @@
 | Round 3 | Loyalty — Points, Referral, Draft/Schedule, Tier Badge, Invoice | ✅ Done |
 | Round 4 | Community — Board, Story, CSV, Watermark, Map | ✅ Done |
 | Round 5 | AI & Safety — AI desc, AI price, Track, Escrow, Protection | 🔄 Partial |
-| Round 6 | Advanced — Live, Voice, Image Search, eKYC, Biometric | 🔄 Partial |
+| Round 6 | Advanced — Live, Voice, Image Search, eKYC, Biometric | ✅ Done |
 
 ---
 

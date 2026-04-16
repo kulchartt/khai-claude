@@ -163,4 +163,11 @@ const api = {
   imageSearch(fd) { return this.req('POST','/api/ai/image-search',fd,true); },
   submitEkyc(fd) { return this.req('POST','/api/ekyc',fd,true); },
   getEkycStatus() { return this.get('/api/ekyc/status'); },
+  webauthnRegisterChallenge() { return this.post('/api/webauthn/register-challenge', {}); },
+  webauthnRegister(response) { return this.post('/api/webauthn/register', response); },
+  webauthnLoginChallenge(email) { return this.post('/api/webauthn/login-challenge', { email }); },
+  webauthnLogin(response, userId) { return this.post('/api/webauthn/login', { response, userId }); },
+  webauthnCredentials() { return this.get('/api/webauthn/credentials'); },
+  webauthnDeleteCredential(id) { return this.delete('/api/webauthn/credentials/' + id); },
+  getLiveActive() { return this.get('/api/live/active'); },
 };
