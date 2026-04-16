@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.89.0",
+    "@google/generative-ai": "^0.24.1",
     "@simplewebauthn/server": "^9.0.3",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.0.1",
