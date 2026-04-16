@@ -1,5 +1,5 @@
 const express = require('express');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Groq = require('groq-sdk');
 const multer = require('multer');
 const { getDB } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
@@ -15,7 +15,7 @@ const imgSearchUpload = multer({
   }
 });
 
-const getAI = () => new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const getAI = () => new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // POST /api/ai/description — AI ช่วยเขียนรายละเอียดสินค้า
 router.post('/description', authMiddleware, async (req, res) => {
@@ -24,8 +24,13 @@ router.post('/description', authMiddleware, async (req, res) => {
     const existing = (req.body.existing || '').slice(0, 500);
     if (!title) return res.status(400).json({ error: 'กรุณาระบุชื่อสินค้า' });
 
-    const model = getAI().getGenerativeModel({ model: 'gemini-2.0-flash' });
-    const prompt = `เขียนรายละเอียดสินค้ามือสองภาษาไทยสำหรับตลาดออนไลน์ สั้น กระชับ น่าสนใจ ไม่เกิน 5 ประโยค
+    const ai = getAI();
+    const completion = await ai.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `เขียนรายละเอียดสินค้ามือสองภาษาไทยสำหรับตลาดออนไลน์ สั้น กระชับ น่าสนใจ ไม่เกิน 5 ประโยค
 
 ข้อมูลสินค้า:
 - ชื่อ: ${title}
@@ -33,13 +38,14 @@ router.post('/description', authMiddleware, async (req, res) => {
 - สภาพ: ${condition || 'ไม่ระบุ'}
 ${existing ? `- รายละเอียดเดิม: ${existing}` : ''}
 
-เขียนเฉพาะรายละเอียดสินค้า ไม่ต้องมีหัวข้อหรือคำอธิบายอื่น`;
+เขียนเฉพาะรายละเอียดสินค้า ไม่ต้องมีหัวข้อหรือคำอธิบายอื่น`
+      }]
+    });
 
-    const result = await model.generateContent(prompt);
-    const description = result.response.text().trim();
+    const description = completion.choices[0]?.message?.content?.trim() || '';
     res.json({ description });
   } catch (e) {
-    if (e.message?.includes('API_KEY')) return res.status(500).json({ error: 'API key ไม่ถูกต้อง กรุณาตรวจสอบ GEMINI_API_KEY' });
+    if (e.status === 401) return res.status(500).json({ error: 'API key ไม่ถูกต้อง กรุณาตรวจสอบ GROQ_API_KEY' });
     res.status(500).json({ error: e.message });
   }
 });
@@ -47,7 +53,7 @@ ${existing ? `- รายละเอียดเดิม: ${existing}` : ''}
 // GET /api/ai/price-suggest — วิเคราะห์ราคาตลาดจาก DB
 router.get('/price-suggest', authMiddleware, async (req, res) => {
   try {
-    const { category, condition, title } = req.query;
+    const { category, condition } = req.query;
     if (!category) return res.status(400).json({ error: 'กรุณาระบุหมวดหมู่' });
 
     const db = getDB();
@@ -91,25 +97,30 @@ router.get('/price-suggest', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST /api/ai/image-search — ค้นหาสินค้าด้วยรูปภาพ (Gemini Vision)
+// POST /api/ai/image-search — ค้นหาสินค้าด้วยรูปภาพ (Groq Vision)
 router.post('/image-search', authMiddleware, (req, res) => {
   imgSearchUpload.single('image')(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message });
     try {
       if (!req.file) return res.status(400).json({ error: 'กรุณาแนบรูปภาพ' });
 
-      const model = getAI().getGenerativeModel({ model: 'gemini-2.0-flash' });
-      const imagePart = {
-        inlineData: {
-          data: req.file.buffer.toString('base64'),
-          mimeType: req.file.mimetype
-        }
-      };
-      const prompt = 'วิเคราะห์รูปภาพนี้แล้วสกัดคำค้นหาสำหรับสินค้า ให้ตอบเป็น JSON: {"keywords": "...", "category": "..."} โดย category ต้องเป็นหนึ่งใน: มือถือ, เสื้อผ้า, หนังสือ, กีฬา, ของแต่งบ้าน, กล้อง หรือ null';
+      const base64Image = req.file.buffer.toString('base64');
+      const mimeType = req.file.mimetype;
+      const ai = getAI();
 
-      const result = await model.generateContent([prompt, imagePart]);
-      const text = result.response.text().trim();
+      const completion = await ai.chat.completions.create({
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } },
+            { type: 'text', text: 'วิเคราะห์รูปภาพนี้แล้วสกัดคำค้นหาสำหรับสินค้า ให้ตอบเป็น JSON: {"keywords": "...", "category": "..."} โดย category ต้องเป็นหนึ่งใน: มือถือ, เสื้อผ้า, หนังสือ, กีฬา, ของแต่งบ้าน, กล้อง หรือ null' }
+          ]
+        }]
+      });
 
+      const text = completion.choices[0]?.message?.content?.trim() || '';
       let keywords = '';
       let category = null;
       try {
@@ -140,7 +151,7 @@ router.post('/image-search', authMiddleware, (req, res) => {
 
       res.json({ keywords, category, products });
     } catch (e) {
-      if (e.message?.includes('API_KEY')) return res.status(500).json({ error: 'API key ไม่ถูกต้อง' });
+      if (e.status === 401) return res.status(500).json({ error: 'API key ไม่ถูกต้อง' });
       res.status(500).json({ error: e.message });
     }
   });
