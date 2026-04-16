@@ -463,9 +463,93 @@ function downloadInvoice(order){
   }catch(e){toast('ไม่สามารถสร้าง PDF ได้: '+e.message);}
 }
 
-async function openEditModal(id){try{const p=await api.getProduct(id);document.getElementById('eId').value=p.id;document.getElementById('eTitle').value=p.title;document.getElementById('ePrice').value=p.price;document.getElementById('eDesc').value=p.description||'';document.getElementById('eLoc').value=p.location||'';document.getElementById('eCat').value=p.category;document.getElementById('eCond').value=p.condition;document.getElementById('eStatus').value=p.status||'available';document.getElementById('eDel').value=p.delivery_method||'both';openOverlay('editOverlay');}catch(e){toast(e.message);}}
+async function openEditModal(id){
+  try{
+    const p = await api.getProduct(id);
+    document.getElementById('eId').value = p.id;
+    document.getElementById('eTitle').value = p.title;
+    document.getElementById('ePrice').value = p.price;
+    document.getElementById('eDesc').value = p.description||'';
+    document.getElementById('eLoc').value = p.location||'';
+    document.getElementById('eCat').value = p.category;
+    document.getElementById('eCond').value = p.condition;
+    document.getElementById('eStatus').value = p.status||'available';
+    document.getElementById('eDel').value = p.delivery_method||'both';
+    document.getElementById('eImgNew').value = '';
+    document.getElementById('eImgNewPreview').innerHTML = '';
 
-async function doEditProduct(){const id=document.getElementById('eId').value,title=document.getElementById('eTitle').value.trim(),price=document.getElementById('ePrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}try{await api.updateProduct(id,{title,price:Number(price),category:document.getElementById('eCat').value,condition:document.getElementById('eCond').value,description:document.getElementById('eDesc').value,location:document.getElementById('eLoc').value,status:document.getElementById('eStatus').value,delivery_method:document.getElementById('eDel').value});closeOverlay('editOverlay');toast('อัปเดตสินค้าแล้ว ✅','#1D9E75');loadProducts();openProfile();}catch(e){toast(e.message);}}
+    // แสดงรูปปัจจุบัน
+    const grid = document.getElementById('eImgGrid');
+    const imgs = p.images && p.images.length ? p.images : (p.image_url ? [{id:null,url:p.image_url}] : []);
+    grid.innerHTML = imgs.map(img => `
+      <div class="edit-img-item" id="eimg-${img.id||'main'}">
+        <img src="${imgSrc(img.url)}" />
+        ${img.id ? `<button class="edit-img-del" onclick="deleteProductImage(${p.id},${img.id})" title="ลบรูปนี้">✕</button>` : ''}
+      </div>`).join('');
+
+    openOverlay('editOverlay');
+  }catch(e){toast(e.message);}
+}
+
+async function deleteProductImage(productId, imageId){
+  if(!confirm('ลบรูปนี้?'))return;
+  try{
+    await api.deleteProductImage(productId, imageId);
+    toast('ลบรูปแล้ว');
+    const el = document.getElementById(`eimg-${imageId}`);
+    if(el) el.remove();
+  }catch(e){toast(e.message);}
+}
+
+function previewEditImages(input){
+  const preview = document.getElementById('eImgNewPreview');
+  preview.innerHTML = '';
+  Array.from(input.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const div = document.createElement('div');
+      div.style.cssText = 'position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border)';
+      div.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover"/>`;
+      preview.appendChild(div);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function doEditProduct(){
+  const id=document.getElementById('eId').value;
+  const title=document.getElementById('eTitle').value.trim();
+  const price=document.getElementById('ePrice').value;
+  if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}
+  try{
+    const newFiles = document.getElementById('eImgNew').files;
+    if(newFiles && newFiles.length > 0){
+      // มีรูปใหม่ → ส่งเป็น FormData
+      const fd = new FormData();
+      fd.append('title',title); fd.append('price',price);
+      fd.append('category',document.getElementById('eCat').value);
+      fd.append('condition',document.getElementById('eCond').value);
+      fd.append('description',document.getElementById('eDesc').value);
+      fd.append('location',document.getElementById('eLoc').value);
+      fd.append('status',document.getElementById('eStatus').value);
+      fd.append('delivery_method',document.getElementById('eDel').value);
+      Array.from(newFiles).forEach(f => fd.append('images',f));
+      await api.req('PUT','/api/products/'+id,fd,true);
+    } else {
+      await api.updateProduct(id,{title,price:Number(price),
+        category:document.getElementById('eCat').value,
+        condition:document.getElementById('eCond').value,
+        description:document.getElementById('eDesc').value,
+        location:document.getElementById('eLoc').value,
+        status:document.getElementById('eStatus').value,
+        delivery_method:document.getElementById('eDel').value});
+    }
+    closeOverlay('editOverlay');
+    toast('อัปเดตสินค้าแล้ว ✅','#1D9E75');
+    loadProducts();
+    openProfile();
+  }catch(e){toast(e.message);}
+}
 
 async function confirmDeleteProduct(id){if(!confirm('ลบสินค้านี้? จะไม่สามารถกู้คืนได้'))return;try{await api.deleteProduct(id);toast('ลบสินค้าแล้ว');openProfile();}catch(e){toast(e.message);}}
 

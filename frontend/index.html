@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260419o"/>
+  <link rel="stylesheet" href="css/style.css?v=20260419p"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -543,6 +543,18 @@
     <button class="mclose" onclick="closeOverlay('editOverlay')">×</button>
     <h2>แก้ไขสินค้า ✏️</h2>
     <input type="hidden" id="eId"/>
+
+    <!-- รูปภาพปัจจุบัน -->
+    <div class="field">
+      <label style="font-weight:700">📷 รูปภาพ</label>
+      <div id="eImgGrid" class="edit-img-grid"></div>
+      <label class="edit-img-add" onclick="document.getElementById('eImgNew').click()">
+        ＋ เพิ่มรูปใหม่
+      </label>
+      <input type="file" id="eImgNew" accept="image/*" multiple style="display:none" onchange="previewEditImages(this)"/>
+      <div id="eImgNewPreview" class="img-preview-grid" style="margin-top:8px"></div>
+    </div>
+
     <div class="field"><label>ชื่อสินค้า *</label><input type="text" id="eTitle" placeholder="เช่น iPhone 14 Pro Max"/></div>
     <div class="field"><label>ราคา (บาท) *</label><input type="number" id="ePrice" placeholder="0"/></div>
     <div class="field"><label>หมวดหมู่</label>
@@ -890,8 +902,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260419o"></script>
-<script src="js/app.js?v=20260419o"></script>
+<script src="js/api.js?v=20260419p"></script>
+<script src="js/app.js?v=20260419p"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

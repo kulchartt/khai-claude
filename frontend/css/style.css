@@ -577,3 +577,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* Seller profile mini-story strip */
 .seller-story-strip{display:flex;gap:10px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none}
 .seller-story-strip::-webkit-scrollbar{display:none}
+/* Edit product images */
+.edit-img-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.edit-img-item{position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.edit-img-item img{width:100%;height:100%;object-fit:cover}
+.edit-img-del{position:absolute;top:2px;right:2px;width:20px;height:20px;background:rgba(220,38,38,.85);color:#fff;border:none;border-radius:50%;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.edit-img-add{display:inline-flex;align-items:center;justify-content:center;width:80px;height:80px;border:2px dashed var(--border);border-radius:8px;font-size:22px;color:var(--text-sec);cursor:pointer;transition:.15s}
+.edit-img-add:hover{border-color:var(--green);color:var(--green)}
