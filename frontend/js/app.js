@@ -464,6 +464,7 @@ function downloadInvoice(order){
 }
 
 async function openEditModal(id){
+  _clearAccFiles('eImgNew');
   try{
     const p = await api.getProduct(id);
     document.getElementById('eId').value = p.id;
@@ -584,7 +585,7 @@ function switchTab(t){document.getElementById('loginForm').classList.toggle('hid
 async function doLogin(){const email=document.getElementById('loginEmail').value.trim(),pass=document.getElementById('loginPass').value;if(!email||!pass){toast('กรุณากรอกข้อมูลให้ครบ');return;}try{const res=await api.login(email,pass);localStorage.setItem('token',res.token);localStorage.setItem('user',JSON.stringify(res.user));state.user=res.user;state.token=res.token;closeOverlay('loginOverlay');updateNav();toast('ยินดีต้อนรับ '+res.user.name+'!','#1D9E75');await syncBadges();connectSocket();}catch(e){toast(e.message);}}
 async function doRegister(){const name=document.getElementById('regName').value.trim(),email=document.getElementById('regEmail').value.trim(),pass=document.getElementById('regPass').value;if(!name||!email||!pass){toast('กรุณากรอกข้อมูลให้ครบ');return;}try{const res=await api.register(name,email,pass);localStorage.setItem('token',res.token);localStorage.setItem('user',JSON.stringify(res.user));state.user=res.user;state.token=res.token;closeOverlay('loginOverlay');updateNav();toast('สมัครสำเร็จ! ยินดีต้อนรับ 🎉','#1D9E75');connectSocket();}catch(e){toast(e.message);}}
 function doLogout(){if(socket){socket.disconnect();socket=null;}localStorage.removeItem('token');localStorage.removeItem('user');state.user=null;state.token=null;state.cartCount=0;state.wlCount=0;state.notifCount=0;state.chatCount=0;state.wlIds=[];['cartBadge','wlBadge','notifBadge','chatBadge'].forEach(id=>updateBadge(id,0));updateNav();goPage('home');toast('ออกจากระบบแล้ว');}
-function openSell(){if(!state.user){toast('กรุณาเข้าสู่ระบบก่อน');openOverlay('loginOverlay');return;}openOverlay('sellOverlay');}
+function openSell(){if(!state.user){toast('กรุณาเข้าสู่ระบบก่อน');openOverlay('loginOverlay');return;}_clearAccFiles('sImg');openOverlay('sellOverlay');}
 async function doSell(){const title=document.getElementById('sTitle').value.trim(),price=document.getElementById('sPrice').value;if(!title||!price){toast('กรุณากรอกชื่อสินค้าและราคา');return;}const fd=new FormData();fd.append('title',title);fd.append('price',price);fd.append('category',document.getElementById('sCat').value);fd.append('condition',document.getElementById('sCond').value);fd.append('description',document.getElementById('sDesc').value);fd.append('location',document.getElementById('sLoc').value);fd.append('delivery_method',document.getElementById('sDel').value);const isDraft=document.getElementById('sellDraft')?.checked;const publishAt=document.getElementById('sellPublishAt')?.value;if(isDraft)fd.append('is_draft','1');if(publishAt)fd.append('publish_at',publishAt);const watermark=document.getElementById('sellWatermark')?.checked?'1':'0';fd.append('watermark',watermark);const imgs=document.getElementById('sImg').files;for(const img of imgs)fd.append('images',img);try{
     await api.createProduct(fd);
     closeOverlay('sellOverlay');
@@ -1053,16 +1054,35 @@ function _renderNewImgGrid(files, gridEl, inputId, isEdit) {
   });
 }
 
+// สะสมไฟล์ข้ามการเปิด file picker หลายครั้ง
+const _accFiles = {};
+function _mergeIntoInput(input) {
+  const prev = _accFiles[input.id] || [];
+  const added = Array.from(input.files);
+  const merged = [...prev, ...added].slice(0, 10); // max 10
+  const dt = new DataTransfer();
+  merged.forEach(f => dt.items.add(f));
+  input.files = dt.files;
+  _accFiles[input.id] = merged;
+}
+function _clearAccFiles(inputId) {
+  _accFiles[inputId] = [];
+  const input = document.getElementById(inputId);
+  if (input) { const dt = new DataTransfer(); input.files = dt.files; }
+}
+
 function removeNewImg(index, inputId) {
   const input = document.getElementById(inputId);
   const dt = new DataTransfer();
   Array.from(input.files).forEach((f, i) => { if (i !== index) dt.items.add(f); });
   input.files = dt.files;
-  if (inputId === 'eImgNew') previewEditImages(input);
-  else previewImages(input);
+  _accFiles[inputId] = Array.from(dt.files); // sync accumulator
+  if (inputId === 'eImgNew') previewEditImages(input, true);
+  else previewImages(input, true);
 }
 
-function previewImages(input) {
+function previewImages(input, skipMerge = false) {
+  if (!skipMerge) _mergeIntoInput(input);
   const grid = document.getElementById('imgPreviewGrid');
   const wrap = document.getElementById('imgUploadWrap');
   grid.innerHTML = '';
@@ -1076,7 +1096,8 @@ function previewImages(input) {
 
 function removePreviewImg(index) { removeNewImg(index, 'sImg'); }
 
-function previewEditImages(input) {
+function previewEditImages(input, skipMerge = false) {
+  if (!skipMerge) _mergeIntoInput(input);
   const preview = document.getElementById('eImgNewPreview');
   preview.innerHTML = '';
   if (!input.files.length) return;
