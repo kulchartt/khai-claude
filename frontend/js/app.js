@@ -87,13 +87,9 @@ async function openDetail(id){
             <div class="meta-box"><div class="meta-l">ส่งมอบ</div><div class="meta-v">${{pickup:'🤝 นัดรับ',shipping:'📦 ส่งพัสดุ',both:'📦🤝 ส่งหรือนัดรับ'}[p.delivery_method||'both']}</div></div>
             <div class="meta-box"><div class="meta-l">รหัสสินค้า</div><div class="meta-v">#${String(p.id).padStart(4,'0')}</div></div>
           ${p.meetup_lat && p.meetup_lng ? `
-            <div class="meta-box" style="grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:8px 10px">
-              <div id="detailMap" style="width:60px;height:60px;border-radius:6px;flex-shrink:0;overflow:hidden"></div>
-              <div style="flex:1;min-width:0">
-                <div class="meta-l">📍 จุดนัดรับ</div>
-                <div class="meta-v" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.meetup_note||'ดูตำแหน่งบนแผนที่'}</div>
-              </div>
-              <button class="btn btn-sm" onclick="openProductMap(${p.meetup_lat},${p.meetup_lng},'${(p.meetup_note||'').replace(/'/g,"\\'")}')">🗺️ ดูแผนที่</button>
+            <div class="meta-box" onclick="openProductMap(${p.meetup_lat},${p.meetup_lng},'${(p.meetup_note||'').replace(/'/g,"\\'")}')">
+              <div class="meta-l">📍 จุดนัดรับ</div>
+              <div class="meta-v">${p.meetup_note||'ดูตำแหน่งบนแผนที่'}</div>
             </div>` : ''}
           </div>
         </div>
@@ -114,16 +110,6 @@ async function openDetail(id){
       <div class="related-wrap" id="relatedWrap"></div>`;
     goPage('detail');
     loadRelated(p.id, p.category);
-    // โหลด mini-map ถ้ามีจุดนัดรับ
-    if (p.meetup_lat && p.meetup_lng && window.google) {
-      setTimeout(() => {
-        const el = document.getElementById('detailMap');
-        if (!el) return;
-        const loc = { lat: Number(p.meetup_lat), lng: Number(p.meetup_lng) };
-        const m = new google.maps.Map(el, { center: loc, zoom: 15, mapTypeControl:false, streetViewControl:false, fullscreenControl:false, zoomControl:false, gestureHandling:'none' });
-        new google.maps.Marker({ position: loc, map: m, title: p.meetup_note||'จุดนัดรับ' });
-      }, 300);
-    }
   }catch(e){toast('โหลดสินค้าไม่สำเร็จ');}
 }
 
