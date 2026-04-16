@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260420b"/>
+  <link rel="stylesheet" href="css/style.css?v=20260420c"/>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDdJGqjObnrJtqIoK-9TUjYdIwIMo77MvY&libraries=places&language=th"></script>
 </head>
 <body>
@@ -357,10 +357,14 @@
 <div class="overlay" id="mapOverlay" style="z-index:400">
   <div class="sheet">
     <div class="sheet-header"><span>🗺️ จุดนัดรับสินค้า</span><button class="close-btn" onclick="closeOverlay('mapOverlay')">✕</button></div>
-    <div style="padding:16px">
-      <div id="meetupMap" style="height:300px;border-radius:12px;margin-bottom:12px"></div>
-      <input type="text" id="meetupNote" class="input" placeholder="หมายเหตุ เช่น หน้า 7-Eleven ตึก A" style="margin-bottom:12px"/>
-      <button class="btn btn-g" onclick="confirmMeetupLocation()">📍 ยืนยันจุดนัดรับ</button>
+    <div style="padding:12px 16px 16px">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="text" id="meetupSearch" class="input" placeholder="🔍 ค้นหาสถานที่..." style="flex:1"/>
+        <button class="btn btn-sm" onclick="meetupCurrentLocation()" title="ตำแหน่งปัจจุบัน" style="padding:0 12px;font-size:18px;flex-shrink:0">📡</button>
+      </div>
+      <div id="meetupMap" style="height:280px;border-radius:12px;margin-bottom:10px"></div>
+      <input type="text" id="meetupNote" class="input" placeholder="หมายเหตุ เช่น หน้า 7-Eleven ตึก A" style="margin-bottom:10px"/>
+      <button class="btn btn-g full" onclick="confirmMeetupLocation()">📍 ยืนยันจุดนัดรับ</button>
     </div>
   </div>
 </div>
@@ -917,8 +921,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260420b"></script>
-<script src="js/app.js?v=20260420b"></script>
+<script src="js/api.js?v=20260420c"></script>
+<script src="js/app.js?v=20260420c"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

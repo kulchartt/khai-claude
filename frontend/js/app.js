@@ -2267,6 +2267,7 @@ function openMeetupMap(src = 's') {
   openOverlay('mapOverlay');
   document.getElementById('meetupNote').value = prev?.note || '';
   document.getElementById('meetupNote').readOnly = false;
+  document.getElementById('meetupSearch').value = '';
   const confirmBtn = document.querySelector('#mapOverlay .btn-g');
   if (confirmBtn) confirmBtn.style.display = '';
   setTimeout(() => {
@@ -2274,11 +2275,41 @@ function openMeetupMap(src = 's') {
     if (!container || !window.google) return;
     container.innerHTML = '';
     _meetupLatLng = { lat, lng };
-    const { map, marker } = _initGMap(container, lat, lng, true, (la, lo) => {
-      _meetupLatLng = { lat: la, lng: lo };
-    });
+    const onPick = (la, lo) => { _meetupLatLng = { lat: la, lng: lo }; };
+    const { map, marker } = _initGMap(container, lat, lng, true, onPick);
     _meetupMap = map; _meetupMarker = marker;
+
+    // Places Autocomplete
+    const searchInput = document.getElementById('meetupSearch');
+    const ac = new google.maps.places.Autocomplete(searchInput, {
+      componentRestrictions: { country: 'th' },
+      fields: ['geometry', 'name', 'formatted_address'],
+    });
+    ac.addListener('place_changed', () => {
+      const place = ac.getPlace();
+      if (!place.geometry) return;
+      const loc = place.geometry.location;
+      map.panTo(loc); map.setZoom(16);
+      marker.setPosition(loc);
+      _meetupLatLng = { lat: loc.lat(), lng: loc.lng() };
+    });
   }, 300);
+}
+
+function meetupCurrentLocation() {
+  if (!navigator.geolocation) { toast('เบราว์เซอร์ไม่รองรับ GPS'); return; }
+  toast('กำลังหาตำแหน่ง...⏳');
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+    _meetupLatLng = { lat, lng };
+    if (_meetupMap && _meetupMarker) {
+      const loc = new google.maps.LatLng(lat, lng);
+      _meetupMap.panTo(loc); _meetupMap.setZoom(17);
+      _meetupMarker.setPosition(loc);
+      _meetupMarker.setAnimation(google.maps.Animation.BOUNCE);
+      setTimeout(() => _meetupMarker.setAnimation(null), 1400);
+    }
+  }, () => toast('ไม่สามารถเข้าถึงตำแหน่งได้'));
 }
 
 async function confirmMeetupLocation() {
