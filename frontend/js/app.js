@@ -208,7 +208,7 @@ function profileTab(tab){
             <div style="display:flex;flex-direction:column;gap:4px">
               <div class="order-status ${['awaiting_payment','awaiting_confirmation','pending'].includes(o.status)?'status-pending':'status-done'}">${statusLabel[o.status]||o.status}</div>
               ${o.status==='confirmed'||o.status==='completed'?`<div style="font-size:12px;color:var(--text-sec)">${shipLabel[o.shipping_status]||'ยังไม่จัดส่ง'}</div>`:''}
-              ${o.tracking_number?`<div style="font-size:12px;color:var(--text-sec)">📮 Tracking: <b>${o.tracking_number}</b></div>`:''}
+              ${o.tracking_number?`<a class="tracking-link" href="${_trackingUrl(o.tracking_carrier,o.tracking_number)}" target="_blank" rel="noopener">📮 ${o.tracking_carrier||'Tracking'}: ${o.tracking_number} ↗</a>`:''}
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
               ${o.slip_url?`<a href="${o.slip_url}" target="_blank" class="btn btn-sm">🖼️ slip</a>`:''}
@@ -244,7 +244,7 @@ function profileTab(tab){
             <div style="display:flex;flex-direction:column;gap:4px">
               <div class="order-status ${o.status==='completed'?'status-done':o.status==='cancelled'?'status-cancel':'status-pending'}">${statusLabel[o.status]||o.status}</div>
               ${o.status==='confirmed'&&o.shipping_status&&o.shipping_status!=='pending'?`<div style="font-size:12px;color:#2563eb;font-weight:500">${shipLabel[o.shipping_status]||''}</div>`:''}
-              ${o.tracking_number?`<div style="font-size:12px;color:var(--text-sec)">📮 Tracking: <b>${o.tracking_number}</b></div>`:''}
+              ${o.tracking_number?`<a class="tracking-link" href="${_trackingUrl(o.tracking_carrier,o.tracking_number)}" target="_blank" rel="noopener">📮 ${o.tracking_carrier||'Tracking'}: ${o.tracking_number} ↗</a>`:''}
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
               ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-g" onclick="showPaymentFromOrder(${o.id})">💳 ช่องทางชำระเงิน</button>`:''}
@@ -1004,12 +1004,70 @@ async function doShipOrder(id, shipping_status){
 }
 async function confirmShipWithTracking(){
   const tracking=document.getElementById('trackingInput').value.trim()||null;
+  const carrier=document.getElementById('trackingCarrier').value||null;
   closeOverlay('trackingOverlay');
   try{
-    const res=await api.shipOrder(window._shipOrderId,'shipped',tracking);
+    const res=await api.shipOrder(window._shipOrderId,'shipped',tracking,carrier);
     toast(res.message,'#1D9E75');
     profileTab('selling');
   }catch(e){toast(e.message);}
+}
+
+// ===== Tracking URL Helper =====
+function _trackingUrl(carrier, trackingNumber){
+  const t=encodeURIComponent(trackingNumber||'');
+  const map={
+    'EMS':'https://track.thailandpost.co.th/tracking/?barcode='+t,
+    'Kerry':'https://th.kerryexpress.com/th/track/?track='+t,
+    'Flash':'https://www.flashexpress.co.th/tracking/?se='+t,
+    'J&T':'https://www.jtexpress.co.th/trajectoryQuery?waybillNo='+t,
+    'Ninja Van':'https://www.ninjavan.co/th-th/tracking?id='+t,
+    'DHL':'https://www.dhl.com/th-th/home/tracking/tracking-parcel.html?submit=1&tracking-id='+t,
+    'SCG':'https://scgexpress.co.th/'+t,
+  };
+  return map[carrier]||'https://track.thailandpost.co.th/tracking/?barcode='+t;
+}
+
+// ===== AI Features =====
+async function aiWriteDesc(prefix){
+  const title=document.getElementById(prefix+'Title')?.value||'';
+  const cat=document.getElementById(prefix+'Cat')?.value||'';
+  const cond=document.getElementById(prefix+'Cond')?.value||'';
+  const existing=document.getElementById(prefix+'Desc')?.value||'';
+  if(!title){toast('กรุณาใส่ชื่อสินค้าก่อน ✏️');return;}
+  const btn=document.getElementById(prefix+'AiBtn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ กำลังเขียน...';}
+  try{
+    const res=await api.aiDescription(title,cat,cond,existing);
+    const ta=document.getElementById(prefix+'Desc');
+    if(ta){ta.value=res.description;ta.focus();}
+    toast('AI เขียนให้แล้ว ✨','#6366f1');
+  }catch(e){toast(e.message||'AI ไม่พร้อมใช้งาน');}
+  finally{if(btn){btn.disabled=false;btn.textContent='✨ AI เขียนให้';}}
+}
+
+async function aiPriceSuggest(prefix){
+  const cat=document.getElementById(prefix+'Cat')?.value||'';
+  const cond=document.getElementById(prefix+'Cond')?.value||'';
+  if(!cat){toast('กรุณาเลือกหมวดหมู่ก่อน');return;}
+  const box=document.getElementById(prefix+'PriceSuggest');
+  if(box){box.style.display='block';box.innerHTML='<span style="color:var(--text-sec)">⏳ กำลังวิเคราะห์ราคาตลาด...</span>';}
+  try{
+    const d=await api.aiPriceSuggest(cat,cond);
+    if(!d.count){
+      if(box)box.innerHTML='<span style="color:var(--text-sec)">ยังไม่มีข้อมูลราคาในหมวดนี้</span>';
+      return;
+    }
+    if(box)box.innerHTML=`
+      <div style="font-weight:700;margin-bottom:6px;color:var(--green)">💡 ราคาตลาด: ${cat}${cond?' · '+cond:''}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;text-align:center">
+        <div style="background:var(--bg-sec);border-radius:6px;padding:6px"><div style="font-size:11px;color:var(--text-sec)">ต่ำสุด</div><div style="font-weight:700">฿${Number(d.min).toLocaleString()}</div></div>
+        <div style="background:#f0fdf4;border-radius:6px;padding:6px;border:1px solid #86efac"><div style="font-size:11px;color:var(--green)">แนะนำ</div><div style="font-weight:700;color:var(--green)">฿${Number(d.suggested).toLocaleString()}</div></div>
+        <div style="background:var(--bg-sec);border-radius:6px;padding:6px"><div style="font-size:11px;color:var(--text-sec)">สูงสุด</div><div style="font-weight:700">฿${Number(d.max).toLocaleString()}</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--text-sec);margin-bottom:6px">เฉลี่ย ฿${Number(d.avg).toLocaleString()} · จาก ${d.count} รายการ</div>
+      <button class="ai-btn" style="font-size:12px" onclick="document.getElementById('${prefix}Price').value=${d.suggested}">ใช้ราคาแนะนำ ฿${Number(d.suggested).toLocaleString()}</button>`;
+  }catch(e){if(box)box.innerHTML='<span style="color:#ef4444">โหลดข้อมูลไม่ได้</span>';}
 }
 
 // ── New Image Preview with Drag & Drop (ใช้ได้ทั้ง sell และ edit) ──

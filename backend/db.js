@@ -278,6 +278,9 @@ async function initDB() {
   await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS meetup_note TEXT DEFAULT NULL`);
   await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS watermark INTEGER DEFAULT 0`);
 
+  // Round 5 features
+  await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_carrier TEXT DEFAULT NULL`);
+
   const { rows } = await db.query('SELECT COUNT(*) as c FROM products');
   if (parseInt(rows[0].c) === 0) {
     const hash = await bcrypt.hash('demo1234', 10);

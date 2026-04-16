@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260420m"/>
+  <link rel="stylesheet" href="css/style.css?v=20260421a"/>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDdJGqjObnrJtqIoK-9TUjYdIwIMo77MvY&libraries=places&language=th"></script>
 </head>
 <body>
@@ -472,14 +472,27 @@
       <div class="img-preview-grid" id="imgPreviewGrid"></div>
     </div>
     <div class="field"><label>ชื่อสินค้า *</label><input type="text" id="sTitle" placeholder="เช่น iPhone 14 Pro Max"/></div>
-    <div class="field"><label>ราคา (บาท) *</label><input type="number" id="sPrice" placeholder="0"/></div>
+    <div class="field">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="margin:0">ราคา (บาท) *</label>
+        <button type="button" class="ai-btn" onclick="aiPriceSuggest('s')">💡 แนะนำราคา</button>
+      </div>
+      <input type="number" id="sPrice" placeholder="0"/>
+      <div id="sPriceSuggest" style="display:none;margin-top:6px;padding:10px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;font-size:13px"></div>
+    </div>
     <div class="field"><label>หมวดหมู่</label>
       <select id="sCat"><option>มือถือ</option><option>เสื้อผ้า</option><option>หนังสือ</option><option>กีฬา</option><option>ของแต่งบ้าน</option><option>กล้อง</option></select>
     </div>
     <div class="field"><label>สภาพสินค้า</label>
       <select id="sCond"><option>มือหนึ่ง (ใหม่)</option><option>เหมือนใหม่</option><option>สภาพดี</option><option>สภาพพอใช้</option></select>
     </div>
-    <div class="field"><label>รายละเอียด</label><textarea id="sDesc" placeholder="อธิบายสินค้า..."></textarea></div>
+    <div class="field">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="margin:0">รายละเอียด</label>
+        <button type="button" class="ai-btn" onclick="aiWriteDesc('s')" id="sAiBtn">✨ AI เขียนให้</button>
+      </div>
+      <textarea id="sDesc" placeholder="อธิบายสินค้า..."></textarea>
+    </div>
     <div class="field"><label>จังหวัด</label><input type="text" id="sLoc" placeholder="เช่น กรุงเทพฯ"/></div>
     <div class="field"><label>วิธีส่งมอบ</label>
       <select id="sDel" onchange="toggleMeetupBtn('s')">
@@ -571,14 +584,27 @@
     </div>
 
     <div class="field"><label>ชื่อสินค้า *</label><input type="text" id="eTitle" placeholder="เช่น iPhone 14 Pro Max"/></div>
-    <div class="field"><label>ราคา (บาท) *</label><input type="number" id="ePrice" placeholder="0"/></div>
+    <div class="field">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="margin:0">ราคา (บาท) *</label>
+        <button type="button" class="ai-btn" onclick="aiPriceSuggest('e')">💡 แนะนำราคา</button>
+      </div>
+      <input type="number" id="ePrice" placeholder="0"/>
+      <div id="ePriceSuggest" style="display:none;margin-top:6px;padding:10px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;font-size:13px"></div>
+    </div>
     <div class="field"><label>หมวดหมู่</label>
       <select id="eCat"><option>มือถือ</option><option>เสื้อผ้า</option><option>หนังสือ</option><option>กีฬา</option><option>ของแต่งบ้าน</option><option>กล้อง</option></select>
     </div>
     <div class="field"><label>สภาพสินค้า</label>
       <select id="eCond"><option>มือหนึ่ง (ใหม่)</option><option>เหมือนใหม่</option><option>สภาพดี</option><option>สภาพพอใช้</option></select>
     </div>
-    <div class="field"><label>รายละเอียด</label><textarea id="eDesc" placeholder="อธิบายสินค้า..."></textarea></div>
+    <div class="field">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="margin:0">รายละเอียด</label>
+        <button type="button" class="ai-btn" onclick="aiWriteDesc('e')" id="eAiBtn">✨ AI เขียนให้</button>
+      </div>
+      <textarea id="eDesc" placeholder="อธิบายสินค้า..."></textarea>
+    </div>
     <div class="field"><label>จังหวัด</label><input type="text" id="eLoc" placeholder="เช่น กรุงเทพฯ"/></div>
     <div class="field"><label>วิธีส่งมอบ</label>
       <select id="eDel" onchange="toggleMeetupBtn('e')">
@@ -693,10 +719,24 @@
   <div class="modal">
     <h2>🚚 ส่งพัสดุแล้ว</h2>
     <div class="field">
+      <label>ขนส่ง <span style="color:var(--text-hint);font-weight:400;font-size:13px">(ไม่บังคับ)</span></label>
+      <select id="trackingCarrier" style="font-size:15px">
+        <option value="">— เลือกขนส่ง —</option>
+        <option value="EMS">📮 EMS (ไปรษณีย์ไทย)</option>
+        <option value="Kerry">🟡 Kerry Express</option>
+        <option value="Flash">⚡ Flash Express</option>
+        <option value="J&T">🔴 J&T Express</option>
+        <option value="Ninja Van">🥷 Ninja Van</option>
+        <option value="DHL">🔴 DHL</option>
+        <option value="SCG">🟦 SCG Express</option>
+        <option value="อื่นๆ">📦 อื่นๆ</option>
+      </select>
+    </div>
+    <div class="field">
       <label>เลข Tracking <span style="color:var(--text-hint);font-weight:400;font-size:13px">(ไม่บังคับ)</span></label>
       <input type="text" id="trackingInput" placeholder="เช่น TH123456789, EF123456789TH" style="font-size:15px"/>
     </div>
-    <p style="font-size:13px;color:var(--text-hint);margin:0 0 16px">ผู้ซื้อจะเห็นเลข Tracking นี้ในประวัติออเดอร์</p>
+    <p style="font-size:13px;color:var(--text-hint);margin:0 0 16px">ผู้ซื้อจะเห็นข้อมูลนี้ในประวัติออเดอร์</p>
     <div class="row-btns">
       <button class="btn btn-g" style="flex:1" onclick="confirmShipWithTracking()">✅ ยืนยันส่งพัสดุ</button>
       <button class="btn" onclick="closeOverlay('trackingOverlay')">ยกเลิก</button>
@@ -922,8 +962,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260420m"></script>
-<script src="js/app.js?v=20260420m"></script>
+<script src="js/api.js?v=20260421a"></script>
+<script src="js/app.js?v=20260421a"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

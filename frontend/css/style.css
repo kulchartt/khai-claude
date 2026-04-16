@@ -569,6 +569,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .community-card:hover{background:var(--bg-sec)}
 .rc-btn{background:var(--bg-sec);border:none;border-radius:99px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--text-sec);cursor:pointer;transition:.15s}
 .rc-btn:hover{background:var(--border);color:var(--text)}
+.ai-btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:99px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
+.ai-btn:hover{opacity:.85}
+.ai-btn:disabled{opacity:.5;cursor:not-allowed}
+.tracking-link{display:inline-flex;align-items:center;gap:6px;background:var(--bg-sec);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--green);text-decoration:none;font-weight:600;margin-top:6px}
+.tracking-link:hover{background:var(--border)}
 .community-cats{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
 .community-cats::-webkit-scrollbar{display:none}
 .community-cat-badge{font-size:11px;background:var(--green-light);color:var(--green);border-radius:99px;padding:2px 8px;font-weight:600;white-space:nowrap}

@@ -31,6 +31,7 @@ const feedbackRoutes = require('./routes/feedback');
 const bundleRoutes = require('./routes/bundles');
 const communityRoutes = require('./routes/community');
 const storyRoutes = require('./routes/stories');
+const aiRoutes = require('./routes/ai');
 
 const { initDB, getDB } = require('./db');
 
@@ -69,6 +70,7 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/bundles', bundleRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/stories', storyRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/health/cloudinary', async (req, res) => {

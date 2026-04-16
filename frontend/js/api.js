@@ -86,7 +86,7 @@ const api = {
   submitSlip(orderId, fd) { return this.req('POST', '/api/orders/'+orderId+'/slip', fd, true); },
   confirmPayment(orderId) { return this.patch('/api/orders/'+orderId+'/confirm-payment', {}); },
   cancelOrder(orderId) { return this.patch('/api/orders/'+orderId+'/cancel', {}); },
-  shipOrder(orderId, shipping_status, tracking_number) { return this.patch('/api/orders/'+orderId+'/ship', { shipping_status, tracking_number }); },
+  shipOrder(orderId, shipping_status, tracking_number, tracking_carrier) { return this.patch('/api/orders/'+orderId+'/ship', { shipping_status, tracking_number, tracking_carrier }); },
   sellerCancelOrder(orderId) { return this.patch('/api/orders/'+orderId+'/seller-cancel', {}); },
   sendChatImage(roomId, fd) { return this.req('POST', '/api/chat/rooms/'+roomId+'/image', fd, true); },
   toggleFollow(sellerId) { return this.post('/api/follows/toggle', { seller_id: sellerId }); },
@@ -157,4 +157,6 @@ const api = {
   addStory(fd) { return this.req('POST','/api/stories',fd,true); },
   deleteStory(id) { return this.delete('/api/stories/'+id); },
   bulkCSV(products) { return this.post('/api/products/bulk-csv', {products}); },
+  aiDescription(title, category, condition, existing) { return this.post('/api/ai/description', {title, category, condition, existing}); },
+  aiPriceSuggest(category, condition) { return this.get('/api/ai/price-suggest?category='+encodeURIComponent(category)+'&condition='+encodeURIComponent(condition||'')); },
 };
