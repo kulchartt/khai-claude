@@ -19,9 +19,10 @@ router.post('/register-challenge', authMiddleware, async (req, res) => {
 
     const options = await generateRegistrationOptions({
       rpName: RP_NAME, rpID: RP_ID,
-      userID: String(user.id), userName: user.email, userDisplayName: user.name,
+      userID: Buffer.from(String(user.id), 'utf8'),
+      userName: user.email, userDisplayName: user.name,
       timeout: 60000, attestationType: 'none',
-      authenticatorSelection: { residentKey: 'preferred', userVerification: 'preferred' },
+      authenticatorSelection: { residentKey: 'discouraged', userVerification: 'preferred' },
     });
 
     // Store challenge

@@ -2474,13 +2474,15 @@ function openProductMap(lat, lng, note) {
 async function registerBiometric() {
   try {
     toast('กำลังตั้งค่า Biometric...');
-    const options = await api.webauthnRegisterChallenge();
-    // Convert challenge from base64url to Uint8Array
+    const rawOpts = await api.webauthnRegisterChallenge();
+    console.log('[WebAuthn] raw options from server:', JSON.stringify(rawOpts));
+    const options = { ...rawOpts };
     options.challenge = _base64urlToBuffer(options.challenge);
-    options.user.id = _base64urlToBuffer(options.user.id);
+    options.user = { ...options.user, id: _base64urlToBuffer(options.user.id) };
     if (options.excludeCredentials) {
       options.excludeCredentials = options.excludeCredentials.map(c => ({ ...c, id: _base64urlToBuffer(c.id) }));
     }
+    console.log('[WebAuthn] converted options — challenge.len:', options.challenge.length, 'user.id.len:', options.user.id.length);
     const credential = await navigator.credentials.create({ publicKey: options });
     const credJSON = {
       id: credential.id,
@@ -2495,8 +2497,7 @@ async function registerBiometric() {
     toast('✅ ลงทะเบียน Biometric สำเร็จ!', '#1D9E75');
     loadBiometricCredentials();
   } catch (e) {
-    if (e.name === 'NotAllowedError') toast('ยกเลิกการลงทะเบียน');
-    else toast('เกิดข้อผิดพลาด: ' + e.message);
+    toast('Biometric: ' + e.name + ' — ' + (e.message || ''));
   }
 }
 
