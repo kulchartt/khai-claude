@@ -159,4 +159,8 @@ const api = {
   bulkCSV(products) { return this.post('/api/products/bulk-csv', {products}); },
   aiDescription(title, category, condition, existing) { return this.post('/api/ai/description', {title, category, condition, existing}); },
   aiPriceSuggest(category, condition) { return this.get('/api/ai/price-suggest?category='+encodeURIComponent(category)+'&condition='+encodeURIComponent(condition||'')); },
+  sendChatVoice(roomId, fd) { return this.req('POST', '/api/chat/rooms/'+roomId+'/voice', fd, true); },
+  imageSearch(fd) { return this.req('POST','/api/ai/image-search',fd,true); },
+  submitEkyc(fd) { return this.req('POST','/api/ekyc',fd,true); },
+  getEkycStatus() { return this.get('/api/ekyc/status'); },
 };

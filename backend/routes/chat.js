@@ -14,6 +14,15 @@ const chatImgUpload = multer({
   }
 });
 
+const chatVoiceUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('audio/') || file.mimetype.startsWith('video/')) cb(null, true);
+    else cb(new Error('อนุญาตเฉพาะไฟล์เสียง'));
+  }
+});
+
 router.get('/rooms', authMiddleware, async (req, res) => {
   try {
     const { rows } = await getDB().query(`
@@ -96,6 +105,46 @@ router.post('/rooms/:roomId/image', authMiddleware, (req, res) => {
       const fullMsg = fm[0];
       const io = req.app.get('io');
       if (io) io.to(parseInt(req.params.roomId)).emit('new_message', fullMsg);
+      res.json(fullMsg);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+});
+
+// POST /api/chat/rooms/:roomId/voice — ส่งเสียงในแชท
+router.post('/rooms/:roomId/voice', authMiddleware, (req, res) => {
+  chatVoiceUpload.single('voice')(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    try {
+      const db = getDB();
+      const { rows: rr } = await db.query('SELECT * FROM chat_rooms WHERE id = $1', [req.params.roomId]);
+      const room = rr[0];
+      if (!room || (room.buyer_id !== req.user.id && room.seller_id !== req.user.id)) {
+        return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึง' });
+      }
+      if (!req.file) return res.status(400).json({ error: 'กรุณาแนบไฟล์เสียง' });
+      const result = await uploadToCloudinary(req.file.buffer, { folder: 'mueasong/voice', resource_type: 'video' });
+      const voiceUrl = result.secure_url;
+      const content = '__voice__:' + voiceUrl;
+      const { rows: mr } = await db.query(
+        'INSERT INTO messages (room_id, sender_id, content) VALUES ($1,$2,$3) RETURNING id',
+        [req.params.roomId, req.user.id, content]
+      );
+      const { rows: fm } = await db.query(
+        'SELECT m.*, u.name as sender_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.id = $1',
+        [mr[0].id]
+      );
+      const fullMsg = fm[0];
+      const io = req.app.get('io');
+      if (io) io.to(parseInt(req.params.roomId)).emit('new_message', fullMsg);
+      // notification to other user
+      const otherId = room.buyer_id === req.user.id ? room.seller_id : room.buyer_id;
+      await db.query("INSERT INTO notifications (user_id, type, title, body, link) VALUES ($1,'chat','ข้อความเสียงใหม่',$2,$3)",
+        [otherId, `${req.user.name}: ส่งข้อความเสียง`, `/chat/${req.params.roomId}`]);
+      const onlineUsers = req.app.get('onlineUsers');
+      if (onlineUsers) {
+        const otherSocket = onlineUsers.get(otherId);
+        if (otherSocket) io.to(otherSocket).emit('notification', { type: 'chat' });
+      }
       res.json(fullMsg);
     } catch (e) { res.status(500).json({ error: e.message }); }
   });

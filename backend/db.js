@@ -281,6 +281,10 @@ async function initDB() {
   // Round 5 features
   await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_carrier TEXT DEFAULT NULL`);
 
+  // Round 6 features
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ekyc_verified INTEGER DEFAULT 0`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ekyc_name TEXT DEFAULT NULL`);
+
   const { rows } = await db.query('SELECT COUNT(*) as c FROM products');
   if (parseInt(rows[0].c) === 0) {
     const hash = await bcrypt.hash('demo1234', 10);

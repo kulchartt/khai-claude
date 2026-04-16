@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260421e"/>
+  <link rel="stylesheet" href="css/style.css?v=20260416r6a"/>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDdJGqjObnrJtqIoK-9TUjYdIwIMo77MvY&libraries=places&language=th"></script>
 </head>
 <body>
@@ -23,6 +23,8 @@
   <div class="logo" onclick="goPage('home')">Ploi<span>Khong</span><span class="logo-ai">with AI</span></div>
   <div class="search-wrap" style="position:relative">
     <input type="text" id="searchQ" placeholder="ค้นหาสินค้า..." oninput="applyFilter();showSuggestions(this.value)" onfocus="showSuggestions(this.value)" onblur="hideSuggestions()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+    <button class="img-search-btn" onclick="document.getElementById('imgSearchInput').click()" title="ค้นหาด้วยรูป">📷</button>
+    <input type="file" id="imgSearchInput" accept="image/*" style="display:none" onchange="doImageSearch(this)"/>
     <button onclick="openAdvSearch()">🔍</button>
     <div class="search-suggestions hidden" id="searchSuggestions"></div>
   </div>
@@ -183,6 +185,14 @@
         </select>
       </div>
     </section>
+    <!-- Image Search Results Panel -->
+    <div id="imgSearchResults" style="display:none;padding:16px 24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:600" id="imgSearchTitle">📷 ผลการค้นหาด้วยรูปภาพ</div>
+        <button class="btn btn-sm" onclick="closeImageSearch()">✕ ปิด</button>
+      </div>
+      <div class="product-grid" id="imgSearchGrid"></div>
+    </div>
     <div id="bundleSection" class="trending-section" style="display:none"></div>
     <div id="trendingSection" class="trending-section" style="display:none">
       <div class="section-title" style="padding:0"><span>🔥 กำลังฮิต</span></div>
@@ -901,6 +911,25 @@
   </div>
 </div>
 
+<!-- eKYC Modal -->
+<div class="overlay" id="ekycOverlay">
+  <div class="modal">
+    <button class="mclose" onclick="closeOverlay('ekycOverlay')">×</button>
+    <h2>🪪 ยืนยันตัวตน eKYC</h2>
+    <p style="font-size:13px;color:var(--text-sec);margin:-8px 0 16px">อัปโหลดรูปบัตรประชาชนเพื่อรับ eKYC Badge แสดงความน่าเชื่อถือ</p>
+    <div id="ekycStatusBox" style="margin-bottom:16px"></div>
+    <div class="field">
+      <label>รูปบัตรประชาชน *</label>
+      <div class="img-upload-wrap" id="ekycUploadWrap" onclick="document.getElementById('ekycFileInput').click()" style="height:80px;position:relative;overflow:hidden">
+        <div class="img-upload-placeholder" id="ekycPlaceholder">📎 กดเพื่อเลือกรูปบัตรประชาชน</div>
+        <img id="ekycPreview" style="display:none;max-height:70px;max-width:100%;width:auto;border-radius:8px;object-fit:contain;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"/>
+      </div>
+      <input type="file" id="ekycFileInput" accept="image/*" style="display:none" onchange="previewEkycImage(this)"/>
+    </div>
+    <button class="btn btn-g full" onclick="doSubmitEkyc()">🪪 ยืนยันตัวตน</button>
+  </div>
+</div>
+
 <!-- Buyer Review Modal -->
 <div class="overlay" id="buyerReviewOverlay">
   <div class="modal">
@@ -963,8 +992,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260421e"></script>
-<script src="js/app.js?v=20260421e"></script>
+<script src="js/api.js?v=20260416r6a"></script>
+<script src="js/app.js?v=20260416r6a"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

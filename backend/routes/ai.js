@@ -1,9 +1,19 @@
 const express = require('express');
 const Anthropic = require('@anthropic-ai/sdk');
+const multer = require('multer');
 const { getDB } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
+
+const imgSearchUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('อนุญาตเฉพาะไฟล์รูปภาพ'));
+  }
+});
 
 const getAI = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -87,6 +97,70 @@ router.get('/price-suggest', authMiddleware, async (req, res) => {
       samples: rows.slice(0, 5).map(r => ({ title: r.title, price: r.price, condition: r.condition }))
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/ai/image-search — ค้นหาสินค้าด้วยรูปภาพ (Claude Vision)
+router.post('/image-search', authMiddleware, (req, res) => {
+  imgSearchUpload.single('image')(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    try {
+      if (!req.file) return res.status(400).json({ error: 'กรุณาแนบรูปภาพ' });
+      const base64Image = req.file.buffer.toString('base64');
+      const mimeType = req.file.mimetype;
+      const ai = getAI();
+      const msg = await ai.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mimeType, data: base64Image }
+            },
+            {
+              type: 'text',
+              text: 'วิเคราะห์รูปภาพนี้แล้วสกัดคำค้นหาสำหรับสินค้า ให้ตอบเป็น JSON: {"keywords": "...", "category": "..."} โดย category ต้องเป็นหนึ่งใน: มือถือ, เสื้อผ้า, หนังสือ, กีฬา, ของแต่งบ้าน, กล้อง หรือ null'
+            }
+          ]
+        }]
+      });
+
+      let keywords = '';
+      let category = null;
+      try {
+        const text = msg.content[0]?.text?.trim() || '';
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          keywords = parsed.keywords || '';
+          category = parsed.category || null;
+        }
+      } catch (parseErr) {
+        keywords = msg.content[0]?.text?.trim() || '';
+      }
+
+      const db = getDB();
+      const kwList = keywords.split(/[\s,]+/).filter(k => k.length > 1);
+      let products = [];
+      if (kwList.length > 0) {
+        const conditions = kwList.map((kw, i) => `(title ILIKE $${i+1} OR description ILIKE $${i+1})`).join(' OR ');
+        const params = kwList.map(kw => `%${kw}%`);
+        const catFilter = category ? ` AND category = $${params.length + 1}` : '';
+        if (category) params.push(category);
+        const { rows } = await db.query(
+          `SELECT id, title, price, category, condition, image_url, location, status FROM products WHERE (${conditions})${catFilter} AND status = 'available' LIMIT 20`,
+          params
+        );
+        products = rows;
+      }
+
+      res.json({ keywords, category, products });
+    } catch (e) {
+      if (e.status === 401) return res.status(500).json({ error: 'API key ไม่ถูกต้อง' });
+      res.status(500).json({ error: e.message });
+    }
+  });
 });
 
 module.exports = router;

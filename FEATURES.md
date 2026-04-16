@@ -1,7 +1,7 @@
 # PloiKhong — Feature List
 
 > ตลาดออนไลน์ ของมือหนึ่งก็มี มือสองก็ดี — with AI  
-> อัปเดตล่าสุด: **2026-04-16** — Round 4 complete (Community Board, Story Feed, Bulk CSV, Watermark, Map Meetup)
+> อัปเดตล่าสุด: **2026-04-16** — Round 6A complete (Voice Message, Image Search, eKYC)
 
 ---
 
@@ -37,9 +37,9 @@
 | Close Sale | ผู้ขายปิดการขายก่อนกำหนด | ✅ Done |
 | Watermark รูปภาพ | ใส่ลายน้ำอัตโนมัติบนรูปสินค้า | ✅ Done |
 | Bulk CSV Upload | อัปโหลดสินค้าหลายรายการผ่าน CSV | ✅ Done |
-| Image Search | ค้นหาสินค้าด้วยรูปภาพ | 🔲 Round 6 |
-| AI เขียน Description | AI ช่วยเขียนรายละเอียดสินค้า | 🔲 Round 5 |
-| AI แนะนำราคา | วิเคราะห์ราคาตลาดแล้วแนะนำราคาขาย | 🔲 Round 5 |
+| Image Search | ค้นหาสินค้าด้วยรูปภาพ | ✅ Done |
+| AI เขียน Description | AI ช่วยเขียนรายละเอียดสินค้า | ✅ Done |
+| AI แนะนำราคา | วิเคราะห์ราคาตลาดแล้วแนะนำราคาขาย | ✅ Done |
 
 ---
 
@@ -83,7 +83,7 @@
 | ประวัติการขาย | Seller ดู order ที่ได้รับ | ✅ Done |
 | Shipping Status | preparing / shipped / received | ✅ Done |
 | Tracking Number | ผู้ขายกรอก tracking เลข | ✅ Done |
-| Track พัสดุ | เชื่อม API ติดตามพัสดุ EMS/Kerry/Flash | 🔲 Round 5 |
+| Track พัสดุ | เชื่อม API ติดตามพัสดุ EMS/Kerry/Flash | ✅ Done |
 | Invoice PDF | ดาวน์โหลด invoice เป็น PDF (jsPDF) | ✅ Done |
 | Dispute / แจ้งปัญหา | เปิด dispute พร้อมแนบหลักฐาน | ✅ Done |
 | Buyer Protection | ระบบคุ้มครองผู้ซื้อ | 🔲 Round 5 |
@@ -98,7 +98,7 @@
 | ส่งรูปภาพในแชท | อัปโหลดรูปส่งในห้องแชท | ✅ Done |
 | Quick Reply Templates | ปุ่มตอบกลับสำเร็จรูป | ✅ Done |
 | Chat Unread Badge | แสดงจำนวนข้อความที่ยังไม่อ่าน | ✅ Done |
-| Voice Message | ส่งข้อความเสียงในแชท | 🔲 Round 6 |
+| Voice Message | ส่งข้อความเสียงในแชท | ✅ Done |
 
 ---
 
@@ -185,7 +185,7 @@
 |---------|-----------|-------|
 | Report สินค้า | แจ้งสินค้าที่ไม่เหมาะสม | ✅ Done |
 | Dispute System | เปิดเคส dispute พร้อมหลักฐาน | ✅ Done |
-| eKYC | ยืนยันตัวตนด้วยบัตรประชาชน | 🔲 Round 6 |
+| eKYC | ยืนยันตัวตนด้วยบัตรประชาชน | ✅ Done |
 
 ---
 
@@ -233,8 +233,8 @@
 | Round 2 | Commerce — Flash Sale, Bundle, Reserve, Holiday Mode | ✅ Done |
 | Round 3 | Loyalty — Points, Referral, Draft/Schedule, Tier Badge, Invoice | ✅ Done |
 | Round 4 | Community — Board, Story, CSV, Watermark, Map | ✅ Done |
-| Round 5 | AI & Safety — AI desc, AI price, Track, Escrow, Protection | 🔲 Planned |
-| Round 6 | Advanced — Live, Voice, Image Search, eKYC, Biometric | 🔲 Planned |
+| Round 5 | AI & Safety — AI desc, AI price, Track, Escrow, Protection | 🔄 Partial |
+| Round 6 | Advanced — Live, Voice, Image Search, eKYC, Biometric | 🔄 Partial |
 
 ---
 
