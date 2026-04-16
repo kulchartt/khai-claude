@@ -20,6 +20,21 @@ router.post('/', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// User: get own reports
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await getDB().query(`
+      SELECT r.id, r.reason, r.detail, r.status, r.created_at,
+        p.title as product_title, p.id as product_id, p.image_url as product_image
+      FROM reports r
+      JOIN products p ON r.product_id = p.id
+      WHERE r.reporter_id = $1
+      ORDER BY r.created_at DESC
+    `, [req.user.id]);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Admin: get all reports
 router.get('/', authMiddleware, async (req, res) => {
   try {
