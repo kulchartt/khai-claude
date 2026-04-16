@@ -98,8 +98,8 @@ router.post('/', authMiddleware, uploadMiddleware, async (req, res) => {
       const uploadOptions = { folder: 'mueasong/products' };
       if (req.body.watermark === '1') {
         uploadOptions.transformation = [
-          { overlay: { font_family: 'Arial', font_size: 24, font_weight: 'bold', text: 'PloiKhong' },
-            gravity: 'south_east', x: 10, y: 10, opacity: 60, color: 'white' }
+          { overlay: { font_family: 'Arial', font_size: 13, font_weight: 'normal', text: 'PloiKhong' },
+            gravity: 'south_east', x: 6, y: 6, opacity: 35, color: 'white' }
         ];
       }
       for (const file of req.files) {
