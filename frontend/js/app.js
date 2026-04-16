@@ -498,6 +498,11 @@ async function deleteProductImage(productId, imageId){
     toast('ลบรูปแล้ว');
     const el = document.getElementById(`eimg-${imageId}`);
     if(el) el.remove();
+    // ถ้าไม่มีรูปเหลือเลย บอกผู้ใช้
+    const grid = document.getElementById('eImgGrid');
+    if(grid && !grid.children.length){
+      grid.innerHTML = '<div style="font-size:12px;color:var(--text-hint);padding:8px 0">ไม่มีรูปภาพ — กดเพิ่มรูปใหม่ด้านล่าง</div>';
+    }
   }catch(e){toast(e.message);}
 }
 

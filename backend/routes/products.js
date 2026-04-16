@@ -269,7 +269,16 @@ router.delete('/:id/images/:imageId', authMiddleware, async (req, res) => {
       await cloudinary.uploader.destroy(`mueasong/${publicId}`).catch(() => {});
     }
     await db.query('DELETE FROM product_images WHERE id = $1', [req.params.imageId]);
-    res.json({ message: 'ลบรูปแล้ว' });
+
+    // อัปเดต image_url ของ product ให้ชี้ไปรูปแรกที่เหลือ
+    const { rows: remaining } = await db.query(
+      'SELECT url FROM product_images WHERE product_id = $1 ORDER BY sort_order ASC LIMIT 1',
+      [req.params.id]
+    );
+    const newMainUrl = remaining[0]?.url || '';
+    await db.query('UPDATE products SET image_url = $1 WHERE id = $2', [newMainUrl, req.params.id]);
+
+    res.json({ message: 'ลบรูปแล้ว', new_image_url: newMainUrl });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
