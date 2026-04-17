@@ -22,6 +22,7 @@ router.get('/me/orders', authMiddleware, async (req, res) => {
         STRING_AGG(DISTINCT p.title, ', ') as items,
         MIN(p.seller_id) as seller_id,
         MIN(p.id) as product_id,
+        MIN(p.image_url) as image_url,
         MIN(s.name) as seller_name,
         MIN(s.promptpay) as seller_promptpay,
         MIN(s.bank_name) as seller_bank_name,
@@ -78,14 +79,15 @@ router.get('/me/seller-orders', authMiddleware, async (req, res) => {
     const { rows } = await getDB().query(`
       SELECT o.id, o.total, o.status, o.slip_url, o.shipping_status, o.tracking_number, o.tracking_carrier,
         o.delivery_type, o.meetup_lat, o.meetup_lng, o.meetup_note, o.created_at,
-        u.name as buyer_name, u.email as buyer_email,
+        u.id as buyer_id, u.name as buyer_name, u.email as buyer_email,
+        MIN(p.image_url) as image_url,
         STRING_AGG(p.title, ', ') as items
       FROM orders o
       JOIN order_items oi ON o.id = oi.order_id
       JOIN products p ON oi.product_id = p.id
       JOIN users u ON o.user_id = u.id
       WHERE p.seller_id = $1
-      GROUP BY o.id, u.name, u.email
+      GROUP BY o.id, u.id, u.name, u.email
       ORDER BY o.created_at DESC
     `, [req.user.id]);
     res.json(rows);
