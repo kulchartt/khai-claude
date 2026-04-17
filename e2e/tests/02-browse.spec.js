@@ -20,8 +20,10 @@ test.describe('🏪 Browse & Search', () => {
 
     const before = await page.locator('.card').count();
 
-    // Type in search (supports both id and placeholder approaches)
-    const searchInput = page.locator('#searchInput, input[placeholder*="ค้นหา"]').first();
+    // Search input uses readonly trick (removed on focus) — must click first
+    const searchInput = page.locator('#searchQ, #searchInput, input[placeholder*="ค้นหา"]').first();
+    await searchInput.click(); // triggers onfocus → removeAttribute('readonly')
+    await page.waitForFunction(() => !document.querySelector('#searchQ')?.hasAttribute('readonly'), { timeout: 3000 }).catch(() => {});
     await searchInput.fill('zzz_no_match_e2e_xyz');
     await page.waitForTimeout(900); // debounce
 
