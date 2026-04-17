@@ -383,23 +383,57 @@ function profileTab(tab){
   } else if(tab==='reservations'){
     const c=document.getElementById('profileTabContent');
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
-    api.getMyReservations().then(reservations=>{
-      if(!reservations.length){c.innerHTML='<div class="empty-msg">ยังไม่มีรายการจอง</div>';return;}
-      c.innerHTML='<div style="margin-top:16px">'+reservations.map(p=>`
-        <div class="order-item">
-          <div class="order-top">
-            ${p.image_url?`<img src="${imgSrc(p.image_url)}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0;margin-right:4px" loading="lazy"/>`:''}
-            <div style="flex:1">
-              <div class="order-id" style="cursor:pointer" onclick="openDetail(${p.id})">${p.title}</div>
-              <div class="order-date">จองโดย: <b>${p.reserved_by_name||'?'}</b></div>
-              <div class="order-date" style="color:var(--green);font-weight:600">฿${Number(p.price).toLocaleString()}</div>
+    Promise.all([api.getMyReservedByMe(), api.getMyReservations()]).then(([myReservs, incoming])=>{
+      let html='<div style="margin-top:16px">';
+      // ===== BUYER SECTION: สินค้าที่ฉันจองไว้ =====
+      if(myReservs.length){
+        html+=`<div style="font-weight:600;font-size:15px;margin-bottom:10px">🔖 สินค้าที่ฉันจองไว้ (${myReservs.length})</div>`;
+        html+=myReservs.map(p=>{
+          const expiry=p.reserved_at?new Date(new Date(p.reserved_at).getTime()+12*60*60*1000):null;
+          const hoursLeft=expiry?Math.max(0,Math.ceil((expiry-Date.now())/3600000)):null;
+          return `<div class="order-item">
+            <div class="order-top">
+              ${p.image_url?`<img src="${imgSrc(p.image_url)}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0;margin-right:4px" loading="lazy"/>`:''}
+              <div style="flex:1">
+                <div class="order-id" style="cursor:pointer" onclick="openDetail(${p.id})">${p.title}</div>
+                <div class="order-date">ร้าน: <b>${p.seller_name||'?'}</b></div>
+                <div style="color:var(--green);font-weight:600;font-size:14px">฿${Number(p.price).toLocaleString()}</div>
+                ${hoursLeft!==null?`<div style="font-size:11px;color:${hoursLeft>3?'#d97706':'#dc2626'};font-weight:500;margin-top:2px">⏰ ${hoursLeft>0?`หมดอายุใน ${hoursLeft} ชม.`:'เกินเวลาแล้ว — จะถูกยกเลิกเร็วๆ นี้'}</div>`:''}
+              </div>
             </div>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <button class="btn btn-g" style="flex:1" onclick="respondReserve(${p.id},'accept')">✅ ยืนยันจอง</button>
-            <button class="btn btn-danger" style="flex:1" onclick="respondReserve(${p.id},'reject')">❌ ปฏิเสธ</button>
-          </div>
-        </div>`).join('')+'</div>';
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn btn-g" style="flex:1" onclick="buyNow(${p.id},'${p.delivery_method||'shipping'}')">⚡ ซื้อเลย</button>
+              <button class="btn" style="flex:1" onclick="startChat(${p.seller_id},${p.id})">💬 แชทผู้ขาย</button>
+            </div>
+          </div>`;
+        }).join('');
+      }
+      // ===== SELLER SECTION: คำขอจองสินค้าของฉัน =====
+      if(incoming.length){
+        html+=`<div style="font-weight:600;font-size:15px;margin:${myReservs.length?'20px':'0px'} 0 10px">📥 คำขอจองสินค้าของฉัน (${incoming.length})</div>`;
+        html+=incoming.map(p=>{
+          const expiry=p.reserved_at?new Date(new Date(p.reserved_at).getTime()+12*60*60*1000):null;
+          const hoursLeft=expiry?Math.max(0,Math.ceil((expiry-Date.now())/3600000)):null;
+          return `<div class="order-item">
+            <div class="order-top">
+              ${p.image_url?`<img src="${imgSrc(p.image_url)}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0;margin-right:4px" loading="lazy"/>`:''}
+              <div style="flex:1">
+                <div class="order-id" style="cursor:pointer" onclick="openDetail(${p.id})">${p.title}</div>
+                <div class="order-date">จองโดย: <b>${p.reserved_by_name||'?'}</b></div>
+                <div style="color:var(--green);font-weight:600;font-size:14px">฿${Number(p.price).toLocaleString()}</div>
+                ${hoursLeft!==null?`<div style="font-size:11px;color:${hoursLeft>3?'#d97706':'#dc2626'};font-weight:500;margin-top:2px">⏰ ${hoursLeft>0?`หมดอายุใน ${hoursLeft} ชม.`:'เกินเวลาแล้ว'}</div>`:''}
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn btn-g" style="flex:1" onclick="respondReserve(${p.id},'accept')">✅ ยืนยันจอง</button>
+              <button class="btn btn-danger" style="flex:1" onclick="respondReserve(${p.id},'reject')">❌ ปฏิเสธ</button>
+            </div>
+          </div>`;
+        }).join('');
+      }
+      if(!myReservs.length&&!incoming.length){html+='<div class="empty-msg">ยังไม่มีรายการจอง</div>';}
+      html+='</div>';
+      c.innerHTML=html;
     }).catch(e=>toast(e.message));
   } else if(tab==='addresses'){
     openAddressesTab();

@@ -66,13 +66,28 @@ router.get('/trending', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Seller view: products that others reserved from me
 router.get('/my/reservations', authMiddleware, async (req, res) => {
   try {
     const { rows } = await getDB().query(
-      `SELECT p.id, p.title, p.price, p.image_url, p.status, p.reserved_for_id,
+      `SELECT p.id, p.title, p.price, p.image_url, p.status, p.reserved_for_id, p.reserved_at,
               u.name as reserved_by_name
        FROM products p LEFT JOIN users u ON u.id = p.reserved_for_id
        WHERE p.seller_id=$1 AND p.status='reserved' ORDER BY p.created_at DESC`,
+      [req.user.id]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Buyer view: products I reserved
+router.get('/my/reserved-by-me', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await getDB().query(
+      `SELECT p.id, p.title, p.price, p.image_url, p.status, p.reserved_at, p.delivery_method,
+              COALESCE(u.shop_name, u.name) as seller_name, u.id as seller_id
+       FROM products p JOIN users u ON u.id = p.seller_id
+       WHERE p.reserved_for_id=$1 AND p.status='reserved' ORDER BY p.reserved_at DESC`,
       [req.user.id]
     );
     res.json(rows);

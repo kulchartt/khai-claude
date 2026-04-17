@@ -140,6 +140,7 @@ const api = {
   reserveProduct(id) { return this.post('/api/products/'+id+'/reserve', {}); },
   respondReservation(id, action) { return this.patch('/api/products/'+id+'/reserve', {action}); },
   getMyReservations() { return this.get('/api/products/my/reservations'); },
+  getMyReservedByMe() { return this.get('/api/products/my/reserved-by-me'); },
   getBundles() { return this.get('/api/bundles'); },
   getBundleDetail(id) { return this.get('/api/bundles/'+id); },
   getSellerBundles(id) { return this.get('/api/bundles/seller/'+id); },
