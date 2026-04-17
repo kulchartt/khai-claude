@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="PloiKhong"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="stylesheet" href="css/style.css?v=20260416r6o"/>
+  <link rel="stylesheet" href="css/style.css?v=20260417r7"/>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDdJGqjObnrJtqIoK-9TUjYdIwIMo77MvY&libraries=places&language=th"></script>
 </head>
 <body>
@@ -22,7 +22,7 @@
 <header class="navbar">
   <div class="logo" onclick="goPage('home')">Ploi<span>Khong</span><span class="logo-ai">with AI</span></div>
   <div class="search-wrap" style="position:relative">
-    <input type="text" id="searchQ" placeholder="ค้นหาสินค้า..." oninput="applyFilter();showSuggestions(this.value)" onfocus="showSuggestions(this.value)" onblur="hideSuggestions()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+    <input type="search" id="searchQ" placeholder="ค้นหาสินค้า..." oninput="applyFilter();showSuggestions(this.value)" onfocus="showSuggestions(this.value)" onblur="hideSuggestions()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other"/>
     <button class="img-search-btn" onclick="document.getElementById('imgSearchInput').click()" title="ค้นหาด้วยรูป">📷</button>
     <input type="file" id="imgSearchInput" accept="image/*" style="display:none" onchange="doImageSearch(this)"/>
     <button onclick="openAdvSearch()">🔍</button>
