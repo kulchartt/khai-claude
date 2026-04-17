@@ -243,7 +243,7 @@ function profileTab(tab){
   document.querySelectorAll('.profile-tab').forEach(t=>t.classList.toggle('on',t.id==='ptab-'+tab));
   const c=document.getElementById('profileTabContent');
   if(tab==='products'){
-    c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px"><span style="font-weight:600">สินค้าของฉัน</span><div style="display:flex;gap:8px"><button class="btn btn-sm" onclick="openCSVUpload()">📊 อัปโหลด CSV</button><button class="btn btn-sm btn-g" onclick="openSell()">+ ลงขายเพิ่ม</button></div></div><div class="product-grid" id="myProductsGrid"></div><div class="promptpay-settings" id="promptpaySettings"><div style="font-weight:600;margin-bottom:8px">💳 PromptPay ของฉัน <span style="font-size:12px;color:var(--text-hint);font-weight:400">(ผู้ซื้อจะเห็นเมื่อ checkout — ไม่แสดงในโปรไฟล์)</span></div><div style="display:flex;gap:8px"><input type="text" id="promptpayInput" placeholder="เบอร์มือถือ หรือ เลขบัตรประชาชน" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text);font-size:14px"/><button class="btn btn-g btn-sm" onclick="savePromptpay()">บันทึก</button></div></div>`;
+    c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px"><span style="font-weight:600">สินค้าของฉัน</span><div style="display:flex;gap:8px"><button class="btn btn-sm btn-g" onclick="openSell()">+ ลงขายเพิ่ม</button></div></div><div class="product-grid" id="myProductsGrid"></div><div class="promptpay-settings" id="promptpaySettings"><div style="font-weight:600;margin-bottom:8px">💳 PromptPay ของฉัน <span style="font-size:12px;color:var(--text-hint);font-weight:400">(ผู้ซื้อจะเห็นเมื่อ checkout — ไม่แสดงในโปรไฟล์)</span></div><div style="display:flex;gap:8px"><input type="text" id="promptpayInput" placeholder="เบอร์มือถือ หรือ เลขบัตรประชาชน" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text);font-size:14px"/><button class="btn btn-g btn-sm" onclick="savePromptpay()">บันทึก</button></div></div>`;
     renderMyCards(window._myItems||[],'myProductsGrid');
     api.getPromptpay().then(r=>{if(r.promptpay)document.getElementById('promptpayInput').value=r.promptpay;}).catch(()=>{});
     // Show pending reservations for seller
@@ -251,7 +251,7 @@ function profileTab(tab){
       if(!reservations.length)return;
       const grid=document.getElementById('myProductsGrid');
       if(!grid)return;
-      const html=`<div style="margin-bottom:16px;padding:12px;background:var(--bg-sec);border-radius:var(--radius-lg)"><div style="font-weight:600;margin-bottom:10px">🔖 รอยืนยันการจอง (${reservations.length})</div>${reservations.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg-card);border-radius:var(--radius);margin-bottom:6px"><div style="flex:1"><div style="font-size:13px;font-weight:500">${p.title}</div><div style="font-size:12px;color:var(--text-sec)">จองโดย: <b>${p.reserved_by_name||'?'}</b></div></div><button class="btn btn-sm btn-g" onclick="respondReserve(${p.id},'accept')">✅</button><button class="btn btn-sm btn-danger" onclick="respondReserve(${p.id},'reject')">❌</button></div>`).join('')}</div>`;
+      const html=`<div style="margin-bottom:16px;padding:12px;background:var(--bg-sec);border-radius:var(--radius-lg)"><div style="font-weight:600;margin-bottom:10px">🔖 รอยืนยันการจอง (${reservations.length})</div>${reservations.map(p=>{const rat=p.reserved_at?new Date(p.reserved_at):null;const ratStr=rat?rat.toLocaleString('th',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';return`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg-card);border-radius:var(--radius);margin-bottom:6px"><div style="flex:1"><div style="font-size:13px;font-weight:500">${p.title}</div><div style="font-size:12px;color:var(--text-sec)">จองโดย: <b>${p.reserved_by_name||'?'}</b>${ratStr?` · ${ratStr}`:''}</div></div><button class="btn btn-sm btn-g" onclick="respondReserve(${p.id},'accept')">✅</button><button class="btn btn-sm btn-danger" onclick="respondReserve(${p.id},'reject')">❌</button></div>`;}).join('')}</div>`;
       grid.insertAdjacentHTML('beforebegin',html);
     }).catch(()=>{});
   } else if(tab==='selling'){
@@ -844,7 +844,8 @@ async function openRoom(roomId){
     const otherId=room?(room.buyer_id===state.user.id?room.seller_id:room.buyer_id):null;
     const nameClick=otherId?`onclick="openSellerProfile(${otherId})" style="cursor:pointer;font-weight:600;font-size:14px" title="ดูโปรไฟล์"`:`style="font-weight:600;font-size:14px"`;
     const headerInfo=room?.product_title
-      ?`<div style="flex:1"><div ${nameClick}>${otherName}</div><div style="font-size:12px;color:var(--text-sec);margin-top:1px">📦 ${room.product_title}</div></div>`
+      ?`<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">${room.product_image?`<img src="${imgSrc(room.product_image)}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer" onclick="openDetail(${room.product_id})" loading="lazy"/>`:''}
+<div style="min-width:0"><div ${nameClick}>${otherName}</div><div style="font-size:12px;color:var(--text-sec);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" onclick="openDetail(${room.product_id})">📦 ${room.product_title}</div></div></div>`
       :`<div style="flex:1"><div ${nameClick}>${otherName||'การสนทนา'}</div></div>`;
     const closeSaleBtn=(isSeller&&room?.product_id)
       ?`<button class="btn btn-sm btn-danger" onclick="doCloseSale(${room.product_id})" id="closeSaleBtn">🏷️ ปิดการขาย</button>`
@@ -2579,58 +2580,6 @@ async function doDeleteStory(id) {
     closeOverlay('storyOverlay');
     toast('ลบ story แล้ว');
     loadStories();
-  } catch(e) { toast(e.message); }
-}
-
-// ============ ROUND 4: Bulk CSV Upload ============
-function openCSVUpload() {
-  document.getElementById('csvFileInput').value = '';
-  document.getElementById('csvPreview').innerHTML = '';
-  openOverlay('csvOverlay');
-}
-
-function downloadCSVTemplate() {
-  const header = 'title,price,category,condition,description,location';
-  const example = 'iPhone 14 สีดำ,15000,มือถือ,สภาพดี,ใช้งาน 6 เดือน แบตดี,กรุงเทพฯ';
-  const blob = new Blob([header+'\n'+example], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'ploikhong-template.csv'; a.click();
-}
-
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,''));
-  return lines.slice(1).map(line => {
-    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g,''));
-    const obj = {};
-    headers.forEach((h,i) => obj[h] = vals[i]||'');
-    return obj;
-  }).filter(r => r.title && r.price);
-}
-
-document.addEventListener('change', e => {
-  if (e.target.id !== 'csvFileInput') return;
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const products = parseCSV(ev.target.result);
-    const preview = document.getElementById('csvPreview');
-    if (!products.length) { preview.innerHTML = '<span style="color:#dc2626">ไม่พบข้อมูล — ตรวจสอบรูปแบบ CSV</span>'; return; }
-    preview.innerHTML = `<b style="color:#16a34a">พบ ${products.length} รายการ</b><br/>${products.slice(0,3).map(p=>`• ${p.title} — ฿${p.price}`).join('<br/>')}${products.length>3?`<br/>...และอีก ${products.length-3} รายการ`:''}`;
-    window._csvProducts = products;
-  };
-  reader.readAsText(file, 'UTF-8');
-});
-
-async function doUploadCSV() {
-  const products = window._csvProducts;
-  if (!products || !products.length) { toast('กรุณาเลือกไฟล์ CSV ก่อน'); return; }
-  try {
-    const res = await api.bulkCSV(products);
-    closeOverlay('csvOverlay');
-    toast(`เพิ่มสินค้าแล้ว ${res.inserted} รายการ ✅`, '#1D9E75');
-    loadProducts();
-    window._csvProducts = null;
   } catch(e) { toast(e.message); }
 }
 

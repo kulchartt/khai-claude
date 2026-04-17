@@ -367,23 +367,6 @@
   </div>
 </div>
 
-<!-- Bulk CSV Overlay -->
-<div class="overlay" id="csvOverlay">
-  <div class="sheet">
-    <div class="sheet-header"><span>📊 อัปโหลดสินค้าจาก CSV</span><button class="close-btn" onclick="closeOverlay('csvOverlay')">✕</button></div>
-    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-      <div style="background:var(--bg-sec);border-radius:8px;padding:12px;font-size:13px">
-        <b>รูปแบบ CSV ที่ถูกต้อง:</b><br/>
-        <code style="font-size:11px">title,price,category,condition,description,location</code><br/><br/>
-        <button class="btn btn-sm" onclick="downloadCSVTemplate()">⬇️ ดาวน์โหลด Template</button>
-      </div>
-      <input type="file" id="csvFileInput" accept=".csv" style="font-size:13px"/>
-      <div id="csvPreview" style="font-size:13px;color:var(--text-sec)"></div>
-      <button class="btn btn-g" onclick="doUploadCSV()">📤 อัปโหลด</button>
-    </div>
-  </div>
-</div>
-
 <!-- Map Meetup Overlay -->
 <div class="overlay" id="mapOverlay" style="z-index:400">
   <div class="sheet">
@@ -1083,7 +1066,7 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js?v=20260417r11"></script>
-<script src="js/app.js?v=20260417r30"></script>
+<script src="js/app.js?v=20260417r31"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
