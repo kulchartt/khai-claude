@@ -2619,10 +2619,13 @@ async function startLive() {
     const badge = document.getElementById('liveBadge');
     if (badge) badge.style.display = 'inline-block';
 
-    // Handle new viewer joining
+    // Handle new viewer joining — รองรับหลายคนดูพร้อมกัน
+    const _hostPCs = {}; // เก็บ PC แยกต่างหากต่อ viewer socket id
     socket.on('live:viewer-joined', async ({ viewerSocketId }) => {
+      _hostPCs[viewerSocketId]?.close();
       const pc = new RTCPeerConnection(STUN);
-      _livePC = pc;
+      _hostPCs[viewerSocketId] = pc;
+      _livePC = pc; // ยังเก็บไว้อ้างอิง (viewer คนล่าสุด)
       _localStream.getTracks().forEach(t => pc.addTrack(t, _localStream));
       pc.onicecandidate = e => { if (e.candidate) socket.emit('live:ice', { to: viewerSocketId, candidate: e.candidate }); };
       const offer = await pc.createOffer();
@@ -2630,12 +2633,14 @@ async function startLive() {
       socket.emit('live:offer', { to: viewerSocketId, offer });
     });
 
-    socket.on('live:answer', async ({ answer }) => {
-      if (_livePC) await _livePC.setRemoteDescription(answer);
+    socket.on('live:answer', async ({ from, answer }) => {
+      const pc = _hostPCs[from] || _livePC;
+      if (pc) await pc.setRemoteDescription(answer).catch(() => {});
     });
 
-    socket.on('live:ice', ({ candidate }) => {
-      if (_livePC) _livePC.addIceCandidate(candidate).catch(() => {});
+    socket.on('live:ice', ({ from, candidate }) => {
+      const pc = _hostPCs[from] || _livePC;
+      if (pc) pc.addIceCandidate(candidate).catch(() => {});
     });
 
     socket.on('live:chat', renderLiveChatMsg);
@@ -2658,18 +2663,28 @@ async function joinLive(sellerId) {
   openOverlay('liveViewOverlay');
   const loading = document.getElementById('liveViewLoading');
   if (loading) loading.style.display = 'block';
-  socket.emit('live:join', sellerId);
 
+  // ลบ listener เก่าก่อนเสมอ ป้องกัน stack ซ้อน
+  socket.off('live:offer');
+  socket.off('live:ice');
+  socket.off('live:ended');
+  socket.off('live:chat');
+
+  _viewingPCs[sellerId]?.close();
   const pc = new RTCPeerConnection(STUN);
   _viewingPCs[sellerId] = pc;
+
+  let hostSocketId = null;
 
   pc.ontrack = e => {
     const vid = document.getElementById('liveViewVideo');
     if (vid) { vid.srcObject = e.streams[0]; vid.play(); if (loading) loading.style.display = 'none'; }
   };
-  pc.onicecandidate = e => { if (e.candidate) socket.emit('live:ice', { to: socket.id, candidate: e.candidate }); };
+  // ส่ง ICE ไปหา host (ไม่ใช่ตัวเอง)
+  pc.onicecandidate = e => { if (e.candidate && hostSocketId) socket.emit('live:ice', { to: hostSocketId, candidate: e.candidate }); };
 
   socket.on('live:offer', async ({ from, offer }) => {
+    hostSocketId = from; // เก็บ socket id ของ host ไว้ใช้ส่ง ICE
     await pc.setRemoteDescription(offer);
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
@@ -2678,6 +2693,8 @@ async function joinLive(sellerId) {
   socket.on('live:ice', ({ candidate }) => pc.addIceCandidate(candidate).catch(() => {}));
   socket.on('live:ended', () => { toast('ไลฟ์จบแล้ว'); closeOverlay('liveViewOverlay'); });
   socket.on('live:chat', renderLiveChatMsg);
+
+  socket.emit('live:join', sellerId);
 
   const sellerIdInput = document.getElementById('liveViewSellerId');
   if (sellerIdInput) sellerIdInput.value = sellerId;
