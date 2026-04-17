@@ -23,8 +23,10 @@ router.post('/buy-now', authMiddleware, async (req, res) => {
     if (!product_id) return res.status(400).json({ error: 'ระบุสินค้าด้วย' });
     await client.query('BEGIN');
     const { rows: pr } = await client.query(
-      "SELECT p.*, COALESCE(u.shop_name, u.name) as seller_name, u.promptpay, u.bank_name, u.bank_account, u.bank_account_name FROM products p JOIN users u ON u.id = p.seller_id WHERE p.id = $1 AND p.status = 'available'",
-      [product_id]
+      `SELECT p.*, COALESCE(u.shop_name, u.name) as seller_name, u.promptpay, u.bank_name, u.bank_account, u.bank_account_name
+       FROM products p JOIN users u ON u.id = p.seller_id
+       WHERE p.id = $1 AND (p.status = 'available' OR (p.status = 'reserved' AND p.reserved_for_id = $2))`,
+      [product_id, req.user.id]
     );
     if (!pr[0]) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'ไม่พบสินค้าหรือสินค้าถูกขายแล้ว' }); }
     const p = pr[0];
