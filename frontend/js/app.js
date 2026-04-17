@@ -2643,6 +2643,7 @@ async function startLive() {
       if (pc) pc.addIceCandidate(candidate).catch(() => {});
     });
 
+    socket.off('live:chat');
     socket.on('live:chat', renderLiveChatMsg);
   } catch (e) {
     toast('ไม่สามารถเข้าถึงกล้อง: ' + e.message);
@@ -2659,6 +2660,7 @@ function stopLive() {
   toast('จบไลฟ์แล้ว');
 }
 
+let _pickerProducts = [];
 async function openLiveProductPicker() {
   const picker = document.getElementById('liveProductPicker');
   if (!picker) return;
@@ -2667,21 +2669,20 @@ async function openLiveProductPicker() {
   picker.innerHTML = '<div style="font-size:13px;color:var(--text-sec)">กำลังโหลด...</div>';
   try {
     const items = await api.getMyProducts();
-    const avail = items.filter(p => p.status === 'available');
-    if (!avail.length) { picker.innerHTML = '<div style="font-size:13px;color:var(--text-sec)">ไม่มีสินค้าที่ลงขายอยู่</div>'; return; }
-    picker.innerHTML = avail.map(p => `<div style="display:flex;align-items:center;gap:8px;padding:6px;cursor:pointer;border-radius:8px;hover:background:var(--bg-sec)" onclick="shareLiveProduct(${p.id})"><div style="font-size:22px;flex-shrink:0">${productImg(p)||'📦'}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.title}</div><div style="font-size:12px;color:var(--green)">฿${Number(p.price).toLocaleString()}</div></div><button class="btn btn-sm btn-g" onclick="event.stopPropagation();shareLiveProduct(${p.id})">แชร์</button></div>`).join('');
+    _pickerProducts = items.filter(p => p.status === 'available');
+    if (!_pickerProducts.length) { picker.innerHTML = '<div style="font-size:13px;color:var(--text-sec)">ไม่มีสินค้าที่ลงขายอยู่</div>'; return; }
+    picker.innerHTML = _pickerProducts.map(p => `<div style="display:flex;align-items:center;gap:8px;padding:6px;border-radius:8px"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.title}</div><div style="font-size:12px;color:var(--green)">฿${Number(p.price).toLocaleString()}</div></div><button class="btn btn-sm btn-g" onclick="shareLiveProduct(${p.id})">แชร์</button></div>`).join('');
   } catch(e) { picker.innerHTML = '<div style="font-size:13px;color:var(--text-sec)">โหลดไม่ได้</div>'; }
 }
 
-async function shareLiveProduct(productId) {
+function shareLiveProduct(productId) {
   const sellerId = parseInt(document.getElementById('liveHostSellerId')?.value);
   if (!sellerId) return;
-  try {
-    const p = (window._myItems || []).find(x => x.id === productId) || await api.getProduct(productId);
-    socket.emit('live:product', { sellerId, product: { id: p.id, title: p.title, price: p.price, image_url: p.image_url } });
-    document.getElementById('liveProductPicker').style.display = 'none';
-    toast('📦 แชร์สินค้าแล้ว', '#1D9E75');
-  } catch(e) { toast(e.message); }
+  const p = _pickerProducts.find(x => x.id === productId);
+  if (!p) { toast('ไม่พบสินค้า'); return; }
+  socket.emit('live:product', { sellerId, product: { id: p.id, title: p.title, price: p.price, image_url: p.image_url } });
+  document.getElementById('liveProductPicker').style.display = 'none';
+  toast('📦 แชร์สินค้าแล้ว', '#1D9E75');
 }
 
 async function joinLive(sellerId) {
