@@ -1910,7 +1910,7 @@ document.getElementById('pwaDismissBtn')?.addEventListener('click',()=>{
 });
 
 // ===== SWIPE TO BROWSE =====
-const SWIPE_BATCH=5;
+const SWIPE_BATCH=6;
 let _swipeProducts=[],_swipeIndex=0;
 async function openSwipeMode(){
   goPage('swipe');
