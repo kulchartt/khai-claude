@@ -48,6 +48,11 @@ router.post('/room', authMiddleware, async (req, res) => {
     const { seller_id, product_id } = req.body;
     if (seller_id === req.user.id) return res.status(400).json({ error: 'ไม่สามารถแชทกับตัวเองได้' });
     const db = getDB();
+    const { rows: blk } = await db.query(
+      'SELECT 1 FROM blocked_users WHERE (blocker_id=$1 AND blocked_id=$2) OR (blocker_id=$2 AND blocked_id=$1)',
+      [req.user.id, seller_id]
+    );
+    if (blk.length) return res.status(403).json({ error: 'ไม่สามารถแชทกับผู้ใช้นี้ได้' });
     const { rows: ex } = await db.query(
       'SELECT * FROM chat_rooms WHERE buyer_id = $1 AND seller_id = $2 AND product_id IS NOT DISTINCT FROM $3',
       [req.user.id, seller_id, product_id || null]

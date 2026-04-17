@@ -35,6 +35,7 @@ const aiRoutes = require('./routes/ai');
 const ekycRoutes = require('./routes/ekyc');
 const webauthnRoutes = require('./routes/webauthn');
 const liveRoutes = require('./routes/live');
+const blockRoutes = require('./routes/blocks');
 
 const { initDB, getDB } = require('./db');
 
@@ -77,6 +78,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/ekyc', ekycRoutes);
 app.use('/api/webauthn', webauthnRoutes);
 app.use('/api/live', liveRoutes);
+app.use('/api/blocks', blockRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/health/cloudinary', async (req, res) => {
@@ -111,6 +113,16 @@ io.on('connection', (socket) => {
     try {
       const db = getDB();
       const { room_id, content } = data;
+      // Block check
+      const { rows: rr0 } = await db.query('SELECT * FROM chat_rooms WHERE id = $1', [room_id]);
+      if (rr0[0]) {
+        const otherId = rr0[0].buyer_id === userId ? rr0[0].seller_id : rr0[0].buyer_id;
+        const { rows: blk } = await db.query(
+          'SELECT 1 FROM blocked_users WHERE (blocker_id=$1 AND blocked_id=$2) OR (blocker_id=$2 AND blocked_id=$1)',
+          [userId, otherId]
+        );
+        if (blk.length) { socket.emit('error', { message: 'ไม่สามารถส่งข้อความได้' }); return; }
+      }
       const { rows: mr } = await db.query('INSERT INTO messages (room_id, sender_id, content) VALUES ($1,$2,$3) RETURNING id', [room_id, userId, content]);
       const { rows: fm } = await db.query('SELECT m.*, u.name as sender_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.id = $1', [mr[0].id]);
       const fullMsg = fm[0];

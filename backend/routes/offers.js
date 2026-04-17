@@ -17,6 +17,11 @@ router.post('/', authMiddleware, async (req, res) => {
     if (!product) return res.status(404).json({ error: 'ไม่พบสินค้า' });
     if (product.seller_id === req.user.id) return res.status(400).json({ error: 'ไม่สามารถเสนอราคาสินค้าของตัวเองได้' });
     if (product.status !== 'available') return res.status(400).json({ error: 'สินค้านี้ไม่ว่างแล้ว' });
+    const { rows: blk } = await db.query(
+      'SELECT 1 FROM blocked_users WHERE (blocker_id=$1 AND blocked_id=$2) OR (blocker_id=$2 AND blocked_id=$1)',
+      [req.user.id, product.seller_id]
+    );
+    if (blk.length) return res.status(403).json({ error: 'ไม่สามารถเสนอราคาได้' });
 
     // สร้าง offer
     const { rows } = await db.query(
