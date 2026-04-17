@@ -14,6 +14,7 @@
     "test:purchase":  "playwright test 05-purchase",
     "test:offers":    "playwright test 06-offers",
     "test:reserve":   "playwright test 07-reservation",
+    "test:cats":      "playwright test 08-categories",
     "report":         "playwright show-report playwright-report"
   },
   "keywords": [],
