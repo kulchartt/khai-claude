@@ -854,7 +854,7 @@ async function openRoom(roomId){
       <div class="chat-messages" id="msgList">${msgs.map(m=>renderMsg(m,state.user.id)).join('')}</div>
       <div class="quick-replies">${QUICK_REPLIES.map(t=>`<button class="qr-btn" onclick="fillQuickReply('${t}')">${t}</button>`).join('')}</div>
       <div id="voiceRecordingBar" style="display:none;padding:6px 12px;background:var(--green-light);color:var(--green-dark);font-size:13px;font-weight:600;border-radius:var(--radius);margin:4px 8px;text-align:center">🎙️ <span id="voiceRecordingTxt">กำลังอัดเสียง...</span> <span class="recording-pulse">●</span></div>
-      <div class="chat-input"><input type="search" id="msgInput" placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter')sendMsg()" autocomplete="off" data-lpignore="true" data-form-type="other" data-1p-ignore="true"/><button class="btn btn-sm" onclick="document.getElementById('chatImgInput').click()" title="ส่งรูป">📷</button><input type="file" id="chatImgInput" accept="image/*" style="display:none" onchange="sendChatImage(this)"/><button id="chatMicBtn" class="btn btn-sm" onclick="toggleVoiceRecord()" title="อัดข้อความเสียง">🎙️</button><button onclick="sendMsg()">ส่ง</button></div>`;
+      <div class="chat-input"><div id="msgInput" class="chat-msg-input" contenteditable="true" data-placeholder="พิมพ์ข้อความ..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></div><button class="btn btn-sm" onclick="document.getElementById('chatImgInput').click()" title="ส่งรูป">📷</button><input type="file" id="chatImgInput" accept="image/*" style="display:none" onchange="sendChatImage(this)"/><button id="chatMicBtn" class="btn btn-sm" onclick="toggleVoiceRecord()" title="อัดข้อความเสียง">🎙️</button><button onclick="sendMsg()">ส่ง</button></div>`;
     const ml=document.getElementById('msgList');
     if(ml)setTimeout(()=>{ml.scrollTop=ml.scrollHeight;},50);
     if(socket)socket.emit('join_room',roomId);
@@ -877,7 +877,7 @@ async function doCloseSale(productId){
     loadProducts();
   }catch(e){toast(e.message);}
 }
-function sendMsg(){const input=document.getElementById('msgInput');if(!input||!input.value.trim()||!socket)return;socket.emit('send_message',{room_id:currentRoomId,content:input.value.trim()});input.value='';}
+function sendMsg(){const input=document.getElementById('msgInput');if(!input||!socket)return;const text=(input.value!==undefined?input.value:input.textContent||'').trim();if(!text)return;socket.emit('send_message',{room_id:currentRoomId,content:text});if(input.value!==undefined)input.value='';else{input.textContent='';input.innerHTML='';}}
 function renderMsg(m, myId){const out=m.sender_id===myId;const isImg=m.content&&m.content.startsWith('__img__:');const isVoice=m.content&&m.content.startsWith('__voice__:');let msgBody;if(isImg){msgBody=`<img src="${m.content.slice(8)}" style="max-width:200px;border-radius:8px;cursor:pointer;display:block" onclick="window.open(this.src)" loading="lazy"/>`;}else if(isVoice){msgBody=`<div class="voice-msg"><audio controls src="${m.content.slice(10)}" preload="none"></audio></div>`;}else{msgBody=m.content;}return `<div style="display:flex;flex-direction:column;align-items:${out?'flex-end':'flex-start'}">${!out?`<div class="msg-name">${m.sender_name}</div>`:''}<div class="msg ${out?'msg-out':'msg-in'}">${msgBody}<div class="msg-time">${new Date(m.created_at).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div></div></div>`;}
 async function sendChatImage(input){if(!input.files[0]||!currentRoomId)return;const fd=new FormData();fd.append('image',input.files[0]);try{toast('กำลังส่งรูป...');await api.sendChatImage(currentRoomId,fd);const msgs=await api.getMessages(currentRoomId);const ml=document.getElementById('msgList');if(!ml)return;ml.innerHTML=msgs.map(m=>renderMsg(m,state.user.id)).join('');ml.scrollTop=ml.scrollHeight;input.value='';}catch(e){toast(e.message);}}
 
@@ -2085,7 +2085,12 @@ async function toggleHolidayMode(){
 // ===== CHAT QUICK REPLY =====
 function fillQuickReply(text){
   const input=document.getElementById('msgInput');
-  if(input){input.value=text;input.focus();}
+  if(!input)return;
+  if(input.value!==undefined)input.value=text;
+  else input.textContent=text;
+  input.focus();
+  // move cursor to end for contenteditable
+  if(input.contentEditable==='true'){const r=document.createRange();const s=window.getSelection();r.selectNodeContents(input);r.collapse(false);s.removeAllRanges();s.addRange(r);}
 }
 
 // ===== PWA INSTALL PROMPT =====
