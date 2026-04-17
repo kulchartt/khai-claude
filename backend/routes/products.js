@@ -168,6 +168,7 @@ router.post('/', authMiddleware, uploadMiddleware, async (req, res) => {
       }
     } catch (notifErr) { console.error('follower notify error:', notifErr); }
 
+    io?.emit('product:new', { id: productId });
     res.json({ id: productId, message: 'ลงขายสินค้าสำเร็จ!' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -255,6 +256,7 @@ router.patch('/:id/close', authMiddleware, async (req, res) => {
     if (product.seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
     if (product.status === 'sold') return res.status(400).json({ error: 'สินค้านี้ขายไปแล้ว' });
     await db.query("UPDATE products SET status = 'sold' WHERE id = $1", [req.params.id]);
+    req.app.get('io')?.emit('product:update', { id: parseInt(req.params.id), status: 'sold' });
     res.json({ message: 'ปิดการขายแล้ว 🏷️ สินค้าถูกทำเครื่องหมายว่าขายแล้ว' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -353,6 +355,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     if (product.seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์ลบ' });
     await db.query('DELETE FROM product_images WHERE product_id = $1', [req.params.id]);
     await db.query('DELETE FROM products WHERE id = $1', [req.params.id]);
+    req.app.get('io')?.emit('product:deleted', { id: parseInt(req.params.id) });
     res.json({ message: 'ลบสินค้าแล้ว' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -402,6 +405,7 @@ router.post('/:id/reserve', authMiddleware, async (req, res) => {
     const io = req.app.get('io'); const onlineUsers = req.app.get('onlineUsers');
     const sock = onlineUsers?.get(product.seller_id);
     if (sock) io?.to(sock).emit('notification', { type: 'system' });
+    io?.emit('product:update', { id: parseInt(req.params.id), status: 'reserved' });
     res.json({ message: 'ส่งคำขอจองแล้ว! รอผู้ขายยืนยัน ⏳' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -423,6 +427,7 @@ router.patch('/:id/reserve', authMiddleware, async (req, res) => {
         [product.seller_id, `ผู้ซื้อยกเลิกการจอง "${product.title}" แล้ว`]);
       const sock = onlineUsers?.get(product.seller_id);
       if (sock) io?.to(sock).emit('notification', { type: 'system' });
+      io?.emit('product:update', { id: parseInt(req.params.id), status: 'available' });
       return res.json({ message: 'ยกเลิกการจองแล้ว' });
     }
     // Seller accept / reject
@@ -439,6 +444,7 @@ router.patch('/:id/reserve', authMiddleware, async (req, res) => {
         [product.reserved_for_id, `ผู้ขายไม่ยืนยันการจอง "${product.title}"`]);
       const sock = onlineUsers?.get(product.reserved_for_id);
       if (sock) io?.to(sock).emit('notification', { type: 'system' });
+      io?.emit('product:update', { id: parseInt(req.params.id), status: 'available' });
       res.json({ message: 'ปฏิเสธการจองแล้ว' });
     } else {
       res.status(400).json({ error: 'action ไม่ถูกต้อง' });

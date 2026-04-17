@@ -54,6 +54,7 @@ router.post('/buy-now', authMiddleware, async (req, res) => {
     // ลบออกจากตะกร้า (ถ้ามี)
     await client.query('DELETE FROM cart_items WHERE product_id = $1', [p.id]);
     await client.query('COMMIT');
+    req.app.get('io')?.emit('product:update', { id: p.id, status: 'reserved' });
     res.json({
       message: 'สร้างคำสั่งซื้อแล้ว',
       order_id: orderId,
@@ -143,6 +144,7 @@ router.patch('/:id/cancel', authMiddleware, async (req, res) => {
       const sock = onlineUsers?.get(seller_id);
       if (sock) io?.to(sock).emit('notification', { type: 'order' });
     }
+    for (const { product_id } of items) io?.emit('product:update', { id: product_id, status: 'available' });
 
     res.json({ message: 'ยกเลิกคำสั่งซื้อแล้ว สินค้ากลับมาวางขายแล้ว' });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -183,6 +185,9 @@ router.patch('/:id/confirm-payment', authMiddleware, async (req, res) => {
       [or[0].user_id, notifyBody]);
     const sock = onlineUsers?.get(or[0].user_id);
     if (sock) io?.to(sock).emit('notification', { type: 'order' });
+    const { rows: pIds } = await db.query('SELECT product_id FROM order_items WHERE order_id=$1', [req.params.id]);
+    for (const { product_id } of pIds) io?.emit('product:update', { id: product_id, status: 'sold' });
+    if (sock) io?.to(sock).emit('order:update', { orderId: parseInt(req.params.id), status: newStatus });
 
     res.json({ message: isMeetup ? 'ยืนยันนัดรับเสร็จสิ้น ✅' : 'ยืนยันรับชำระเงินแล้ว ✅ กรุณาจัดส่งสินค้าให้ผู้ซื้อ' });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -218,6 +223,7 @@ router.patch('/:id/seller-cancel', authMiddleware, async (req, res) => {
       [order.user_id, `ออเดอร์ #${String(req.params.id).padStart(4,'0')} ถูกยกเลิกโดยผู้ขาย — กรุณาติดต่อผู้ขายเพื่อรับเงินคืน`]);
     const sock = onlineUsers?.get(order.user_id);
     if (sock) io?.to(sock).emit('notification', { type: 'order' });
+    for (const { product_id } of items) io?.emit('product:update', { id: product_id, status: 'available' });
 
     res.json({ message: 'ยกเลิกออเดอร์แล้ว สินค้ากลับมาวางขายแล้ว' });
   } catch (e) { res.status(500).json({ error: e.message }); }
