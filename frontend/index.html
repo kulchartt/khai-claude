@@ -36,7 +36,8 @@
     <button class="icon-btn" onclick="openChatList()">💬<span class="badge hidden" id="chatBadge">0</span></button>
     <button class="icon-btn hide-sm" onclick="openWishlist()">❤️<span class="badge hidden" id="wlBadge">0</span></button>
     <button class="icon-btn hide-sm" onclick="openSwipeMode()" title="สุ่มสินค้า">🔀</button>
-    <button class="icon-btn" onclick="openCart()">🛒<span class="badge hidden" id="cartBadge">0</span></button>
+    <!-- cart hidden — ใช้ในตลาดมือหนึ่ง -->
+    <button class="icon-btn" onclick="openCart()" id="cartBtn" style="display:none">🛒<span class="badge hidden" id="cartBadge">0</span></button>
     <button class="dark-toggle hide-sm" id="darkToggle" onclick="toggleDarkMode()" title="สลับธีม">🌙</button>
     <div id="navUser"></div>
   </nav>
@@ -1053,7 +1054,7 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js?v=20260416r6h"></script>
-<script src="js/app.js?v=20260417r8"></script>
+<script src="js/app.js?v=20260417r10"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

@@ -14,6 +14,55 @@ const upload = multer({
   }
 });
 
+// POST /api/orders/buy-now — ซื้อทันที 1 ชิ้น (มือสอง)
+router.post('/buy-now', authMiddleware, async (req, res) => {
+  const db = getDB();
+  const client = await db.connect();
+  try {
+    const { product_id } = req.body;
+    if (!product_id) return res.status(400).json({ error: 'ระบุสินค้าด้วย' });
+    await client.query('BEGIN');
+    const { rows: pr } = await client.query(
+      "SELECT p.*, u.name as seller_name, u.promptpay, u.bank_name, u.bank_account, u.bank_account_name FROM products p JOIN users u ON u.id = p.seller_id WHERE p.id = $1 AND p.status = 'available'",
+      [product_id]
+    );
+    if (!pr[0]) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'ไม่พบสินค้าหรือสินค้าถูกขายแล้ว' }); }
+    const p = pr[0];
+    if (Number(p.seller_id) === Number(req.user.id)) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'ไม่สามารถซื้อสินค้าของตัวเองได้' }); }
+    // ตรวจ soft lock ของคนอื่น
+    if (p.cart_locked_until && new Date(p.cart_locked_until) > new Date() && Number(p.cart_locked_by) !== Number(req.user.id)) {
+      const remaining = Math.ceil((new Date(p.cart_locked_until) - new Date()) / 60000);
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: `สินค้านี้กำลังถูกจองชั่วคราว (อีกประมาณ ${remaining} นาที)` });
+    }
+    const { rows: or } = await client.query(
+      "INSERT INTO orders (user_id, total, status) VALUES ($1,$2,'awaiting_payment') RETURNING id",
+      [req.user.id, p.price]
+    );
+    const orderId = or[0].id;
+    await client.query('INSERT INTO order_items (order_id, product_id, price, qty) VALUES ($1,$2,$3,1)', [orderId, p.id, p.price]);
+    await client.query("UPDATE products SET status = 'reserved', cart_locked_until = NULL, cart_locked_by = NULL WHERE id = $1", [p.id]);
+    // ลบออกจากตะกร้า (ถ้ามี)
+    await client.query('DELETE FROM cart_items WHERE product_id = $1', [p.id]);
+    await client.query('COMMIT');
+    res.json({
+      message: 'สร้างคำสั่งซื้อแล้ว',
+      order_id: orderId,
+      total: p.price,
+      seller_promptpay: p.promptpay || null,
+      seller_name: p.seller_name || '',
+      seller_bank_name: p.bank_name || null,
+      seller_bank_account: p.bank_account || null,
+      seller_bank_account_name: p.bank_account_name || null,
+    });
+  } catch (e) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: e.message });
+  } finally {
+    client.release();
+  }
+});
+
 // POST /api/orders/:id/slip — ผู้ซื้ออัปโหลด slip
 router.post('/:id/slip', authMiddleware, (req, res) => {
   upload.single('slip')(req, res, async (err) => {
@@ -95,10 +144,11 @@ router.patch('/:id/confirm-payment', authMiddleware, async (req, res) => {
       JOIN products p ON oi.product_id = p.id
       WHERE o.id = $1
     `, [req.params.id]);
-    if (!rows.find(r => r.seller_id === req.user.id)) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+    if (!rows.find(r => Number(r.seller_id) === Number(req.user.id))) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
 
     const { rows: or } = await db.query('SELECT * FROM orders WHERE id = $1', [req.params.id]);
     if (!or[0]) return res.status(404).json({ error: 'ไม่พบออเดอร์' });
+    if (or[0].status !== 'awaiting_confirmation') return res.status(400).json({ error: 'ออเดอร์นี้ยังไม่ได้รับ slip หรือดำเนินการไปแล้ว' });
 
     await db.query("UPDATE orders SET status = 'confirmed' WHERE id = $1", [req.params.id]);
     // ตอนนี้ยืนยันแล้ว — เปลี่ยนสถานะสินค้าเป็น sold จริงๆ
@@ -128,7 +178,7 @@ router.patch('/:id/seller-cancel', authMiddleware, async (req, res) => {
       JOIN order_items oi ON o.id = oi.order_id
       JOIN products p ON oi.product_id = p.id WHERE o.id = $1
     `, [req.params.id]);
-    if (!sellers.find(r => r.seller_id === req.user.id)) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+    if (!sellers.find(r => Number(r.seller_id) === Number(req.user.id))) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
 
     const { rows: or } = await db.query('SELECT * FROM orders WHERE id = $1', [req.params.id]);
     const order = or[0];
@@ -169,7 +219,7 @@ router.patch('/:id/ship', authMiddleware, async (req, res) => {
       JOIN products p ON oi.product_id = p.id
       WHERE o.id = $1
     `, [req.params.id]);
-    if (!rows.find(r => r.seller_id === req.user.id)) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+    if (!rows.find(r => Number(r.seller_id) === Number(req.user.id))) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
 
     const { rows: or } = await db.query('SELECT * FROM orders WHERE id = $1', [req.params.id]);
     if (!or[0]) return res.status(404).json({ error: 'ไม่พบออเดอร์' });

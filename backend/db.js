@@ -285,6 +285,12 @@ async function initDB() {
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ekyc_verified INTEGER DEFAULT 0`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ekyc_name TEXT DEFAULT NULL`);
 
+  // Soft lock — cart reservation (15 min)
+  await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS cart_locked_until TIMESTAMPTZ DEFAULT NULL`);
+  await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS cart_locked_by INTEGER DEFAULT NULL`);
+  // Clean up expired locks on startup
+  await db.query(`UPDATE products SET cart_locked_until = NULL, cart_locked_by = NULL WHERE cart_locked_until IS NOT NULL AND cart_locked_until < NOW()`);
+
   // Round 6B — WebAuthn (Biometric Login)
   await db.query(`CREATE TABLE IF NOT EXISTS webauthn_credentials (
     id SERIAL PRIMARY KEY,

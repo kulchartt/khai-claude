@@ -5,8 +5,14 @@ const router = express.Router();
 
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { rows } = await getDB().query(`
-      SELECT c.id, c.qty, p.id as product_id, p.title, p.price, p.category, p.image_url, p.condition, p.status
+    const db = getDB();
+    // Renew soft locks for this user's cart every time they open cart
+    await db.query(`
+      UPDATE products SET cart_locked_until = NOW() + INTERVAL '15 minutes', cart_locked_by = $1
+      WHERE id IN (SELECT product_id FROM cart_items WHERE user_id = $1) AND status = 'available'
+    `, [req.user.id]);
+    const { rows } = await db.query(`
+      SELECT c.id, c.qty, p.id as product_id, p.title, p.price, p.category, p.image_url, p.condition, p.status, p.cart_locked_until, p.cart_locked_by
       FROM cart_items c JOIN products p ON c.product_id = p.id WHERE c.user_id = $1
     `, [req.user.id]);
     res.json(rows);
@@ -20,6 +26,11 @@ router.post('/add', authMiddleware, async (req, res) => {
     const db = getDB();
     const { rows: pr } = await db.query("SELECT * FROM products WHERE id = $1 AND status = 'available'", [product_id]);
     if (!pr[0]) return res.status(404).json({ error: 'ไม่พบสินค้าหรือสินค้าถูกขายแล้ว' });
+    // ตรวจ soft lock: ถ้าคนอื่นจองอยู่และยังไม่หมดเวลา
+    if (pr[0].cart_locked_until && new Date(pr[0].cart_locked_until) > new Date() && Number(pr[0].cart_locked_by) !== Number(req.user.id)) {
+      const remaining = Math.ceil((new Date(pr[0].cart_locked_until) - new Date()) / 60000);
+      return res.status(409).json({ error: `สินค้านี้กำลังถูกจองชั่วคราว (อีกประมาณ ${remaining} นาที)` });
+    }
     // สินค้ามือสอง = 1 ชิ้นต่อรายการ ถ้ามีในตะกร้าแล้วให้แจ้งแทน
     const { rows: existing } = await db.query(
       'SELECT id FROM cart_items WHERE user_id = $1 AND product_id = $2',
@@ -28,6 +39,11 @@ router.post('/add', authMiddleware, async (req, res) => {
     if (existing.length) return res.status(400).json({ error: 'สินค้านี้อยู่ในตะกร้าแล้ว' });
     await db.query(
       'INSERT INTO cart_items (user_id, product_id, qty) VALUES ($1,$2,1)',
+      [req.user.id, product_id]
+    );
+    // ตั้ง soft lock 15 นาที
+    await db.query(
+      "UPDATE products SET cart_locked_until = NOW() + INTERVAL '15 minutes', cart_locked_by = $1 WHERE id = $2",
       [req.user.id, product_id]
     );
     res.json({ message: 'เพิ่มลงตะกร้าแล้ว' });
@@ -41,6 +57,7 @@ router.post('/qty', authMiddleware, async (req, res) => {
     if (qty > 1) return res.status(400).json({ error: 'สินค้ามือสองมีได้ 1 ชิ้นต่อรายการ' });
     if (qty <= 0) {
       await db.query('DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2', [req.user.id, product_id]);
+      await db.query('UPDATE products SET cart_locked_until = NULL, cart_locked_by = NULL WHERE id = $1 AND cart_locked_by = $2', [product_id, req.user.id]);
     } else {
       await db.query('UPDATE cart_items SET qty = $1 WHERE user_id = $2 AND product_id = $3', [qty, req.user.id, product_id]);
     }
@@ -50,7 +67,10 @@ router.post('/qty', authMiddleware, async (req, res) => {
 
 router.delete('/:product_id', authMiddleware, async (req, res) => {
   try {
-    await getDB().query('DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2', [req.user.id, req.params.product_id]);
+    const db = getDB();
+    await db.query('DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2', [req.user.id, req.params.product_id]);
+    // คืน soft lock เมื่อเอาสินค้าออกจากตะกร้า
+    await db.query('UPDATE products SET cart_locked_until = NULL, cart_locked_by = NULL WHERE id = $1 AND cart_locked_by = $2', [req.params.product_id, req.user.id]);
     res.json({ message: 'ลบออกจากตะกร้าแล้ว' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -75,6 +95,10 @@ router.post('/checkout', authMiddleware, async (req, res) => {
       await client.query("UPDATE products SET status = 'reserved' WHERE id = $1", [item.product_id]);
     }
     await client.query('DELETE FROM cart_items WHERE user_id = $1', [req.user.id]);
+    // คืน soft lock (status เปลี่ยนเป็น reserved แล้ว แต่ cleanup ให้เรียบร้อย)
+    for (const item of items) {
+      await client.query('UPDATE products SET cart_locked_until = NULL, cart_locked_by = NULL WHERE id = $1', [item.product_id]);
+    }
     await client.query('COMMIT');
 
     // ดึง PromptPay ของผู้ขาย (ใช้ seller แรกในออเดอร์)
