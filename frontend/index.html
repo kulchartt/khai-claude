@@ -106,6 +106,21 @@
         <div class="chip" onclick="setCat('กีฬา',this)">⚽ กีฬา</div>
         <div class="chip" onclick="setCat('ของแต่งบ้าน',this)">🏠 ของแต่งบ้าน</div>
         <div class="chip" onclick="setCat('กล้อง',this)">📷 กล้อง</div>
+        <div class="chip" onclick="setCat('ยานพาหนะ',this)">🚗 ยานพาหนะ</div>
+        <div class="chip" onclick="setCat('อสังหาริมทรัพย์',this)">🏢 อสังหาริมทรัพย์</div>
+        <div class="chip" onclick="setCat('เฟอร์นิเจอร์',this)">🛋️ เฟอร์นิเจอร์</div>
+        <div class="chip" onclick="setCat('เกม',this)">🎮 เกม</div>
+        <div class="chip" onclick="setCat('ของใช้ในครัวเรือน',this)">🍳 ของใช้ในครัวเรือน</div>
+        <div class="chip" onclick="setCat('งานอดิเรก',this)">🎨 งานอดิเรก</div>
+        <div class="chip" onclick="setCat('สวน',this)">🌿 สวน</div>
+        <div class="chip" onclick="setCat('สัตว์เลี้ยง',this)">🐾 สัตว์เลี้ยง</div>
+        <div class="chip" onclick="setCat('เครื่องดนตรี',this)">🎸 เครื่องดนตรี</div>
+        <div class="chip" onclick="setCat('เครื่องใช้ไฟฟ้า',this)">⚡ เครื่องใช้ไฟฟ้า</div>
+        <div class="chip" onclick="setCat('อุปกรณ์ไอที',this)">💻 อุปกรณ์ไอที</div>
+        <div class="chip" onclick="setCat('Gadget',this)">📡 Gadget</div>
+        <div class="chip" onclick="setCat('นาฬิกา',this)">⌚ นาฬิกา</div>
+        <div class="chip" onclick="setCat('ของฟรี',this)">🎁 ของฟรี</div>
+        <div class="chip" onclick="setCat('อื่นๆ',this)">📦 อื่นๆ</div>
       </div>
       <div class="filter-controls">
         <input type="number" id="minP" placeholder="ราคาต่ำสุด" oninput="applyFilter()"/>
@@ -496,7 +511,7 @@
       <div id="sPriceSuggest" style="display:none;margin-top:6px;padding:10px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;font-size:13px"></div>
     </div>
     <div class="field"><label>หมวดหมู่</label>
-      <select id="sCat"><option>มือถือ</option><option>เสื้อผ้า</option><option>หนังสือ</option><option>กีฬา</option><option>ของแต่งบ้าน</option><option>กล้อง</option></select>
+      <select id="sCat"><option>มือถือ</option><option>เสื้อผ้า</option><option>หนังสือ</option><option>กีฬา</option><option>ของแต่งบ้าน</option><option>กล้อง</option><option>ยานพาหนะ</option><option>อสังหาริมทรัพย์</option><option>เฟอร์นิเจอร์</option><option>เกม</option><option>ของใช้ในครัวเรือน</option><option>งานอดิเรก</option><option>สวน</option><option>สัตว์เลี้ยง</option><option>เครื่องดนตรี</option><option>เครื่องใช้ไฟฟ้า</option><option>อุปกรณ์ไอที</option><option>Gadget</option><option>นาฬิกา</option><option>ของฟรี</option><option>อื่นๆ</option></select>
     </div>
     <div class="field"><label>สภาพสินค้า</label>
       <select id="sCond"><option>มือหนึ่ง (ใหม่)</option><option>เหมือนใหม่</option><option>สภาพดี</option><option>สภาพพอใช้</option></select>
@@ -608,7 +623,7 @@
       <div id="ePriceSuggest" style="display:none;margin-top:6px;padding:10px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;font-size:13px"></div>
     </div>
     <div class="field"><label>หมวดหมู่</label>
-      <select id="eCat"><option>มือถือ</option><option>เสื้อผ้า</option><option>หนังสือ</option><option>กีฬา</option><option>ของแต่งบ้าน</option><option>กล้อง</option></select>
+      <select id="eCat"><option>มือถือ</option><option>เสื้อผ้า</option><option>หนังสือ</option><option>กีฬา</option><option>ของแต่งบ้าน</option><option>กล้อง</option><option>ยานพาหนะ</option><option>อสังหาริมทรัพย์</option><option>เฟอร์นิเจอร์</option><option>เกม</option><option>ของใช้ในครัวเรือน</option><option>งานอดิเรก</option><option>สวน</option><option>สัตว์เลี้ยง</option><option>เครื่องดนตรี</option><option>เครื่องใช้ไฟฟ้า</option><option>อุปกรณ์ไอที</option><option>Gadget</option><option>นาฬิกา</option><option>ของฟรี</option><option>อื่นๆ</option></select>
     </div>
     <div class="field"><label>สภาพสินค้า</label>
       <select id="eCond"><option>มือหนึ่ง (ใหม่)</option><option>เหมือนใหม่</option><option>สภาพดี</option><option>สภาพพอใช้</option></select>
@@ -918,10 +933,13 @@
     <div class="field"><label>หมวดหมู่</label>
       <select id="ssCategory">
         <option value="ทั้งหมด">ทั้งหมด</option>
-        <option>มือถือ</option><option>แฟชั่น</option><option>อิเล็กทรอนิกส์</option>
-        <option>กีฬา</option><option>หนังสือ</option><option>เฟอร์นิเจอร์</option>
-        <option>ของแต่งบ้าน</option><option>กล้อง</option><option>เสื้อผ้า</option>
-        <option>เครื่องสำอาง</option><option>อื่นๆ</option>
+        <option>มือถือ</option><option>เสื้อผ้า</option><option>หนังสือ</option>
+        <option>กีฬา</option><option>ของแต่งบ้าน</option><option>กล้อง</option>
+        <option>ยานพาหนะ</option><option>อสังหาริมทรัพย์</option><option>เฟอร์นิเจอร์</option>
+        <option>เกม</option><option>ของใช้ในครัวเรือน</option><option>งานอดิเรก</option>
+        <option>สวน</option><option>สัตว์เลี้ยง</option><option>เครื่องดนตรี</option>
+        <option>เครื่องใช้ไฟฟ้า</option><option>อุปกรณ์ไอที</option><option>Gadget</option>
+        <option>นาฬิกา</option><option>ของฟรี</option><option>อื่นๆ</option>
       </select>
     </div>
     <div class="field"><label>ราคาไม่เกิน (฿, ว่างเปล่า = ไม่จำกัด)</label><input type="number" id="ssMaxPrice" placeholder="ไม่จำกัด" min="0"/></div>
@@ -1066,7 +1084,7 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js?v=20260417r11"></script>
-<script src="js/app.js?v=20260417r32"></script>
+<script src="js/app.js?v=20260417r33"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

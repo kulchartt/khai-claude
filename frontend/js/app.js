@@ -4,7 +4,7 @@ const FEATURES = {
   LIVE: false,         // ปิดไว้ก่อน — เปิดใช้ในตลาดมือหนึ่ง
   HOLIDAY_MODE: false, // ปิดไว้ก่อน — ยังไม่ block buyer จริง + ไม่มี auto re-open
 };
-const EMOJIS={มือถือ:'📱',เสื้อผ้า:'👗',หนังสือ:'📚',กีฬา:'⚽',ของแต่งบ้าน:'🏠',กล้อง:'📷'};
+const EMOJIS={มือถือ:'📱',เสื้อผ้า:'👗',หนังสือ:'📚',กีฬา:'⚽',ของแต่งบ้าน:'🏠',กล้อง:'📷',ยานพาหนะ:'🚗',อสังหาริมทรัพย์:'🏢',เฟอร์นิเจอร์:'🛋️',เกม:'🎮',ของใช้ในครัวเรือน:'🍳',งานอดิเรก:'🎨',สวน:'🌿',สัตว์เลี้ยง:'🐾',เครื่องดนตรี:'🎸',เครื่องใช้ไฟฟ้า:'⚡',อุปกรณ์ไอที:'💻',Gadget:'📡',นาฬิกา:'⌚',ของฟรี:'🎁',อื่นๆ:'📦'};
 const CMAP={'มือหนึ่ง (ใหม่)':'cond-brand-new','เหมือนใหม่':'cond-new','สภาพดี':'cond-good','สภาพพอใช้':'cond-fair','มือสองใหม่':'cond-new'};
 const NICONS={chat:'💬',review:'⭐',order:'📦',system:'📢'};
 const QUICK_REPLIES=['ยังมีอยู่ไหมครับ?','ลดราคาได้ไหมครับ?','นัดรับได้ไหมครับ?','ส่งพัสดุได้ไหมครับ?','รีวิวดีไหมครับ?','สภาพจริงเป็นยังไงครับ?'];
@@ -1174,7 +1174,7 @@ function showSuggestions(q){
   if(!box)return;
   if(!q||q.length<1){box.classList.add('hidden');return;}
   const all=window._allProducts||[];
-  const cats=['มือถือ','เสื้อผ้า','หนังสือ','กีฬา','ของแต่งบ้าน','กล้อง'];
+  const cats=['มือถือ','เสื้อผ้า','หนังสือ','กีฬา','ของแต่งบ้าน','กล้อง','ยานพาหนะ','อสังหาริมทรัพย์','เฟอร์นิเจอร์','เกม','ของใช้ในครัวเรือน','งานอดิเรก','สวน','สัตว์เลี้ยง','เครื่องดนตรี','เครื่องใช้ไฟฟ้า','อุปกรณ์ไอที','Gadget','นาฬิกา','ของฟรี','อื่นๆ'];
   const ql=q.toLowerCase();
   const titles=[...new Set(all.filter(p=>p.title.toLowerCase().includes(ql)).map(p=>p.title))].slice(0,4);
   const matchCats=cats.filter(c=>c.includes(q)).slice(0,2);
@@ -1521,7 +1521,7 @@ function switchImgLb(url, el, idx) {
 }
 
 // ===== Feature 4: Categories Page =====
-const CATEGORIES=[{name:'ทั้งหมด',emoji:'🛍️'},{name:'มือถือ',emoji:'📱'},{name:'เสื้อผ้า',emoji:'👗'},{name:'หนังสือ',emoji:'📚'},{name:'กีฬา',emoji:'⚽'},{name:'ของแต่งบ้าน',emoji:'🏠'},{name:'กล้อง',emoji:'📷'},{name:'อื่นๆ',emoji:'📦'}];
+const CATEGORIES=[{name:'ทั้งหมด',emoji:'🛍️'},{name:'มือถือ',emoji:'📱'},{name:'เสื้อผ้า',emoji:'👗'},{name:'หนังสือ',emoji:'📚'},{name:'กีฬา',emoji:'⚽'},{name:'ของแต่งบ้าน',emoji:'🏠'},{name:'กล้อง',emoji:'📷'},{name:'ยานพาหนะ',emoji:'🚗'},{name:'อสังหาริมทรัพย์',emoji:'🏢'},{name:'เฟอร์นิเจอร์',emoji:'🛋️'},{name:'เกม',emoji:'🎮'},{name:'ของใช้ในครัวเรือน',emoji:'🍳'},{name:'งานอดิเรก',emoji:'🎨'},{name:'สวน',emoji:'🌿'},{name:'สัตว์เลี้ยง',emoji:'🐾'},{name:'เครื่องดนตรี',emoji:'🎸'},{name:'เครื่องใช้ไฟฟ้า',emoji:'⚡'},{name:'อุปกรณ์ไอที',emoji:'💻'},{name:'Gadget',emoji:'📡'},{name:'นาฬิกา',emoji:'⌚'},{name:'ของฟรี',emoji:'🎁'},{name:'อื่นๆ',emoji:'📦'}];
 function openCategories(){
   const pg=document.getElementById('page-categories');
   if(!pg)return;
