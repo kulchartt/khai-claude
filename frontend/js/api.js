@@ -96,6 +96,7 @@ const api = {
   getFollowStatus(sellerId) { return this.get('/api/follows/status/'+sellerId); },
   getShop(userId) { return this.get('/api/shop/'+userId); },
   updateShop(data) { return this.patch('/api/shop/me', data); },
+  updateName(name) { return this.patch('/api/users/me/name', { name }); },
   uploadShopBanner(fd) { return this.req('PATCH','/api/shop/me/banner',fd,true); },
   getAddresses() { return this.get('/api/addresses'); },
   createAddress(data) { return this.post('/api/addresses', data); },

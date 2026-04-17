@@ -202,6 +202,15 @@ router.post('/me/verify-request', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.patch('/me/name', authMiddleware, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'กรุณาระบุชื่อ' });
+    await getDB().query('UPDATE users SET name = $1 WHERE id = $2', [name.trim(), req.user.id]);
+    res.json({ message: 'อัปเดตชื่อแล้ว' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/me/verify-request', authMiddleware, async (req, res) => {
   try {
     const { rows } = await getDB().query(

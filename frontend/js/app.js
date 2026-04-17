@@ -407,7 +407,7 @@ async function toggleFollow(sellerId){if(!state.user){openOverlay('loginOverlay'
 async function openSellerProfile(userId){try{const reqs=[api.getSeller(userId),api.getSellerProducts(userId),api.getFollowerCount(userId),api.getSellerReviews(userId)];if(state.user)reqs.push(api.getFollowStatus(userId));const[seller,products,followerData,reviewData,...rest]=await Promise.all(reqs);const followStatus=rest[0];document.getElementById('sellerBackBtn').onclick=()=>history.back();const avatarHtml=seller.avatar?`<img src="${imgSrc(seller.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${(seller.name||'?').slice(0,2).toUpperCase()}`;const isOwnProfile=state.user&&state.user.id===seller.id;const isFollowing=followStatus?.following||false;const followerCount=followerData?.count||0;
 const reviewsHtml=reviewData.reviews.length?reviewData.reviews.map(r=>`<div class="review-item"><div class="review-top"><div class="review-avatar">${r.reviewer_name.slice(0,2).toUpperCase()}</div><div style="flex:1"><div class="review-name">${r.reviewer_name}</div><div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>${r.product_title?`<div style="font-size:11px;color:var(--text-hint);margin-top:2px">สินค้า: ${r.product_title}</div>`:''}</div><div style="font-size:11px;color:var(--text-hint)">${new Date(r.created_at).toLocaleDateString('th',{year:'numeric',month:'short',day:'numeric'})}</div></div><div class="review-comment">${r.comment||'—'}</div></div>`).join(''):`<p style="color:var(--text-sec);font-size:14px;padding:8px 0">ยังไม่มีรีวิว</p>`;
 const tierLabel={bronze:'🥉 Bronze',silver:'🥈 Silver',gold:'🥇 Gold',diamond:'💎 Diamond'};const tierClass={bronze:'tier-bronze',silver:'tier-silver',gold:'tier-gold',diamond:'tier-diamond'};const sellerTier=seller.shop_tier||'bronze';const publicProducts=products.filter(p=>!p.is_draft);
-document.getElementById('sellerContent').innerHTML=`<div class="profile-header"><div class="p-avatar" style="overflow:hidden">${avatarHtml}</div><div style="flex:1"><div class="p-name">${seller.name}${seller.is_verified?'<span class="verified-badge">✅ ยืนยันแล้ว</span>':''} <span class="tier-badge ${tierClass[sellerTier]}">${tierLabel[sellerTier]}</span></div><div class="p-email">สมาชิกตั้งแต่ ${new Date(seller.created_at).toLocaleDateString('th',{year:'numeric',month:'long'})}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${products.length}</div><div class="stat-l">สินค้า</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${seller.rating||5.0}★</div><div class="stat-l">คะแนน</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${reviewData.count||0}</div><div class="stat-l">รีวิว</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${followerCount}</div><div class="stat-l">ผู้ติดตาม</div></div></div>${!isOwnProfile?`<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="flex:1" onclick="startChat(${seller.id},null)">💬 แชทกับผู้ขาย</button><button class="btn ${isFollowing?'btn-danger':''}" style="flex:1" onclick="toggleFollow(${seller.id})">${isFollowing?'💔 เลิกติดตาม':'❤️ ติดตาม'}</button></div>`:''}</div></div>${renderSellerStories(seller.id)}<div class="section-title" style="margin-top:20px"><span>สินค้าทั้งหมด (${publicProducts.length})</span></div><div class="product-grid" id="sellerProductGrid"></div><div class="reviews-section" style="margin-top:24px"><h3>รีวิวผู้ขาย (${reviewData.count}) — เฉลี่ย ${reviewData.average}★</h3>${reviewsHtml}</div>`;renderCards(publicProducts,'sellerProductGrid');goPage('seller');}catch(e){toast(e.message);}}
+document.getElementById('sellerContent').innerHTML=`<div class="profile-header"><div class="p-avatar" style="overflow:hidden">${avatarHtml}</div><div style="flex:1"><div class="p-name">${seller.shop_name||seller.name}${seller.shop_name?`<span style="font-size:12px;color:var(--text-sec);font-weight:normal;margin-left:6px">(${seller.name})</span>`:''}${seller.is_verified?'<span class="verified-badge">✅ ยืนยันแล้ว</span>':''} <span class="tier-badge ${tierClass[sellerTier]}">${tierLabel[sellerTier]}</span></div><div class="p-email">สมาชิกตั้งแต่ ${new Date(seller.created_at).toLocaleDateString('th',{year:'numeric',month:'long'})}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${products.length}</div><div class="stat-l">สินค้า</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${seller.rating||5.0}★</div><div class="stat-l">คะแนน</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${reviewData.count||0}</div><div class="stat-l">รีวิว</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${followerCount}</div><div class="stat-l">ผู้ติดตาม</div></div></div>${!isOwnProfile?`<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-g" style="flex:1" onclick="startChat(${seller.id},null)">💬 แชทกับผู้ขาย</button><button class="btn ${isFollowing?'btn-danger':''}" style="flex:1" onclick="toggleFollow(${seller.id})">${isFollowing?'💔 เลิกติดตาม':'❤️ ติดตาม'}</button></div>`:''}</div></div>${renderSellerStories(seller.id)}<div class="section-title" style="margin-top:20px"><span>สินค้าทั้งหมด (${publicProducts.length})</span></div><div class="product-grid" id="sellerProductGrid"></div><div class="reviews-section" style="margin-top:24px"><h3>รีวิวผู้ขาย (${reviewData.count}) — เฉลี่ย ${reviewData.average}★</h3>${reviewsHtml}</div>`;renderCards(publicProducts,'sellerProductGrid');goPage('seller');}catch(e){toast(e.message);}}
 
 function canBump(bumpedAt){
   if(!bumpedAt)return true;
@@ -1448,6 +1448,7 @@ function openShopEdit(){
   const me=JSON.parse(localStorage.getItem('user')||'null');
   if(!me)return;
   api.getShop(me.id).then(shop=>{
+    document.getElementById('profileName').value=shop.name||'';
     document.getElementById('shopName').value=shop.shop_name||'';
     document.getElementById('shopBio').value=shop.shop_bio||'';
     document.getElementById('shopBannerPreview').style.display=shop.shop_banner?'block':'none';
@@ -1465,15 +1466,20 @@ function previewShopBanner(input){
   reader.readAsDataURL(input.files[0]);
 }
 async function doSaveShop(){
-  const name=document.getElementById('shopName').value.trim();
+  const profileName=document.getElementById('profileName').value.trim();
+  const shopName=document.getElementById('shopName').value.trim();
   const bio=document.getElementById('shopBio').value.trim();
   const bannerFile=document.getElementById('shopBannerInput').files[0];
   try{
-    await api.updateShop({shop_name:name,shop_bio:bio});
+    const saves=[api.updateShop({shop_name:shopName,shop_bio:bio})];
+    if(profileName)saves.push(api.updateName(profileName));
+    await Promise.all(saves);
     if(bannerFile){
       const fd=new FormData();fd.append('banner',bannerFile);
       await api.uploadShopBanner(fd);
     }
+    // update cached user name
+    if(profileName){const u=JSON.parse(localStorage.getItem('user')||'null');if(u){u.name=profileName;localStorage.setItem('user',JSON.stringify(u));state.user=u;}}
     closeOverlay('shopEditOverlay');
     toast('บันทึกข้อมูลร้านแล้ว ✅','#1D9E75');
   }catch(e){toast(e.message);}

@@ -791,7 +791,8 @@
   <div class="modal">
     <button class="mclose" onclick="closeOverlay('shopEditOverlay')">×</button>
     <h2>✏️ แก้ไขข้อมูลร้าน</h2>
-    <div class="field"><label>ชื่อร้าน</label><input type="text" id="shopName" placeholder="ชื่อร้านของคุณ"/></div>
+    <div class="field"><label>ชื่อ-นามสกุล</label><input type="text" id="profileName" placeholder="ชื่อจริงของคุณ"/></div>
+    <div class="field"><label>ชื่อร้าน</label><input type="text" id="shopName" placeholder="ชื่อร้านของคุณ (ถ้ามี)"/></div>
     <div class="field"><label>แนะนำร้าน</label><textarea id="shopBio" placeholder="เล่าเกี่ยวกับร้านของคุณ..."></textarea></div>
     <div class="field"><label>รูป Banner ร้าน</label><input type="file" id="shopBannerInput" accept="image/*" onchange="previewShopBanner(this)"/><img id="shopBannerPreview" style="display:none;width:100%;height:100px;object-fit:cover;border-radius:var(--radius);margin-top:8px"/></div>
     <div class="row-btns">
@@ -1052,8 +1053,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/api.js?v=20260417r7"></script>
-<script src="js/app.js?v=20260417r10"></script>
+<script src="js/api.js?v=20260417r8"></script>
+<script src="js/app.js?v=20260417r11"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

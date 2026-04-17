@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
   try {
     const db = getDB();
     const { cat, q, minPrice, maxPrice, sort, condition, location, page = 1, limit = 20 } = req.query;
-    let sql = `SELECT p.*, u.name as seller_name, u.rating as seller_rating FROM products p JOIN users u ON p.seller_id = u.id WHERE p.status IN ('available','reserved') AND p.is_draft = 0 AND (p.publish_at IS NULL OR p.publish_at <= NOW())`;
+    let sql = `SELECT p.*, COALESCE(u.shop_name, u.name) as seller_name, u.rating as seller_rating FROM products p JOIN users u ON p.seller_id = u.id WHERE p.status IN ('available','reserved') AND p.is_draft = 0 AND (p.publish_at IS NULL OR p.publish_at <= NOW())`;
     const params = [];
     let n = 0;
     const p = () => `$${++n}`;
@@ -51,14 +51,14 @@ router.get('/', async (req, res) => {
 router.get('/trending', async (req, res) => {
   try {
     const { rows } = await getDB().query(`
-      SELECT p.*, u.name as seller_name, u.rating as seller_rating,
+      SELECT p.*, COALESCE(u.shop_name, u.name) as seller_name, u.rating as seller_rating,
         COUNT(DISTINCT w.id)::int as wishlist_count,
         (COALESCE(p.view_count,0) + COUNT(DISTINCT w.id) * 3) as score
       FROM products p
       JOIN users u ON p.seller_id = u.id
       LEFT JOIN wishlist_items w ON w.product_id = p.id
       WHERE p.status = 'available'
-      GROUP BY p.id, u.name, u.rating
+      GROUP BY p.id, u.name, u.shop_name, u.rating
       ORDER BY score DESC
       LIMIT 10
     `);
@@ -83,7 +83,7 @@ router.get('/:id', async (req, res) => {
   try {
     const db = getDB();
     const { rows: pr } = await db.query(`
-      SELECT p.*, u.name as seller_name, u.email as seller_email,
+      SELECT p.*, COALESCE(u.shop_name, u.name) as seller_name, u.name as seller_real_name, u.email as seller_email,
              u.rating as seller_rating, u.review_count as seller_reviews, u.avatar as seller_avatar,
              u.holiday_mode as seller_holiday_mode
       FROM products p JOIN users u ON p.seller_id = u.id WHERE p.id = $1
