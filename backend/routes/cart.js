@@ -20,9 +20,15 @@ router.post('/add', authMiddleware, async (req, res) => {
     const db = getDB();
     const { rows: pr } = await db.query("SELECT * FROM products WHERE id = $1 AND status = 'available'", [product_id]);
     if (!pr[0]) return res.status(404).json({ error: 'ไม่พบสินค้าหรือสินค้าถูกขายแล้ว' });
+    // สินค้ามือสอง = 1 ชิ้นต่อรายการ ถ้ามีในตะกร้าแล้วให้แจ้งแทน
+    const { rows: existing } = await db.query(
+      'SELECT id FROM cart_items WHERE user_id = $1 AND product_id = $2',
+      [req.user.id, product_id]
+    );
+    if (existing.length) return res.status(400).json({ error: 'สินค้านี้อยู่ในตะกร้าแล้ว' });
     await db.query(
-      'INSERT INTO cart_items (user_id, product_id, qty) VALUES ($1,$2,$3) ON CONFLICT (user_id, product_id) DO UPDATE SET qty = cart_items.qty + EXCLUDED.qty',
-      [req.user.id, product_id, qty]
+      'INSERT INTO cart_items (user_id, product_id, qty) VALUES ($1,$2,1)',
+      [req.user.id, product_id]
     );
     res.json({ message: 'เพิ่มลงตะกร้าแล้ว' });
   } catch (e) { res.status(500).json({ error: e.message }); }
