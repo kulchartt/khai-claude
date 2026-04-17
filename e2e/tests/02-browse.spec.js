@@ -56,13 +56,13 @@ test.describe('🏪 Browse & Search', () => {
     await page.locator('.card').first().click();
     await page.waitForSelector('#page-detail.active', { timeout: 10000 });
 
-    // Click back
+    // Click back — hash change triggers goPage('home'), wait for detail to lose .active
     const backBtn = page.locator('#page-detail .back-btn').first();
     await backBtn.click();
-    await page.waitForTimeout(600);
-
-    const detailActive = await page.evaluate(() => document.getElementById('page-detail')?.classList.contains('active'));
-    expect(detailActive).toBe(false);
+    await page.waitForFunction(
+      () => !document.getElementById('page-detail')?.classList.contains('active'),
+      { timeout: 5000 }
+    );
     console.log('✅ Back button returns from detail page');
   });
 

@@ -1,7 +1,8 @@
 const { test, expect } = require('@playwright/test');
 const { HOST_USER, VIEW_USER, login, mockCamera } = require('./helpers');
 
-test.describe('Live Stream', () => {
+// LIVE feature is currently disabled (FEATURES.LIVE = false) — skip until re-enabled
+test.describe.skip('Live Stream', () => {
 
   test('host starts live, viewer joins, product shared, chat works', async ({ browser }) => {
     const hostCtx   = await browser.newContext({ permissions: ['camera', 'microphone'] });
