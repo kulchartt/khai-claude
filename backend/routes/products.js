@@ -413,12 +413,23 @@ router.patch('/:id/reserve', authMiddleware, async (req, res) => {
     const { rows: pr } = await db.query('SELECT * FROM products WHERE id=$1', [req.params.id]);
     const product = pr[0];
     if (!product) return res.status(404).json({ error: 'ไม่พบสินค้า' });
-    if (product.seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
     if (product.status !== 'reserved') return res.status(400).json({ error: 'สินค้านี้ไม่ได้ถูกจอง' });
     const io = req.app.get('io'); const onlineUsers = req.app.get('onlineUsers');
+    // Buyer cancels their own reservation
+    if (action === 'cancel') {
+      if (product.reserved_for_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+      await db.query("UPDATE products SET status='available', reserved_for_id=NULL, reserved_at=NULL WHERE id=$1", [req.params.id]);
+      await db.query("INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'system','ผู้ซื้อยกเลิกการจอง',$2)",
+        [product.seller_id, `ผู้ซื้อยกเลิกการจอง "${product.title}" แล้ว`]);
+      const sock = onlineUsers?.get(product.seller_id);
+      if (sock) io?.to(sock).emit('notification', { type: 'system' });
+      return res.json({ message: 'ยกเลิกการจองแล้ว' });
+    }
+    // Seller accept / reject
+    if (product.seller_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
     if (action === 'accept') {
       await db.query("INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'system','การจองได้รับการยืนยัน ✅',$2)",
-        [product.reserved_for_id, `ผู้ขายยืนยันการจอง "${product.title}" แล้ว!`]);
+        [product.reserved_for_id, `ผู้ขายยืนยันการจอง "${product.title}" แล้ว! กด ⚡ ซื้อเลย เพื่อดำเนินการต่อ`]);
       const sock = onlineUsers?.get(product.reserved_for_id);
       if (sock) io?.to(sock).emit('notification', { type: 'system' });
       res.json({ message: 'ยืนยันการจองแล้ว ✅' });
@@ -430,7 +441,7 @@ router.patch('/:id/reserve', authMiddleware, async (req, res) => {
       if (sock) io?.to(sock).emit('notification', { type: 'system' });
       res.json({ message: 'ปฏิเสธการจองแล้ว' });
     } else {
-      res.status(400).json({ error: 'action ต้องเป็น accept หรือ reject' });
+      res.status(400).json({ error: 'action ไม่ถูกต้อง' });
     }
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

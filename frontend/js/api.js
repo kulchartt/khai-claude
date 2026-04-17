@@ -139,6 +139,7 @@ const api = {
   cancelFlashSale(id) { return this.delete('/api/products/'+id+'/flash'); },
   reserveProduct(id) { return this.post('/api/products/'+id+'/reserve', {}); },
   respondReservation(id, action) { return this.patch('/api/products/'+id+'/reserve', {action}); },
+  cancelReservation(id) { return this.patch('/api/products/'+id+'/reserve', {action:'cancel'}); },
   getMyReservations() { return this.get('/api/products/my/reservations'); },
   getMyReservedByMe() { return this.get('/api/products/my/reserved-by-me'); },
   getBundles() { return this.get('/api/bundles'); },

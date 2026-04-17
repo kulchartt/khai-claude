@@ -403,7 +403,8 @@ function profileTab(tab){
             </div>
             <div style="display:flex;gap:8px;margin-top:10px">
               <button class="btn btn-g" style="flex:1" onclick="buyNow(${p.id},'${p.delivery_method||'shipping'}')">⚡ ซื้อเลย</button>
-              <button class="btn" style="flex:1" onclick="startChat(${p.seller_id},${p.id})">💬 แชทผู้ขาย</button>
+              <button class="btn" onclick="startChat(${p.seller_id},${p.id})">💬 แชท</button>
+              <button class="btn btn-danger" onclick="doCancelReserve(${p.id})">✕ ยกเลิก</button>
             </div>
           </div>`;
         }).join('');
@@ -1994,7 +1995,12 @@ async function doReserve(id){
   catch(e){toast(e.message);}
 }
 async function respondReserve(id,action){
-  try{const r=await api.respondReservation(id,action);toast(r.message,'#1D9E75');profileTab('products');}
+  try{const r=await api.respondReservation(id,action);toast(r.message,'#1D9E75');profileTab('reservations');}
+  catch(e){toast(e.message);}
+}
+async function doCancelReserve(id){
+  if(!confirm('ยืนยันยกเลิกการจองสินค้านี้?'))return;
+  try{const r=await api.cancelReservation(id);toast(r.message);profileTab('reservations');}
   catch(e){toast(e.message);}
 }
 
