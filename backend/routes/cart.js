@@ -38,6 +38,7 @@ router.post('/qty', authMiddleware, async (req, res) => {
   try {
     const { product_id, qty } = req.body;
     const db = getDB();
+    if (qty > 1) return res.status(400).json({ error: 'สินค้ามือสองมีได้ 1 ชิ้นต่อรายการ' });
     if (qty <= 0) {
       await db.query('DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2', [req.user.id, product_id]);
     } else {
