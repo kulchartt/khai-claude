@@ -37,6 +37,13 @@ router.get('/:userId', async (req, res) => {
     const sales = tierRows[0]?.sales || 0;
     shop.sales_count = sales;
     shop.shop_tier = sales >= 50 ? 'diamond' : sales >= 20 ? 'gold' : sales >= 5 ? 'silver' : 'bronze';
+    const { rows: respRows } = await db.query(
+      `SELECT COUNT(*)::int as count, AVG(minutes)::int as avg_minutes
+       FROM response_logs WHERE seller_id = $1 AND created_at > NOW() - INTERVAL '30 days'`,
+      [shop.id]
+    );
+    shop.response_count = respRows[0]?.count || 0;
+    shop.avg_response_minutes = respRows[0]?.avg_minutes || null;
     res.json(shop);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

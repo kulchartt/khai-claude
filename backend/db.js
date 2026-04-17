@@ -291,6 +291,15 @@ async function initDB() {
   // Clean up expired locks on startup
   await db.query(`UPDATE products SET cart_locked_until = NULL, cart_locked_by = NULL WHERE cart_locked_until IS NOT NULL AND cart_locked_until < NOW()`);
 
+  // Response time tracking
+  await db.query(`ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS pending_response_since TIMESTAMPTZ DEFAULT NULL`);
+  await db.query(`CREATE TABLE IF NOT EXISTS response_logs (
+    id SERIAL PRIMARY KEY,
+    seller_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    minutes INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+
   // Round 6B — WebAuthn (Biometric Login)
   await db.query(`CREATE TABLE IF NOT EXISTS webauthn_credentials (
     id SERIAL PRIMARY KEY,

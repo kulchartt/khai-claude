@@ -113,28 +113,32 @@ io.on('connection', (socket) => {
     try {
       const db = getDB();
       const { room_id, content } = data;
+      const { rows: rr } = await db.query('SELECT * FROM chat_rooms WHERE id = $1', [room_id]);
+      const room = rr[0];
+      if (!room) return;
+      const otherId = room.buyer_id === userId ? room.seller_id : room.buyer_id;
+      const isSeller = room.seller_id === userId;
+      const isBuyer = room.buyer_id === userId;
       // Block check
-      const { rows: rr0 } = await db.query('SELECT * FROM chat_rooms WHERE id = $1', [room_id]);
-      if (rr0[0]) {
-        const otherId = rr0[0].buyer_id === userId ? rr0[0].seller_id : rr0[0].buyer_id;
-        const { rows: blk } = await db.query(
-          'SELECT 1 FROM blocked_users WHERE (blocker_id=$1 AND blocked_id=$2) OR (blocker_id=$2 AND blocked_id=$1)',
-          [userId, otherId]
-        );
-        if (blk.length) { socket.emit('error', { message: 'ไม่สามารถส่งข้อความได้' }); return; }
+      const { rows: blk } = await db.query(
+        'SELECT 1 FROM blocked_users WHERE (blocker_id=$1 AND blocked_id=$2) OR (blocker_id=$2 AND blocked_id=$1)',
+        [userId, otherId]
+      );
+      if (blk.length) { socket.emit('error', { message: 'ไม่สามารถส่งข้อความได้' }); return; }
+      // Response time tracking
+      if (isBuyer && !room.pending_response_since) {
+        await db.query('UPDATE chat_rooms SET pending_response_since = NOW() WHERE id = $1', [room_id]);
+      } else if (isSeller && room.pending_response_since) {
+        const mins = Math.max(1, Math.round((Date.now() - new Date(room.pending_response_since).getTime()) / 60000));
+        await db.query('INSERT INTO response_logs (seller_id, minutes) VALUES ($1,$2)', [userId, mins]);
+        await db.query('UPDATE chat_rooms SET pending_response_since = NULL WHERE id = $1', [room_id]);
       }
       const { rows: mr } = await db.query('INSERT INTO messages (room_id, sender_id, content) VALUES ($1,$2,$3) RETURNING id', [room_id, userId, content]);
       const { rows: fm } = await db.query('SELECT m.*, u.name as sender_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.id = $1', [mr[0].id]);
-      const fullMsg = fm[0];
-      io.to(room_id).emit('new_message', fullMsg);
-      const { rows: rr } = await db.query('SELECT * FROM chat_rooms WHERE id = $1', [room_id]);
-      const room = rr[0];
-      if (room) {
-        const otherId = room.buyer_id === userId ? room.seller_id : room.buyer_id;
-        await db.query("INSERT INTO notifications (user_id, type, title, body, link) VALUES ($1,'chat','ข้อความใหม่',$2,$3)", [otherId, `${socket.user.name}: ${content.slice(0,40)}`, `/chat/${room_id}`]);
-        const otherSocket = onlineUsers.get(otherId);
-        if (otherSocket) io.to(otherSocket).emit('notification', { type: 'chat' });
-      }
+      io.to(room_id).emit('new_message', fm[0]);
+      await db.query("INSERT INTO notifications (user_id, type, title, body, link) VALUES ($1,'chat','ข้อความใหม่',$2,$3)", [otherId, `${socket.user.name}: ${content.slice(0,40)}`, `/chat/${room_id}`]);
+      const otherSocket = onlineUsers.get(otherId);
+      if (otherSocket) io.to(otherSocket).emit('notification', { type: 'chat' });
     } catch (e) { console.error('send_message error:', e); }
   });
 
