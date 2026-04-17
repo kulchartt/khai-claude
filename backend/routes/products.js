@@ -168,7 +168,7 @@ router.post('/', authMiddleware, uploadMiddleware, async (req, res) => {
       }
     } catch (notifErr) { console.error('follower notify error:', notifErr); }
 
-    io?.emit('product:new', { id: productId });
+    req.app.get('io')?.emit('product:new', { id: productId });
     res.json({ id: productId, message: 'ลงขายสินค้าสำเร็จ!' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
