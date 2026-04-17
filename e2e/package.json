@@ -1,0 +1,26 @@
+{
+  "name": "e2e",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test":           "playwright test",
+    "test:headed":    "playwright test --headed",
+    "test:headless":  "playwright test --headless",
+    "test:auth":      "playwright test 01-auth",
+    "test:browse":    "playwright test 02-browse",
+    "test:sell":      "playwright test 03-sell",
+    "test:chat":      "playwright test 04-chat",
+    "test:purchase":  "playwright test 05-purchase",
+    "test:offers":    "playwright test 06-offers",
+    "test:reserve":   "playwright test 07-reservation",
+    "report":         "playwright show-report playwright-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}
