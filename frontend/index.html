@@ -308,17 +308,16 @@
   <!-- Swipe to Browse Page -->
   <div id="page-swipe" class="page">
     <div class="back-btn" onclick="goPage('home')">← กลับ</div>
-    <div class="swipe-wrap">
-      <div class="swipe-counter" id="swipeCounter"></div>
-      <div class="swipe-stack" id="swipeStack"></div>
-      <div class="swipe-actions" id="swipeActions">
-        <button class="swipe-btn swipe-skip" onclick="swipeSkip()">✕</button>
-        <button class="swipe-btn swipe-like" onclick="swipeLike()">❤️</button>
+    <div class="page-inner">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin:0">🔀 สุ่มสินค้า</h2>
+        <div class="swipe-counter" id="swipeCounter" style="font-size:13px;color:var(--text-sec)"></div>
       </div>
-      <div class="swipe-done hidden" id="swipeDone">
+      <div id="swipeStack"></div>
+      <div class="swipe-done hidden" id="swipeDone" style="text-align:center;padding:40px 20px">
         <div style="font-size:48px;margin-bottom:16px">🎉</div>
-        <div style="font-size:18px;font-weight:600;margin-bottom:8px">หมดแล้ว!</div>
-        <button class="btn btn-g" onclick="startSwipeMode()">🔀 รีเฟรช</button>
+        <div style="font-size:18px;font-weight:600;margin-bottom:8px">ดูครบทุกชิ้นแล้ว!</div>
+        <button class="btn btn-g" onclick="startSwipeMode()">🔀 สุ่มใหม่</button>
       </div>
     </div>
   </div>

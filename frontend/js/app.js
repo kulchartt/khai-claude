@@ -1910,6 +1910,7 @@ document.getElementById('pwaDismissBtn')?.addEventListener('click',()=>{
 });
 
 // ===== SWIPE TO BROWSE =====
+const SWIPE_BATCH=5;
 let _swipeProducts=[],_swipeIndex=0;
 async function openSwipeMode(){
   goPage('swipe');
@@ -1921,13 +1922,58 @@ async function startSwipeMode(){
   const actions=document.getElementById('swipeActions');
   if(stack)stack.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--text-sec)">กำลังโหลด...</div>';
   if(done)done.classList.add('hidden');
-  if(actions)actions.style.display='flex';
+  if(actions)actions.style.display='none';
   try{
-    const products=await api.getProducts({limit:30});
+    const products=await api.getProducts({limit:60});
     _swipeProducts=products.sort(()=>Math.random()-.5);
     _swipeIndex=0;
-    renderSwipeCard();
+    renderSwipeBatch();
   }catch(e){toast('โหลดสินค้าไม่สำเร็จ');}
+}
+function renderSwipeBatch(){
+  const stack=document.getElementById('swipeStack');
+  const done=document.getElementById('swipeDone');
+  const counter=document.getElementById('swipeCounter');
+  if(!stack)return;
+  if(_swipeIndex>=_swipeProducts.length){
+    stack.innerHTML='';
+    if(done)done.classList.remove('hidden');
+    if(counter)counter.textContent='';
+    return;
+  }
+  const batch=_swipeProducts.slice(_swipeIndex,_swipeIndex+SWIPE_BATCH);
+  const total=Math.ceil(_swipeProducts.length/SWIPE_BATCH);
+  const current=Math.floor(_swipeIndex/SWIPE_BATCH)+1;
+  if(counter)counter.textContent=`ชุดที่ ${current} / ${total}`;
+  stack.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 0">${batch.map(p=>{
+    const img=p.image_url?`<img src="${imgSrc(p.image_url)}" style="width:100%;height:140px;object-fit:cover;border-radius:10px 10px 0 0"/>` :`<div style="height:140px;display:flex;align-items:center;justify-content:center;font-size:48px;background:var(--bg-sec);border-radius:10px 10px 0 0">${EMOJIS[p.category]||'📦'}</div>`;
+    const inWl=state.wlIds.includes(p.id);
+    return `<div style="background:var(--bg-card);border-radius:12px;box-shadow:var(--shadow);overflow:hidden">
+      <div onclick="openDetail(${p.id})" style="cursor:pointer">${img}</div>
+      <div style="padding:8px 10px">
+        <div onclick="openDetail(${p.id})" style="font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.title}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--green)">฿${Number(p.price).toLocaleString()}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+          <span style="font-size:11px;color:var(--text-sec)">${p.condition||''}</span>
+          <button onclick="swipeToggleWl(${p.id},this)" style="background:none;border:none;font-size:18px;cursor:pointer;padding:0">${inWl?'❤️':'🤍'}</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div>
+  <button class="btn btn-g" style="width:100%;margin-top:16px" onclick="swipeNext()">🔀 สุ่มใหม่ ${_swipeIndex+SWIPE_BATCH<_swipeProducts.length?'':'(เริ่มใหม่)'}</button>`;
+}
+function swipeNext(){
+  _swipeIndex+=SWIPE_BATCH;
+  if(_swipeIndex>=_swipeProducts.length){_swipeProducts=_swipeProducts.sort(()=>Math.random()-.5);_swipeIndex=0;}
+  renderSwipeBatch();
+}
+function swipeToggleWl(id,btn){
+  if(!state.user){toast('กรุณาเข้าสู่ระบบก่อน');return;}
+  api.toggleWishlist(id).then(r=>{
+    if(r.liked){state.wlIds.push(id);state.wlCount++;btn.textContent='❤️';}
+    else{state.wlIds=state.wlIds.filter(x=>x!==id);state.wlCount=Math.max(0,state.wlCount-1);btn.textContent='🤍';}
+    updateBadge('wlBadge',state.wlCount);
+  }).catch(e=>toast(e.message));
 }
 function renderSwipeCard(){
   const stack=document.getElementById('swipeStack');
