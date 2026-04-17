@@ -2784,7 +2784,7 @@ function renderLiveProduct(data) {
 
 async function addToCartFromLive(productId) {
   try {
-    await api.addToCart(productId, 1);
+    await api.addCart(productId);
     toast('🛒 ใส่ตะกร้าแล้ว!', '#1D9E75');
     const popup = document.getElementById('liveProductPopup');
     if (popup) popup.style.display = 'none';
