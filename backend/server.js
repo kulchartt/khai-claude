@@ -172,6 +172,12 @@ io.on('connection', (socket) => {
   socket.on('live:offer', ({ to, offer }) => { io.to(to).emit('live:offer', { from: socket.id, offer }); });
   socket.on('live:answer', ({ to, answer }) => { io.to(to).emit('live:answer', { from: socket.id, answer }); });
   socket.on('live:ice', ({ to, candidate }) => { io.to(to).emit('live:ice', { from: socket.id, candidate }); });
+  socket.on('live:product', ({ sellerId, product }) => {
+    // Only seller can share their own products
+    if (userId !== sellerId) return;
+    io.to(`live_${sellerId}`).emit('live:product', product);
+  });
+
   socket.on('live:chat', ({ sellerId, message }) => {
     const me = JSON.parse(JSON.stringify({ senderId: userId, senderName: socket.user.name, message, time: new Date() }));
     io.to(`live_${sellerId}`).emit('live:chat', me);

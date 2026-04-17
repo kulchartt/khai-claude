@@ -2659,6 +2659,31 @@ function stopLive() {
   toast('จบไลฟ์แล้ว');
 }
 
+async function openLiveProductPicker() {
+  const picker = document.getElementById('liveProductPicker');
+  if (!picker) return;
+  if (picker.style.display === 'block') { picker.style.display = 'none'; return; }
+  picker.style.display = 'block';
+  picker.innerHTML = '<div style="font-size:13px;color:var(--text-sec)">กำลังโหลด...</div>';
+  try {
+    const items = await api.getMyProducts();
+    const avail = items.filter(p => p.status === 'available');
+    if (!avail.length) { picker.innerHTML = '<div style="font-size:13px;color:var(--text-sec)">ไม่มีสินค้าที่ลงขายอยู่</div>'; return; }
+    picker.innerHTML = avail.map(p => `<div style="display:flex;align-items:center;gap:8px;padding:6px;cursor:pointer;border-radius:8px;hover:background:var(--bg-sec)" onclick="shareLiveProduct(${p.id})"><div style="font-size:22px;flex-shrink:0">${productImg(p)||'📦'}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.title}</div><div style="font-size:12px;color:var(--green)">฿${Number(p.price).toLocaleString()}</div></div><button class="btn btn-sm btn-g" onclick="event.stopPropagation();shareLiveProduct(${p.id})">แชร์</button></div>`).join('');
+  } catch(e) { picker.innerHTML = '<div style="font-size:13px;color:var(--text-sec)">โหลดไม่ได้</div>'; }
+}
+
+async function shareLiveProduct(productId) {
+  const sellerId = parseInt(document.getElementById('liveHostSellerId')?.value);
+  if (!sellerId) return;
+  try {
+    const p = (window._myItems || []).find(x => x.id === productId) || await api.getProduct(productId);
+    socket.emit('live:product', { sellerId, product: { id: p.id, title: p.title, price: p.price, image_url: p.image_url } });
+    document.getElementById('liveProductPicker').style.display = 'none';
+    toast('📦 แชร์สินค้าแล้ว', '#1D9E75');
+  } catch(e) { toast(e.message); }
+}
+
 async function joinLive(sellerId) {
   openOverlay('liveViewOverlay');
   const loading = document.getElementById('liveViewLoading');
@@ -2669,6 +2694,7 @@ async function joinLive(sellerId) {
   socket.off('live:ice');
   socket.off('live:ended');
   socket.off('live:chat');
+  socket.off('live:product');
 
   _viewingPCs[sellerId]?.close();
   const pc = new RTCPeerConnection(STUN);
@@ -2693,6 +2719,7 @@ async function joinLive(sellerId) {
   socket.on('live:ice', ({ candidate }) => pc.addIceCandidate(candidate).catch(() => {}));
   socket.on('live:ended', () => { toast('ไลฟ์จบแล้ว'); closeOverlay('liveViewOverlay'); });
   socket.on('live:chat', renderLiveChatMsg);
+  socket.on('live:product', renderLiveProduct);
 
   socket.emit('live:join', sellerId);
 
@@ -2725,6 +2752,24 @@ function renderLiveChatMsg(msg) {
   div.innerHTML = `<strong>${msg.senderName}:</strong> ${msg.message}`;
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
+}
+
+function renderLiveProduct(data) {
+  const popup = document.getElementById('liveProductPopup');
+  if (!popup) return;
+  popup.style.display = 'block';
+  popup.innerHTML = `<div style="display:flex;align-items:center;gap:10px"><div style="font-size:28px">📦</div><div style="flex:1"><div style="font-size:14px;font-weight:700">${data.title}</div><div style="font-size:16px;color:var(--green);font-weight:700">฿${Number(data.price).toLocaleString()}</div></div><button class="btn btn-sm btn-g" onclick="addToCartFromLive(${data.id})">🛒 ใส่ตะกร้า</button></div>`;
+  clearTimeout(window._liveProductTimer);
+  window._liveProductTimer = setTimeout(() => { if (popup) popup.style.display = 'none'; }, 15000);
+}
+
+async function addToCartFromLive(productId) {
+  try {
+    await api.addToCart(productId, 1);
+    toast('🛒 ใส่ตะกร้าแล้ว!', '#1D9E75');
+    const popup = document.getElementById('liveProductPopup');
+    if (popup) popup.style.display = 'none';
+  } catch(e) { toast(e.message); }
 }
 
 async function loadLiveList() {

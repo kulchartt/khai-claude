@@ -1016,6 +1016,10 @@
     <h2>🔴 กำลังไลฟ์</h2>
     <input type="hidden" id="liveHostSellerId"/>
     <video id="liveHostVideo" autoplay muted playsinline style="width:100%;border-radius:12px;background:#000;aspect-ratio:16/9"></video>
+    <div style="margin-top:10px">
+      <button class="btn btn-sm btn-g" style="width:100%" onclick="openLiveProductPicker()">📦 แชร์สินค้า</button>
+      <div id="liveProductPicker" style="display:none;margin-top:8px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);padding:8px"></div>
+    </div>
     <div style="display:flex;gap:8px;margin-top:12px">
       <input type="text" id="liveChatInputHost" placeholder="พิมพ์ข้อความ..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text)" onkeydown="if(event.key==='Enter')sendLiveChat()"/>
       <button class="btn btn-sm" onclick="sendLiveChat()">ส่ง</button>
@@ -1032,6 +1036,7 @@
     <button class="mclose" onclick="leaveLive()">×</button>
     <input type="hidden" id="liveViewSellerId"/>
     <div id="liveViewLoading" style="text-align:center;padding:24px">🔄 กำลังเชื่อมต่อ...</div>
+    <div id="liveProductPopup" style="display:none;background:var(--bg-card);border:2px solid var(--green);border-radius:var(--radius);padding:12px;margin-top:8px"></div>
     <video id="liveViewVideo" autoplay playsinline style="width:100%;border-radius:12px;background:#000;aspect-ratio:16/9"></video>
     <div style="display:flex;gap:8px;margin-top:12px">
       <input type="text" id="liveChatInput" placeholder="พิมพ์ข้อความ..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text)" onkeydown="if(event.key==='Enter')sendLiveChat()"/>
@@ -1046,7 +1051,7 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js?v=20260416r6h"></script>
-<script src="js/app.js?v=20260417r1"></script>
+<script src="js/app.js?v=20260417r2"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
