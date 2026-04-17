@@ -330,7 +330,7 @@ function profileTab(tab){
               ${(o.status==='confirmed'||o.status==='completed')?`<button class="btn btn-sm btn-danger" onclick="openDisputeModal(${o.id})">🚨 แจ้งปัญหา</button>`:''}
               ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-danger" onclick="doCancelOrder(${o.id})">❌ ยกเลิก</button>`:''}
               ${o.status==='awaiting_confirmation'?`<span style="font-size:11px;color:#d97706;font-weight:500">⚠️ ส่ง slip แล้ว — ติดต่อผู้ขายหากต้องการยกเลิก</span>`:''}
-              ${o.status==='pending'&&o.delivery_type==='meetup'?`<span style="font-size:11px;color:var(--text-sec)">รอผู้ขายยืนยันหลังนัดรับ</span>`:''}
+              ${o.status==='pending'&&o.delivery_type==='meetup'?`<span style="font-size:11px;color:#d97706;font-weight:500">🤝 รอนัดหมาย — ชำระเงินสดเมื่อรับของ</span>`:''}
             </div>
           </div>
         </div>`).join('')+'</div>';
