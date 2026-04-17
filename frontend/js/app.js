@@ -825,6 +825,8 @@ async function init(){
   loadTrending();
   loadStories();
 
+  socket.on('live:list', () => loadLiveList());
+
   window.addEventListener('hashchange',()=>{
     const h=window.location.hash;
     if(h.startsWith('#product-')){const id=parseInt(h.replace('#product-',''));if(!isNaN(id))openDetail(id);}
@@ -2599,6 +2601,7 @@ function _bufferToBase64url(buf) {
 
 // ===== LIVE SELLING =====
 let _livePC = null; // RTCPeerConnection (seller side, per viewer)
+let _hostPCs = {}; // per-viewer PCs on host side
 let _localStream = null;
 let _isLive = false;
 let _viewingPCs = {}; // viewer side connections by sellerId
@@ -2620,7 +2623,10 @@ async function startLive() {
     if (badge) badge.style.display = 'inline-block';
 
     // Handle new viewer joining — รองรับหลายคนดูพร้อมกัน
-    const _hostPCs = {}; // เก็บ PC แยกต่างหากต่อ viewer socket id
+    _hostPCs = {};
+    socket.off('live:viewer-joined');
+    socket.off('live:answer');
+    socket.off('live:ice');
     socket.on('live:viewer-joined', async ({ viewerSocketId }) => {
       _hostPCs[viewerSocketId]?.close();
       const pc = new RTCPeerConnection(STUN);
@@ -2656,6 +2662,12 @@ function stopLive() {
   _localStream = null;
   _isLive = false;
   _livePC?.close(); _livePC = null;
+  Object.values(_hostPCs).forEach(pc => pc.close());
+  _hostPCs = {};
+  socket.off('live:viewer-joined');
+  socket.off('live:answer');
+  socket.off('live:ice');
+  socket.off('live:chat');
   closeOverlay('liveHostOverlay');
   toast('จบไลฟ์แล้ว');
 }
@@ -2732,21 +2744,26 @@ function leaveLive() {
   const sellerIdInput = document.getElementById('liveViewSellerId');
   const sellerId = parseInt(sellerIdInput?.value);
   if (sellerId) { socket.emit('live:leave', sellerId); _viewingPCs[sellerId]?.close(); delete _viewingPCs[sellerId]; }
+  socket.off('live:offer');
+  socket.off('live:ice');
+  socket.off('live:ended');
+  socket.off('live:chat');
+  socket.off('live:product');
   closeOverlay('liveViewOverlay');
 }
 
 function sendLiveChat() {
-  const input = document.getElementById('liveChatInput') || document.getElementById('liveChatInputHost');
-  const sellerIdView = document.getElementById('liveViewSellerId');
-  const sellerIdHost = document.getElementById('liveHostSellerId');
-  const sellerId = parseInt(sellerIdView?.value || sellerIdHost?.value);
+  const isHost = document.getElementById('liveHostOverlay')?.classList.contains('open');
+  const input = isHost ? document.getElementById('liveChatInputHost') : document.getElementById('liveViewChatInput');
+  const sellerId = parseInt(isHost ? document.getElementById('liveHostSellerId')?.value : document.getElementById('liveViewSellerId')?.value);
   if (!input?.value.trim() || !sellerId) return;
   socket.emit('live:chat', { sellerId, message: input.value.trim() });
   input.value = '';
 }
 
 function renderLiveChatMsg(msg) {
-  const box = document.getElementById('liveChatBox');
+  const isHost = document.getElementById('liveHostOverlay')?.classList.contains('open');
+  const box = document.getElementById(isHost ? 'liveChatBox' : 'liveViewChatBox');
   if (!box) return;
   const div = document.createElement('div');
   div.style.cssText = 'padding:3px 0;font-size:13px';
@@ -2759,7 +2776,7 @@ function renderLiveProduct(data) {
   const popup = document.getElementById('liveProductPopup');
   if (!popup) return;
   const img = data.image_url ? `<img src="${imgSrc(data.image_url)}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0"/>` : `<div style="width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📦</div>`;
-  popup.innerHTML = `<div style="display:flex;align-items:center;gap:10px">${img}<div style="flex:1;min-width:0"><div style="font-size:11px;color:#facc15;font-weight:600;margin-bottom:2px">🛍️ สินค้าจากไลฟ์</div><div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${data.title}</div><div style="font-size:15px;color:#4ade80;font-weight:700">฿${Number(data.price).toLocaleString()}</div></div><button onclick="addToCartFromLive(${data.id})" style="flex-shrink:0;background:#ff2d55;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer">🛒<br>ซื้อเลย</button></div>`;
+  popup.innerHTML = `<div style="display:flex;align-items:center;gap:10px">${img}<div style="flex:1;min-width:0"><div style="font-size:11px;color:#facc15;font-weight:600;margin-bottom:2px">🛍️ สินค้าจากไลฟ์</div><div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${data.title}</div><div style="font-size:15px;color:#4ade80;font-weight:700">฿${Number(data.price).toLocaleString()}</div></div><button onclick="addToCartFromLive(${data.id})" style="flex-shrink:0;background:#ff2d55;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer">🛒<br>ซื้อเลย</button><button onclick="document.getElementById('liveProductPopup').style.display='none'" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:14px;cursor:pointer;flex-shrink:0;align-self:flex-start">×</button></div>`;
   popup.style.display = 'block';
   clearTimeout(window._liveProductTimer);
   window._liveProductTimer = setTimeout(() => { popup.style.display = 'none'; }, 15000);

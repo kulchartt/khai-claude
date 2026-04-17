@@ -1041,10 +1041,10 @@
       <div id="liveProductPopup" style="display:none;position:absolute;bottom:12px;left:12px;right:12px;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);border-radius:12px;padding:10px 12px;animation:slideup .3s ease"></div>
     </div>
     <div style="display:flex;gap:8px;margin-top:12px">
-      <input type="text" id="liveChatInput" placeholder="พิมพ์ข้อความ..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text)" onkeydown="if(event.key==='Enter')sendLiveChat()"/>
+      <input type="text" id="liveViewChatInput" placeholder="พิมพ์ข้อความ..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text)" onkeydown="if(event.key==='Enter')sendLiveChat()"/>
       <button class="btn btn-sm" onclick="sendLiveChat()">ส่ง</button>
     </div>
-    <div id="liveChatBox" style="height:120px;overflow-y:auto;padding:8px;background:var(--bg-sec);border-radius:var(--radius);margin-top:8px"></div>
+    <div id="liveViewChatBox" style="height:120px;overflow-y:auto;padding:8px;background:var(--bg-sec);border-radius:var(--radius);margin-top:8px"></div>
   </div>
 </div>
 
@@ -1053,7 +1053,7 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js?v=20260416r6h"></script>
-<script src="js/app.js?v=20260417r4"></script>
+<script src="js/app.js?v=20260417r5"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

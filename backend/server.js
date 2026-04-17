@@ -185,8 +185,10 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     onlineUsers.delete(userId);
     if (socket.data.isLiveSeller) {
-      liveStreams.delete(socket.data.isLiveSeller);
+      const sellerId = socket.data.isLiveSeller;
+      liveStreams.delete(sellerId);
       io.emit('live:list', Array.from(liveStreams.values()));
+      io.to(`live_${sellerId}`).emit('live:ended');
     }
   });
 });
