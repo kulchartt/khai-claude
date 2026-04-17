@@ -313,6 +313,7 @@ function profileTab(tab){
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px;flex-wrap:wrap">
             <div style="display:flex;flex-direction:column;gap:4px">
               <div class="order-status ${o.status==='completed'?'status-done':o.status==='cancelled'?'status-cancel':'status-pending'}">${statusLabel[o.status]||o.status}</div>
+              ${o.status==='awaiting_payment'?(()=>{const exp=new Date(new Date(o.created_at).getTime()+24*60*60*1000);const hoursLeft=Math.max(0,Math.ceil((exp-Date.now())/3600000));return hoursLeft>0?`<div style="font-size:11px;color:#c2410c;font-weight:500">⏰ หมดอายุใน ${hoursLeft} ชม. (${exp.toLocaleString('th',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})})</div>`:`<div style="font-size:11px;color:#dc2626;font-weight:600">⚠️ เกินเวลาแล้ว จะถูกยกเลิกเร็วๆ นี้</div>`;})():''}
               ${o.status==='confirmed'&&o.shipping_status&&o.shipping_status!=='pending'?`<div style="font-size:12px;color:#2563eb;font-weight:500">${shipLabel[o.shipping_status]||''}</div>`:''}
               ${o.tracking_number?`<a class="tracking-link" href="${_trackingUrl(o.tracking_carrier,o.tracking_number)}" target="_blank" rel="noopener">📮 ${o.tracking_carrier||'Tracking'}: ${o.tracking_number} ↗</a>`:''}
             </div>
@@ -1041,6 +1042,12 @@ function showPaymentQR(orderId, total, promptpay, sellerName, bankName, bankAcco
   if(!promptpay&&(!bankName||!bankAccount)){
     document.getElementById('paymentQRSection').style.display='';
     container.innerHTML=`<div style="text-align:center;padding:20px;background:var(--bg-sec);border-radius:var(--radius-lg);color:var(--text-sec);font-size:14px;line-height:1.6">ℹ️ ผู้ขายยังไม่ได้ตั้งค่าช่องทางรับเงิน<br><span style="font-size:13px">กรุณาติดต่อผู้ขายผ่าน 💬 Chat</span></div>`;
+  }
+  // Deadline notice
+  const dlEl = document.getElementById('paymentDeadline');
+  if (dlEl) {
+    const dl = new Date(Date.now() + 24*60*60*1000);
+    dlEl.textContent = `⏰ โอนและอัปสลิปภายใน 24 ชั่วโมง (ก่อน ${dl.toLocaleString('th',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})})`;
   }
   openOverlay('paymentOverlay');
   goPage('home');
@@ -1948,7 +1955,7 @@ async function doCancelFlash(id){
 // ===== RESERVE =====
 async function doReserve(id){
   if(!state.user){openOverlay('loginOverlay');return;}
-  if(!confirm('ต้องการจองสินค้านี้ไหม? ผู้ขายจะได้รับการแจ้งเตือน'))return;
+  if(!confirm('ต้องการจองสินค้านี้ไหม?\n\n⏰ การจองจะหมดอายุอัตโนมัติภายใน 12 ชั่วโมง หากยังไม่ได้กดซื้อ'))return;
   try{const r=await api.reserveProduct(id);toast(r.message,'#1D9E75');openDetail(id);}
   catch(e){toast(e.message);}
 }

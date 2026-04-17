@@ -215,6 +215,64 @@ app.set('liveStreams', liveStreams);
 
 initDB().then(() => {
   server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
+  // ===== CRON: Auto-cancel stale orders & auto-release stale reservations =====
+  const runAutoCron = async () => {
+    try {
+      const db = getDB();
+
+      // 1. Auto-cancel orders: awaiting_payment > 24 hours
+      const { rows: staleOrders } = await db.query(`
+        SELECT o.id, o.user_id, o.total,
+               p.id AS product_id, p.seller_id, p.title AS product_title
+        FROM orders o
+        JOIN order_items oi ON oi.order_id = o.id
+        JOIN products p ON p.id = oi.product_id
+        WHERE o.status = 'awaiting_payment'
+          AND o.created_at < NOW() - INTERVAL '24 hours'
+      `);
+      for (const ord of staleOrders) {
+        await db.query("UPDATE orders SET status='cancelled' WHERE id=$1", [ord.id]);
+        await db.query("UPDATE products SET status='available' WHERE id=$1", [ord.product_id]);
+        const num = String(ord.id).padStart(4, '0');
+        await db.query("INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'system','ออเดอร์ถูกยกเลิกอัตโนมัติ',$2)",
+          [ord.user_id, `ออเดอร์ #${num} "${ord.product_title}" ถูกยกเลิกเนื่องจากไม่ได้อัปสลิปภายใน 24 ชั่วโมง`]);
+        await db.query("INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'system','ออเดอร์ถูกยกเลิกอัตโนมัติ',$2)",
+          [ord.seller_id, `ออเดอร์ #${num} "${ord.product_title}" ถูกยกเลิก ผู้ซื้อไม่ได้ชำระเงินภายใน 24 ชั่วโมง`]);
+        console.log(`[cron] Auto-cancelled order #${num}`);
+      }
+
+      // 2. Auto-release reservations: reserved > 12 hours, no active order
+      const { rows: staleReserv } = await db.query(`
+        SELECT p.id, p.title, p.seller_id, p.reserved_for_id
+        FROM products p
+        WHERE p.status = 'reserved'
+          AND p.reserved_at IS NOT NULL
+          AND p.reserved_at < NOW() - INTERVAL '12 hours'
+          AND NOT EXISTS (
+            SELECT 1 FROM order_items oi
+            JOIN orders o ON o.id = oi.order_id
+            WHERE oi.product_id = p.id
+              AND o.status NOT IN ('cancelled','completed')
+          )
+      `);
+      for (const prod of staleReserv) {
+        await db.query("UPDATE products SET status='available', reserved_for_id=NULL, reserved_at=NULL WHERE id=$1", [prod.id]);
+        if (prod.reserved_for_id) {
+          await db.query("INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'system','การจองหมดอายุแล้ว ⏰',$2)",
+            [prod.reserved_for_id, `การจอง "${prod.title}" หมดอายุแล้ว (เกิน 12 ชั่วโมง) สินค้ากลับสู่การขายปกติ`]);
+        }
+        await db.query("INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'system','การจองหมดอายุแล้ว ⏰',$2)",
+          [prod.seller_id, `การจอง "${prod.title}" หมดอายุแล้ว สินค้ากลับสู่การขายปกติอัตโนมัติ`]);
+        console.log(`[cron] Auto-released reservation for product #${prod.id}`);
+      }
+    } catch (e) {
+      console.error('[cron] auto-cancel/release error:', e.message);
+    }
+  };
+  runAutoCron(); // run once on startup to catch anything missed while server was down
+  setInterval(runAutoCron, 60 * 60 * 1000); // then every 1 hour
+
 }).catch(err => {
   console.error('Failed to initialize DB:', err);
   process.exit(1);

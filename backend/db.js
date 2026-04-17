@@ -157,6 +157,7 @@ async function initDB() {
   await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS flash_price NUMERIC DEFAULT NULL`);
   await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS flash_end TIMESTAMPTZ DEFAULT NULL`);
   await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS reserved_for_id INTEGER DEFAULT NULL`);
+  await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS reserved_at TIMESTAMPTZ DEFAULT NULL`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS holiday_mode INTEGER DEFAULT 0`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS holiday_message TEXT DEFAULT NULL`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS holiday_until DATE DEFAULT NULL`);

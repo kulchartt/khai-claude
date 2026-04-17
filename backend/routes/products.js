@@ -379,7 +379,7 @@ router.post('/:id/reserve', authMiddleware, async (req, res) => {
     if (!product) return res.status(404).json({ error: 'ไม่พบสินค้า' });
     if (product.seller_id === req.user.id) return res.status(400).json({ error: 'ไม่สามารถจองสินค้าของตัวเองได้' });
     if (product.status !== 'available') return res.status(400).json({ error: 'สินค้านี้ไม่พร้อมจอง' });
-    await db.query("UPDATE products SET status='reserved', reserved_for_id=$1 WHERE id=$2", [req.user.id, req.params.id]);
+    await db.query("UPDATE products SET status='reserved', reserved_for_id=$1, reserved_at=NOW() WHERE id=$2", [req.user.id, req.params.id]);
     const { rows: buyerRow } = await db.query('SELECT name FROM users WHERE id=$1', [req.user.id]);
     const buyerName = buyerRow[0]?.name || 'ผู้ซื้อ';
     await db.query("INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'system','มีคนจองสินค้า 🔖',$2)",
@@ -408,7 +408,7 @@ router.patch('/:id/reserve', authMiddleware, async (req, res) => {
       if (sock) io?.to(sock).emit('notification', { type: 'system' });
       res.json({ message: 'ยืนยันการจองแล้ว ✅' });
     } else if (action === 'reject') {
-      await db.query("UPDATE products SET status='available', reserved_for_id=NULL WHERE id=$1", [req.params.id]);
+      await db.query("UPDATE products SET status='available', reserved_for_id=NULL, reserved_at=NULL WHERE id=$1", [req.params.id]);
       await db.query("INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'system','การจองถูกปฏิเสธ',$2)",
         [product.reserved_for_id, `ผู้ขายไม่ยืนยันการจอง "${product.title}"`]);
       const sock = onlineUsers?.get(product.reserved_for_id);
