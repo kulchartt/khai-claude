@@ -22,7 +22,7 @@
 <header class="navbar">
   <div class="logo" onclick="goPage('home')">Ploi<span>Khong</span><span class="logo-ai">with AI</span></div>
   <div class="search-wrap" style="position:relative">
-    <input type="search" id="searchQ" placeholder="ค้นหาสินค้า..." oninput="applyFilter();showSuggestions(this.value)" onfocus="showSuggestions(this.value)" onblur="hideSuggestions()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other"/>
+    <input type="text" id="searchQ" placeholder="ค้นหาสินค้า..." oninput="applyFilter();showSuggestions(this.value)" onfocus="this.removeAttribute('readonly');showSuggestions(this.value)" onblur="hideSuggestions()" readonly autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other"/>
     <button class="img-search-btn" onclick="document.getElementById('imgSearchInput').click()" title="ค้นหาด้วยรูป">📷</button>
     <input type="file" id="imgSearchInput" accept="image/*" style="display:none" onchange="doImageSearch(this)"/>
     <button onclick="openAdvSearch()">🔍</button>
@@ -1082,7 +1082,7 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js?v=20260417r11"></script>
-<script src="js/app.js?v=20260417r25"></script>
+<script src="js/app.js?v=20260417r26"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

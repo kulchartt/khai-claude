@@ -57,7 +57,7 @@ function setCat(cat,el){state.cat=cat;document.querySelectorAll('.chip').forEach
 async function openDetail(id){
   try{
     const[p,rv]=await Promise.all([api.getProduct(id),api.getReviews(id)]);
-    const inWl=state.wlIds.includes(id),isOwner=state.user&&state.user.id===p.seller_id;
+    const inWl=state.wlIds.includes(id),isOwner=state.user&&state.user.id===p.seller_id,isReservedByMe=state.user&&p.reserved_for_id===state.user.id;
     window.location.hash='product-'+id;
     addRecentlyViewed(p);
     document.getElementById('detailContent').innerHTML=`
@@ -70,7 +70,9 @@ async function openDetail(id){
           <div class="detail-actions">
             ${!isOwner&&p.status==='available'&&!p.seller_holiday_mode?`<button class="btn btn-g" style="font-size:16px;padding:14px 24px" onclick="buyNow(${p.id},'${p.delivery_method||'shipping'}')">⚡ ซื้อเลย</button>`:''}
             ${!isOwner&&p.status==='available'&&!p.seller_holiday_mode?`<button class="btn btn-reserve" onclick="doReserve(${p.id})">🔖 จอง</button>`:''}
-            ${!isOwner&&p.status==='reserved'?`<span style="font-size:13px;color:#d97706;font-weight:600;padding:8px 0;display:block">⏳ กำลังถูกจอง</span>`:''}
+            ${!isOwner&&p.status==='reserved'&&isReservedByMe?`<button class="btn btn-g" style="font-size:16px;padding:14px 24px" onclick="buyNow(${p.id},'${p.delivery_method||'shipping'}')">⚡ ซื้อเลย</button>`:''}
+            ${!isOwner&&p.status==='reserved'&&isReservedByMe?`<button class="btn btn-danger" onclick="doCancelReserve(${p.id})">✕ ยกเลิกจอง</button>`:''}
+            ${!isOwner&&p.status==='reserved'&&!isReservedByMe?`<span style="font-size:13px;color:#d97706;font-weight:600;padding:8px 0;display:block">⏳ กำลังถูกจอง</span>`:''}
             ${!isOwner?`<button class="btn" onclick="startChat(${p.seller_id},${p.id})">💬 แชทผู้ขาย</button>`:''}
             ${!isOwner&&p.status==='available'?`<button class="btn btn-available" onclick="askAvailable(${p.seller_id},${p.id},'${p.title.replace(/'/g,"\\'")}')">🙋 ยังมีอยู่ไหม?</button>`:''}
             <button class="btn wl-btn ${inWl?'liked':''}" id="wlBtn_${p.id}" onclick="toggleWl(${p.id})">${inWl?'❤️':'🤍'}</button>
