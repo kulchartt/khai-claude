@@ -1945,22 +1945,44 @@ function renderSwipeBatch(){
   const total=Math.ceil(_swipeProducts.length/SWIPE_BATCH);
   const current=Math.floor(_swipeIndex/SWIPE_BATCH)+1;
   if(counter)counter.textContent=`ชุดที่ ${current} / ${total}`;
-  stack.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 0">${batch.map(p=>{
+  stack.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 0">${batch.map((p,i)=>{
     const img=p.image_url?`<img src="${imgSrc(p.image_url)}" style="width:100%;height:140px;object-fit:cover;border-radius:10px 10px 0 0"/>` :`<div style="height:140px;display:flex;align-items:center;justify-content:center;font-size:48px;background:var(--bg-sec);border-radius:10px 10px 0 0">${EMOJIS[p.category]||'📦'}</div>`;
     const inWl=state.wlIds.includes(p.id);
-    return `<div style="background:var(--bg-card);border-radius:12px;box-shadow:var(--shadow);overflow:hidden">
-      <div onclick="openDetail(${p.id})" style="cursor:pointer">${img}</div>
-      <div style="padding:8px 10px">
-        <div onclick="openDetail(${p.id})" style="font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.title}</div>
-        <div style="font-size:14px;font-weight:700;color:var(--green)">฿${Number(p.price).toLocaleString()}</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-          <span style="font-size:11px;color:var(--text-sec)">${p.condition||''}</span>
-          <button onclick="swipeToggleWl(${p.id},this)" style="background:none;border:none;font-size:18px;cursor:pointer;padding:0">${inWl?'❤️':'🤍'}</button>
+    const cardId=`swcard_${p.id}_${i}`;
+    return `<div id="${cardId}" style="perspective:600px;cursor:pointer" onclick="flipSwipeCard('${cardId}',${p.id})">
+      <div class="flip-inner" style="position:relative;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.4,0,.2,1);border-radius:12px">
+        <div class="flip-front" style="backface-visibility:hidden;background:linear-gradient(135deg,var(--green) 0%,#0d7a55 100%);border-radius:12px;height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow)">
+          <div style="font-size:40px">🎁</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.8);font-weight:600">แตะเพื่อเปิด</div>
+        </div>
+        <div class="flip-back" style="backface-visibility:hidden;transform:rotateY(180deg);position:absolute;inset:0;background:var(--bg-card);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)">
+          ${img}
+          <div style="padding:8px 10px">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.title}</div>
+            <div style="font-size:14px;font-weight:700;color:var(--green)">฿${Number(p.price).toLocaleString()}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+              <span style="font-size:11px;color:var(--text-sec)">${p.condition||''}</span>
+              <button id="wlbtn_${cardId}" onclick="event.stopPropagation();swipeToggleWl(${p.id},this)" style="background:none;border:none;font-size:18px;cursor:pointer;padding:0">${inWl?'❤️':'🤍'}</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>`;
   }).join('')}</div>
   <button class="btn btn-g" style="width:100%;margin-top:16px" onclick="swipeNext()">🔀 สุ่มใหม่ ${_swipeIndex+SWIPE_BATCH<_swipeProducts.length?'':'(เริ่มใหม่)'}</button>`;
+}
+function flipSwipeCard(cardId, productId){
+  const wrapper=document.getElementById(cardId);
+  if(!wrapper)return;
+  const inner=wrapper.querySelector('.flip-inner');
+  if(!inner)return;
+  const flipped=inner.style.transform==='rotateY(180deg)';
+  if(flipped){
+    // หงายแล้ว → กดอีกครั้ง = ไปหน้า detail
+    openDetail(productId);
+  } else {
+    inner.style.transform='rotateY(180deg)';
+  }
 }
 function swipeNext(){
   _swipeIndex+=SWIPE_BATCH;
