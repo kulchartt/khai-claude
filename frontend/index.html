@@ -29,15 +29,15 @@
     <div class="search-suggestions hidden" id="searchSuggestions"></div>
   </div>
   <nav class="nav-r">
-    <button class="icon-btn hide-sm" onclick="goPage('home')">🏠</button>
-    <button class="icon-btn hide-sm" onclick="openCategories()">🗂️</button>
+    <button class="icon-btn hide-sm" onclick="goPage('home')" title="หน้าแรก">🏠</button>
+    <button class="icon-btn hide-sm" onclick="openCategories()" title="หมวดหมู่">🗂️</button>
     <button class="icon-btn hide-sm" onclick="goPage('community');loadCommunity()" title="ชุมชน">📋</button>
-    <button class="icon-btn" onclick="openNotifications()" id="notifBtn">🔔<span class="badge hidden" id="notifBadge">0</span></button>
-    <button class="icon-btn" onclick="openChatList()">💬<span class="badge hidden" id="chatBadge">0</span></button>
-    <button class="icon-btn hide-sm" onclick="openWishlist()">❤️<span class="badge hidden" id="wlBadge">0</span></button>
+    <button class="icon-btn" onclick="openNotifications()" id="notifBtn" title="การแจ้งเตือน">🔔<span class="badge hidden" id="notifBadge">0</span></button>
+    <button class="icon-btn" onclick="openChatList()" title="ข้อความ">💬<span class="badge hidden" id="chatBadge">0</span></button>
+    <button class="icon-btn hide-sm" onclick="openWishlist()" title="สินค้าที่ถูกใจ">❤️<span class="badge hidden" id="wlBadge">0</span></button>
     <button class="icon-btn hide-sm" onclick="openSwipeMode()" title="สุ่มสินค้า">🔀</button>
     <!-- cart hidden — ใช้ในตลาดมือหนึ่ง -->
-    <button class="icon-btn" onclick="openCart()" id="cartBtn" style="display:none">🛒<span class="badge hidden" id="cartBadge">0</span></button>
+    <button class="icon-btn" onclick="openCart()" id="cartBtn" style="display:none" title="ตะกร้าสินค้า">🛒<span class="badge hidden" id="cartBadge">0</span></button>
     <button class="dark-toggle hide-sm" id="darkToggle" onclick="toggleDarkMode()" title="สลับธีม">🌙</button>
     <div id="navUser"></div>
   </nav>
