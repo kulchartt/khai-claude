@@ -68,7 +68,7 @@ async function openDetail(id){
           ${(()=>{const now=Date.now();const flashActive=p.flash_price&&p.flash_end&&new Date(p.flash_end)>now;if(flashActive)return `<div class="detail-price" style="color:#dc2626">฿${Number(p.flash_price).toLocaleString()} <span class="original-price" style="font-size:16px">฿${Number(p.price).toLocaleString()}</span> <span class="flash-badge">⚡ Flash Sale</span></div><div class="flash-timer" data-flash-end="${p.flash_end}" style="font-size:13px;color:#dc2626;margin:-8px 0 8px"></div>`;if(p.original_price)return `<div class="detail-price">฿${Number(p.price).toLocaleString()} <span class="original-price" style="font-size:16px">฿${Number(p.original_price).toLocaleString()}</span> <span class="price-drop-badge">ลดราคา</span></div>`;return `<div class="detail-price">฿${Number(p.price).toLocaleString()}</div>`;})()}
           ${p.seller_holiday_mode&&!isOwner?`<div class="holiday-notice">🏖️ ร้านปิดชั่วคราว — ไม่สามารถสั่งซื้อได้ในขณะนี้</div>`:''}
           <div class="detail-actions">
-            ${!isOwner&&p.status==='available'&&!p.seller_holiday_mode?`<button class="btn btn-g" style="font-size:16px;padding:14px 24px" onclick="buyNow(${p.id})">⚡ ซื้อเลย</button>`:''}
+            ${!isOwner&&p.status==='available'&&!p.seller_holiday_mode?`<button class="btn btn-g" style="font-size:16px;padding:14px 24px" onclick="buyNow(${p.id},'${p.delivery_method||'shipping'}')">⚡ ซื้อเลย</button>`:''}
             ${!isOwner&&p.status==='available'&&!p.seller_holiday_mode?`<button class="btn btn-reserve" onclick="doReserve(${p.id})">🔖 จอง</button>`:''}
             ${!isOwner&&p.status==='reserved'?`<span style="font-size:13px;color:#d97706;font-weight:600;padding:8px 0;display:block">⏳ กำลังถูกจอง</span>`:''}
             ${!isOwner?`<button class="btn" onclick="startChat(${p.seller_id},${p.id})">💬 แชทผู้ขาย</button>`:''}
@@ -156,18 +156,65 @@ async function doReport(){
   }catch(e){toast(e.message);}
 }
 
-async function buyNow(id){
+async function buyNow(id, deliveryMethod='shipping'){
   if(!state.user){toast('กรุณาเข้าสู่ระบบก่อน');openOverlay('loginOverlay');return;}
   const btn=event?.currentTarget;
+  // ถ้ารองรับทั้งคู่ ถามก่อน
+  if(deliveryMethod==='both'){
+    const choice=await _chooseMeetupOrShip();
+    if(choice===null)return;
+    deliveryMethod=choice?'pickup':'shipping';
+  }
+  const deliveryType=deliveryMethod==='pickup'?'meetup':'shipping';
   if(btn){btn.disabled=true;btn.textContent='กำลังดำเนินการ...';}
   try{
-    const res=await api.buyNow(id);
+    const res=await api.buyNow(id, deliveryType);
     window._newOrder=true;
-    showPaymentQR(res.order_id,res.total,res.seller_promptpay||null,res.seller_name||'ผู้ขาย',res.seller_bank_name||null,res.seller_bank_account||null,res.seller_bank_account_name||null);
+    if(res.delivery_type==='meetup'){
+      showMeetupConfirm(res.order_id, res.seller_id, res.seller_name||'ผู้ขาย', res.meetup_lat, res.meetup_lng, res.meetup_note);
+    } else {
+      showPaymentQR(res.order_id,res.total,res.seller_promptpay||null,res.seller_name||'ผู้ขาย',res.seller_bank_name||null,res.seller_bank_account||null,res.seller_bank_account_name||null);
+    }
   }catch(e){
     toast(e.message);
     if(btn){btn.disabled=false;btn.innerHTML='⚡ ซื้อเลย';}
   }
+}
+function _chooseMeetupOrShip(){
+  return new Promise(resolve=>{
+    const d=document.createElement('div');
+    d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    d.innerHTML=`<div style="background:var(--bg-card);border-radius:var(--radius-lg);padding:24px;max-width:320px;width:100%;text-align:center">
+      <div style="font-size:20px;margin-bottom:8px">🚚 เลือกวิธีรับสินค้า</div>
+      <p style="color:var(--text-sec);font-size:14px;margin-bottom:20px">ผู้ขายรองรับทั้ง 2 แบบ</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-g" id="_meetupBtn" style="font-size:15px;padding:14px">🤝 นัดรับด้วยตัวเอง</button>
+        <button class="btn" id="_shipBtn" style="font-size:15px;padding:14px">📦 ส่งพัสดุ</button>
+        <button class="btn" id="_cancelBtn" style="color:var(--text-hint)">ยกเลิก</button>
+      </div>
+    </div>`;
+    document.body.appendChild(d);
+    d.querySelector('#_meetupBtn').onclick=()=>{d.remove();resolve(true);};
+    d.querySelector('#_shipBtn').onclick=()=>{d.remove();resolve(false);};
+    d.querySelector('#_cancelBtn').onclick=()=>{d.remove();resolve(null);};
+  });
+}
+function showMeetupConfirm(orderId, sellerId, sellerName, lat, lng, note){
+  document.getElementById('meetupOrderId').textContent='#'+String(orderId).padStart(4,'0');
+  document.getElementById('meetupSellerName').textContent=sellerName;
+  const mapBtn=document.getElementById('meetupMapBtn');
+  if(lat&&lng){
+    mapBtn.style.display='';
+    mapBtn.onclick=()=>window.open(`https://www.google.com/maps?q=${lat},${lng}`,'_blank');
+    document.getElementById('meetupLocationNote').textContent=note||`${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`;
+    document.getElementById('meetupLocationRow').style.display='';
+  } else {
+    mapBtn.style.display='none';
+    document.getElementById('meetupLocationRow').style.display='none';
+  }
+  document.getElementById('meetupChatBtn').onclick=()=>{closeOverlay('meetupOverlay');if(sellerId)startChat(sellerId,null);};
+  openOverlay('meetupOverlay');
+  goPage('home');
 }
 async function addToCart(id){if(!state.user){toast('กรุณาเข้าสู่ระบบก่อน');openOverlay('loginOverlay');return;}try{await api.addCart(id);state.cartCount++;updateBadge('cartBadge',state.cartCount);toast('เพิ่มลงตะกร้าแล้ว! 🛒','#1D9E75');}catch(e){toast(e.message);}}
 async function toggleWl(id){if(!state.user){openOverlay('loginOverlay');return;}try{const res=await api.toggleWishlist(id);if(res.liked){state.wlIds.push(id);state.wlCount++;}else{state.wlIds=state.wlIds.filter(x=>x!==id);state.wlCount=Math.max(0,state.wlCount-1);}updateBadge('wlBadge',state.wlCount);const btn=document.getElementById('wlBtn_'+id);if(btn){btn.textContent=res.liked?'❤️':'🤍';btn.classList.toggle('liked',res.liked);}toast(res.message);}catch(e){toast(e.message);}}
@@ -209,7 +256,7 @@ function profileTab(tab){
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
     api.getSellerOrders().then(orders=>{
       if(!orders.length){c.innerHTML='<div class="empty-msg">ยังไม่มีออเดอร์</div>';return;}
-      const statusLabel={awaiting_payment:'⏳ รอ slip',awaiting_confirmation:'🔍 รอยืนยัน',confirmed:'✅ ยืนยันรับเงินแล้ว',completed:'🎉 เสร็จสิ้น',cancelled:'❌ ยกเลิกแล้ว',pending:'⏳ รอ slip'};
+      const statusLabel={awaiting_payment:'⏳ รอ slip',awaiting_confirmation:'🔍 รอยืนยัน',confirmed:'✅ ยืนยันรับเงินแล้ว',completed:'🎉 เสร็จสิ้น',cancelled:'❌ ยกเลิกแล้ว',pending:'🤝 รอนัดรับ'};
       const shipLabel={pending:'ยังไม่จัดส่ง',preparing:'📦 กำลังเตรียมของ',shipped:'🚚 ส่งพัสดุแล้ว',received:'✅ ผู้ซื้อรับแล้ว'};
       c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`
         <div class="order-item">
@@ -229,12 +276,15 @@ function profileTab(tab){
               ${o.tracking_number?`<a class="tracking-link" href="${_trackingUrl(o.tracking_carrier,o.tracking_number)}" target="_blank" rel="noopener">📮 ${o.tracking_carrier||'Tracking'}: ${o.tracking_number} ↗</a>`:''}
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              ${o.delivery_type==='meetup'?`<span style="font-size:11px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:99px;padding:2px 8px;font-weight:600">🤝 นัดรับ</span>`:''}
+              ${o.delivery_type==='meetup'&&o.meetup_lat?`<a href="https://www.google.com/maps?q=${o.meetup_lat},${o.meetup_lng}" target="_blank" class="btn btn-sm">📍 ดูจุดนัดรับ</a>`:''}
               ${o.slip_url?`<a href="${o.slip_url}" target="_blank" class="btn btn-sm">🖼️ slip</a>`:''}
               ${o.status==='awaiting_confirmation'?`<button class="btn btn-sm btn-g" onclick="doConfirmPayment(${o.id})">✅ ยืนยันรับเงิน</button>`:''}
-              ${o.status==='confirmed'&&(!o.shipping_status||o.shipping_status==='pending')?`<button class="btn btn-sm" onclick="doShipOrder(${o.id},'preparing')">📦 กำลังเตรียมของ</button>`:''}
-              ${o.status==='confirmed'&&o.shipping_status==='preparing'?`<button class="btn btn-sm btn-g" onclick="doShipOrder(${o.id},'shipped')">🚚 ส่งพัสดุแล้ว</button>`:''}
-              ${o.status==='confirmed'&&o.shipping_status==='shipped'?`<span style="font-size:12px;color:#16a34a;font-weight:600">🚚 รอผู้ซื้อยืนยันรับ</span><button class="btn btn-sm" style="margin-left:4px" onclick="doShipOrder(${o.id},'shipped')">✏️ แก้ Tracking</button>`:''}
-              ${o.status!=='completed'&&o.status!=='cancelled'?`<button class="btn btn-sm btn-danger" onclick="doSellerCancel(${o.id})">❌ ยกเลิก (คืนเงิน)</button>`:''}
+              ${o.status==='pending'&&o.delivery_type==='meetup'?`<button class="btn btn-sm btn-g" onclick="doConfirmPayment(${o.id})">✅ นัดรับเสร็จสิ้น</button>`:''}
+              ${o.status==='confirmed'&&o.delivery_type!=='meetup'&&(!o.shipping_status||o.shipping_status==='pending')?`<button class="btn btn-sm" onclick="doShipOrder(${o.id},'preparing')">📦 กำลังเตรียมของ</button>`:''}
+              ${o.status==='confirmed'&&o.delivery_type!=='meetup'&&o.shipping_status==='preparing'?`<button class="btn btn-sm btn-g" onclick="doShipOrder(${o.id},'shipped')">🚚 ส่งพัสดุแล้ว</button>`:''}
+              ${o.status==='confirmed'&&o.delivery_type!=='meetup'&&o.shipping_status==='shipped'?`<span style="font-size:12px;color:#16a34a;font-weight:600">🚚 รอผู้ซื้อยืนยันรับ</span><button class="btn btn-sm" style="margin-left:4px" onclick="doShipOrder(${o.id},'shipped')">✏️ แก้ Tracking</button>`:''}
+              ${o.status!=='completed'&&o.status!=='cancelled'?`<button class="btn btn-sm btn-danger" onclick="doSellerCancel(${o.id})">❌ ยกเลิก</button>`:''}
               ${o.status==='completed'?`<button class="btn btn-sm" onclick="openBuyerReviewModal(${o.id})">⭐ รีวิวผู้ซื้อ</button>`:''}
             </div>
           </div>
@@ -245,7 +295,7 @@ function profileTab(tab){
     api.getOrders().then(orders=>{
       if(!orders.length){c.innerHTML='<div class="empty-msg">ยังไม่มีประวัติการสั่งซื้อ</div>';return;}
       window._payOrders={};orders.forEach(o=>window._payOrders[o.id]=o);
-      const statusLabel={'awaiting_payment':'⏳ รอชำระเงิน','awaiting_confirmation':'🔍 รอผู้ขายยืนยัน','confirmed':'✅ ผู้ขายยืนยันแล้ว','completed':'🎉 รับสินค้าแล้ว','cancelled':'❌ ยกเลิกแล้ว','pending':'⏳ รอดำเนินการ'};
+      const statusLabel={'awaiting_payment':'⏳ รอชำระเงิน','awaiting_confirmation':'🔍 รอผู้ขายยืนยัน','confirmed':'✅ ผู้ขายยืนยันแล้ว','completed':'🎉 รับสินค้าแล้ว','cancelled':'❌ ยกเลิกแล้ว','pending':'🤝 รอนัดรับ'};
       const shipLabel={preparing:'📦 กำลังเตรียมของ',shipped:'🚚 ส่งพัสดุแล้ว — รอรับสินค้า',received:'✅ รับสินค้าแล้ว'};
       c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`
         <div class="order-item">
@@ -265,7 +315,9 @@ function profileTab(tab){
               ${o.tracking_number?`<a class="tracking-link" href="${_trackingUrl(o.tracking_carrier,o.tracking_number)}" target="_blank" rel="noopener">📮 ${o.tracking_carrier||'Tracking'}: ${o.tracking_number} ↗</a>`:''}
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
-              ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-g" onclick="showPaymentFromOrder(${o.id})">💳 ช่องทางชำระเงิน</button>`:''}
+              ${o.delivery_type==='meetup'?`<span style="font-size:11px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:99px;padding:2px 8px;font-weight:600">🤝 นัดรับ</span>`:''}
+              ${o.delivery_type==='meetup'&&o.meetup_lat?`<a href="https://www.google.com/maps?q=${o.meetup_lat},${o.meetup_lng}" target="_blank" class="btn btn-sm">📍 ดูจุดนัดรับ</a>`:''}
+              ${o.status==='awaiting_payment'?`<button class="btn btn-sm btn-g" onclick="showPaymentFromOrder(${o.id})">💳 ช่องทางชำระเงิน</button>`:''}
               ${o.seller_id&&o.status!=='cancelled'?`<button class="btn btn-sm" onclick="startChat(${o.seller_id},${o.product_id||'null'})">💬 คุยกับผู้ขาย</button>`:''}
               ${o.status==='confirmed'&&o.shipping_status==='shipped'?`<button class="btn btn-sm btn-g" onclick="markOrderReceived(${o.id})">✅ ยืนยันรับสินค้า</button>`:''}
               ${o.status==='completed'&&o.product_id?`<button class="btn btn-sm btn-g" onclick="openReviewModal(${o.product_id})">⭐ รีวิวผู้ขาย</button>`:''}
@@ -273,6 +325,7 @@ function profileTab(tab){
               ${(o.status==='confirmed'||o.status==='completed')?`<button class="btn btn-sm btn-danger" onclick="openDisputeModal(${o.id})">🚨 แจ้งปัญหา</button>`:''}
               ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-danger" onclick="doCancelOrder(${o.id})">❌ ยกเลิก</button>`:''}
               ${o.status==='awaiting_confirmation'?`<span style="font-size:11px;color:#d97706;font-weight:500">⚠️ ส่ง slip แล้ว — ติดต่อผู้ขายหากต้องการยกเลิก</span>`:''}
+              ${o.status==='pending'&&o.delivery_type==='meetup'?`<span style="font-size:11px;color:var(--text-sec)">รอผู้ขายยืนยันหลังนัดรับ</span>`:''}
             </div>
           </div>
         </div>`).join('')+'</div>';

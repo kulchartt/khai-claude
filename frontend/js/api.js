@@ -42,7 +42,7 @@ const api = {
   updateCartQty(id,qty) { return this.post('/api/cart/qty',{product_id:id,qty}); },
   removeCart(id) { return this.delete('/api/cart/'+id); },
   checkout() { return this.post('/api/cart/checkout',{}); },
-  buyNow(productId) { return this.post('/api/orders/buy-now',{product_id:productId}); },
+  buyNow(productId, deliveryType='shipping') { return this.post('/api/orders/buy-now',{product_id:productId,delivery_type:deliveryType}); },
   getWishlist() { return this.get('/api/wishlist'); },
   toggleWishlist(id) { return this.post('/api/wishlist/toggle',{product_id:id}); },
   getMyProducts() {

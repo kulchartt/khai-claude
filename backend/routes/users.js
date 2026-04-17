@@ -76,7 +76,8 @@ router.patch('/me/promptpay', authMiddleware, async (req, res) => {
 router.get('/me/seller-orders', authMiddleware, async (req, res) => {
   try {
     const { rows } = await getDB().query(`
-      SELECT o.id, o.total, o.status, o.slip_url, o.shipping_status, o.tracking_number, o.tracking_carrier, o.created_at,
+      SELECT o.id, o.total, o.status, o.slip_url, o.shipping_status, o.tracking_number, o.tracking_carrier,
+        o.delivery_type, o.meetup_lat, o.meetup_lng, o.meetup_note, o.created_at,
         u.name as buyer_name, u.email as buyer_email,
         STRING_AGG(p.title, ', ') as items
       FROM orders o

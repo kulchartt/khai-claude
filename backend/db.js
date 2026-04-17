@@ -318,6 +318,12 @@ async function initDB() {
     expires_at TIMESTAMP DEFAULT NOW() + INTERVAL '5 minutes'
   )`);
 
+  // COD / Meetup order support
+  await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_type TEXT DEFAULT 'shipping'`);
+  await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS meetup_lat FLOAT DEFAULT NULL`);
+  await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS meetup_lng FLOAT DEFAULT NULL`);
+  await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS meetup_note TEXT DEFAULT NULL`);
+
   const { rows } = await db.query('SELECT COUNT(*) as c FROM products');
   if (parseInt(rows[0].c) === 0) {
     const hash = await bcrypt.hash('demo1234', 10);

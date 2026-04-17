@@ -19,7 +19,7 @@ router.post('/buy-now', authMiddleware, async (req, res) => {
   const db = getDB();
   const client = await db.connect();
   try {
-    const { product_id } = req.body;
+    const { product_id, delivery_type: reqDeliveryType } = req.body;
     if (!product_id) return res.status(400).json({ error: 'ระบุสินค้าด้วย' });
     await client.query('BEGIN');
     const { rows: pr } = await client.query(
@@ -35,9 +35,16 @@ router.post('/buy-now', authMiddleware, async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: `สินค้านี้กำลังถูกจองชั่วคราว (อีกประมาณ ${remaining} นาที)` });
     }
+    const isMeetup = reqDeliveryType === 'meetup' && (p.delivery_method === 'pickup' || p.delivery_method === 'both');
+    const deliveryType = isMeetup ? 'meetup' : 'shipping';
+    const orderStatus = isMeetup ? 'pending' : 'awaiting_payment';
     const { rows: or } = await client.query(
-      "INSERT INTO orders (user_id, total, status) VALUES ($1,$2,'awaiting_payment') RETURNING id",
-      [req.user.id, p.price]
+      `INSERT INTO orders (user_id, total, status, delivery_type, meetup_lat, meetup_lng, meetup_note)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+      [req.user.id, p.price, orderStatus, deliveryType,
+       isMeetup ? (p.meetup_lat || null) : null,
+       isMeetup ? (p.meetup_lng || null) : null,
+       isMeetup ? (p.meetup_note || null) : null]
     );
     const orderId = or[0].id;
     await client.query('INSERT INTO order_items (order_id, product_id, price, qty) VALUES ($1,$2,$3,1)', [orderId, p.id, p.price]);
@@ -49,11 +56,16 @@ router.post('/buy-now', authMiddleware, async (req, res) => {
       message: 'สร้างคำสั่งซื้อแล้ว',
       order_id: orderId,
       total: p.price,
+      delivery_type: deliveryType,
+      seller_id: p.seller_id,
       seller_promptpay: p.promptpay || null,
       seller_name: p.seller_name || '',
       seller_bank_name: p.bank_name || null,
       seller_bank_account: p.bank_account || null,
       seller_bank_account_name: p.bank_account_name || null,
+      meetup_lat: isMeetup ? p.meetup_lat : null,
+      meetup_lng: isMeetup ? p.meetup_lng : null,
+      meetup_note: isMeetup ? p.meetup_note : null,
     });
   } catch (e) {
     await client.query('ROLLBACK');
@@ -148,10 +160,12 @@ router.patch('/:id/confirm-payment', authMiddleware, async (req, res) => {
 
     const { rows: or } = await db.query('SELECT * FROM orders WHERE id = $1', [req.params.id]);
     if (!or[0]) return res.status(404).json({ error: 'ไม่พบออเดอร์' });
-    if (or[0].status !== 'awaiting_confirmation') return res.status(400).json({ error: 'ออเดอร์นี้ยังไม่ได้รับ slip หรือดำเนินการไปแล้ว' });
+    const isMeetup = or[0].delivery_type === 'meetup';
+    const allowedStatuses = isMeetup ? ['pending'] : ['awaiting_confirmation'];
+    if (!allowedStatuses.includes(or[0].status)) return res.status(400).json({ error: 'ออเดอร์นี้ยังไม่พร้อมยืนยันหรือดำเนินการไปแล้ว' });
 
-    await db.query("UPDATE orders SET status = 'confirmed' WHERE id = $1", [req.params.id]);
-    // ตอนนี้ยืนยันแล้ว — เปลี่ยนสถานะสินค้าเป็น sold จริงๆ
+    const newStatus = isMeetup ? 'completed' : 'confirmed';
+    await db.query(`UPDATE orders SET status = $1 WHERE id = $2`, [newStatus, req.params.id]);
     await db.query(`
       UPDATE products SET status = 'sold'
       WHERE id IN (SELECT product_id FROM order_items WHERE order_id = $1)
@@ -160,12 +174,15 @@ router.patch('/:id/confirm-payment', authMiddleware, async (req, res) => {
     // แจ้งเตือนผู้ซื้อ
     const io = req.app.get('io');
     const onlineUsers = req.app.get('onlineUsers');
-    await db.query("INSERT INTO notifications (user_id, type, title, body) VALUES ($1,'order','ยืนยันการชำระเงินแล้ว 🎉',$2)",
-      [or[0].user_id, `ออเดอร์ #${String(req.params.id).padStart(4,'0')} — ผู้ขายยืนยันรับเงินแล้ว จะจัดส่งเร็วๆ นี้`]);
+    const notifyBody = isMeetup
+      ? `ออเดอร์ #${String(req.params.id).padStart(4,'0')} — ผู้ขายยืนยันนัดรับเสร็จสิ้นแล้ว 🤝`
+      : `ออเดอร์ #${String(req.params.id).padStart(4,'0')} — ผู้ขายยืนยันรับเงินแล้ว จะจัดส่งเร็วๆ นี้`;
+    await db.query("INSERT INTO notifications (user_id, type, title, body) VALUES ($1,'order','ยืนยันออเดอร์แล้ว 🎉',$2)",
+      [or[0].user_id, notifyBody]);
     const sock = onlineUsers?.get(or[0].user_id);
     if (sock) io?.to(sock).emit('notification', { type: 'order' });
 
-    res.json({ message: 'ยืนยันรับชำระเงินแล้ว ✅ กรุณาจัดส่งสินค้าให้ผู้ซื้อ' });
+    res.json({ message: isMeetup ? 'ยืนยันนัดรับเสร็จสิ้น ✅' : 'ยืนยันรับชำระเงินแล้ว ✅ กรุณาจัดส่งสินค้าให้ผู้ซื้อ' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
