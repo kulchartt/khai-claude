@@ -2758,10 +2758,11 @@ function renderLiveChatMsg(msg) {
 function renderLiveProduct(data) {
   const popup = document.getElementById('liveProductPopup');
   if (!popup) return;
+  const img = data.image_url ? `<img src="${imgSrc(data.image_url)}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0"/>` : `<div style="width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📦</div>`;
+  popup.innerHTML = `<div style="display:flex;align-items:center;gap:10px">${img}<div style="flex:1;min-width:0"><div style="font-size:11px;color:#facc15;font-weight:600;margin-bottom:2px">🛍️ สินค้าจากไลฟ์</div><div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${data.title}</div><div style="font-size:15px;color:#4ade80;font-weight:700">฿${Number(data.price).toLocaleString()}</div></div><button onclick="addToCartFromLive(${data.id})" style="flex-shrink:0;background:#ff2d55;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer">🛒<br>ซื้อเลย</button></div>`;
   popup.style.display = 'block';
-  popup.innerHTML = `<div style="display:flex;align-items:center;gap:10px"><div style="font-size:28px">📦</div><div style="flex:1"><div style="font-size:14px;font-weight:700">${data.title}</div><div style="font-size:16px;color:var(--green);font-weight:700">฿${Number(data.price).toLocaleString()}</div></div><button class="btn btn-sm btn-g" onclick="addToCartFromLive(${data.id})">🛒 ใส่ตะกร้า</button></div>`;
   clearTimeout(window._liveProductTimer);
-  window._liveProductTimer = setTimeout(() => { if (popup) popup.style.display = 'none'; }, 15000);
+  window._liveProductTimer = setTimeout(() => { popup.style.display = 'none'; }, 15000);
 }
 
 async function addToCartFromLive(productId) {
