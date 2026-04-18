@@ -20,6 +20,7 @@ router.get('/', authMiddleware, adminOnly, async (req, res) => {
     'verify_requests', 'reports', 'feedback', 'feedback_messages',
     'bundles', 'posts', 'post_comments', 'post_likes', 'stories',
     'points_log', 'referrals', 'response_logs', 'blocks',
+    'webauthn_credentials', 'webauthn_challenges',
   ];
 
   const backup = {
@@ -29,18 +30,22 @@ router.get('/', authMiddleware, adminOnly, async (req, res) => {
 
   for (const table of tables) {
     try {
-      const { rows } = await db.query(`SELECT * FROM ${table} ORDER BY id`);
+      const { rows } = await db.query(`SELECT * FROM ${table}`);
       backup.tables[table] = rows;
     } catch (e) {
       backup.tables[table] = { error: e.message };
     }
   }
 
-  // Also backup env info (non-sensitive)
+  // Full env snapshot for restore purposes (admin-only endpoint)
   backup.env = {
     node_env: process.env.NODE_ENV,
-    cloudinary_cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     frontend_url: process.env.FRONTEND_URL,
+    cloudinary_cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    cloudinary_api_key: process.env.CLOUDINARY_API_KEY,
+    cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET,
+    jwt_secret: process.env.JWT_SECRET,
+    database_url: process.env.DATABASE_URL,
   };
 
   res.json(backup);
