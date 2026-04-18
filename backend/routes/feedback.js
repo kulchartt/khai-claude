@@ -45,6 +45,20 @@ router.post('/', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /api/feedback/my — logged-in user sees their own submissions (matched by email)
+router.get('/my', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT id, category, message, sender_name, status, admin_reply, created_at
+         FROM feedback
+        WHERE LOWER(sender_email) = LOWER($1)
+        ORDER BY created_at DESC`,
+      [req.user.email]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // GET /api/feedback/admin — admin only (all items)
 router.get('/admin', authMiddleware, adminOnly, async (req, res) => {
   try {

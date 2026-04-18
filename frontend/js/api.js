@@ -130,6 +130,7 @@ const api = {
   adminGetVerifyRequests() { return this.get('/api/admin/verify-requests'); },
   adminHandleVerifyRequest(id, action, admin_note) { return this.patch('/api/admin/verify-requests/'+id, {action, admin_note}); },
   submitFeedback(category, message, sender_name, sender_email) { return this.post('/api/feedback', {category, message, sender_name, sender_email}); },
+  getMyFeedback() { return this.get('/api/feedback/my'); },
   adminGetFeedback() { return this.get('/api/feedback/admin'); },
   adminFeedbackUnreadCount() { return this.get('/api/feedback/admin/unread-count'); },
   adminUpdateFeedback(id, data) { return this.patch('/api/feedback/admin/'+id, data); },
