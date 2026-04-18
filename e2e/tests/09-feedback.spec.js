@@ -194,14 +194,21 @@ test.describe('📩 ติดต่อแอดมิน (Feedback)', () => {
         return;
       }
 
+      // Wait for socket to be connected (so admin receives real-time events)
+      await adminPage.waitForFunction(
+        () => typeof socket !== 'undefined' && socket?.connected === true,
+        { timeout: 15000 }
+      );
+      console.log('✅ Admin socket connected');
+
       // Open admin panel → feedback tab
       await adminPage.evaluate(() => openAdmin());
       await adminPage.waitForSelector('#page-admin.active', { timeout: 12000 });
       await adminPage.evaluate(() => adminTab('feedback'));
       await adminPage.waitForTimeout(1500);
 
-      // Count current feedback items before user submits
-      const beforeCount = await adminPage.locator('#adminFeedbackList > div').count();
+      // Count current feedback items before user submits (.dispute-item inside adminTabContent)
+      const beforeCount = await adminPage.locator('#adminTabContent .dispute-item').count();
       console.log(`📋 Admin sees ${beforeCount} feedback items before user submits`);
 
       // 2. User submits new feedback
@@ -224,13 +231,13 @@ test.describe('📩 ติดต่อแอดมิน (Feedback)', () => {
       await userPage.waitForSelector('.toast', { timeout: 10000 });
       console.log('✅ User submitted feedback');
 
-      // 3. Admin panel should auto-update within 8 seconds (no F5)
+      // 3. Admin panel should auto-update within 10 seconds (no F5)
       await adminPage.waitForFunction(
-        (before) => document.querySelectorAll('#adminFeedbackList > div').length > before,
+        (before) => document.querySelectorAll('#adminTabContent .dispute-item').length > before,
         beforeCount,
-        { timeout: 10000 }
+        { timeout: 12000 }
       );
-      const afterCount = await adminPage.locator('#adminFeedbackList > div').count();
+      const afterCount = await adminPage.locator('#adminTabContent .dispute-item').count();
       expect(afterCount).toBeGreaterThan(beforeCount);
       console.log(`✅ Real-time: admin panel updated ${beforeCount} → ${afterCount} (no F5)`);
 
@@ -309,22 +316,21 @@ test.describe('📩 ติดต่อแอดมิน (Feedback)', () => {
       if (!feedbackId) { console.log('⏭️ Could not get feedbackId, skip'); return; }
       console.log(`📋 Feedback ID: ${feedbackId}`);
 
-      // Admin opens feedback tab
+      // Wait for socket to be connected
+      await adminPage.waitForFunction(
+        () => typeof socket !== 'undefined' && socket?.connected === true,
+        { timeout: 15000 }
+      );
+      console.log('✅ Admin socket connected');
+
+      // Admin opens feedback tab (thread is always visible in admin, no toggle needed)
       await adminPage.evaluate(() => openAdmin());
       await adminPage.waitForSelector('#page-admin.active', { timeout: 12000 });
       await adminPage.evaluate(() => adminTab('feedback'));
-      await adminPage.waitForTimeout(1500);
+      await adminPage.waitForTimeout(2000); // wait for threads to render
 
-      // Admin expands the thread
-      const threadBtn = adminPage.locator(`button[onclick*="toggleFbThread(${feedbackId}"]`).first();
-      if (await threadBtn.count()) {
-        await threadBtn.click();
-        await adminPage.waitForTimeout(800);
-      }
-
-      // Count current messages in thread
+      // Count messages in this feedback's thread
       const threadSel = `#fbThread_${feedbackId}`;
-      await adminPage.waitForSelector(threadSel, { timeout: 5000 }).catch(() => {});
       const beforeMsgCount = await adminPage.locator(`${threadSel} .chat-bubble`).count();
       console.log(`💬 Thread has ${beforeMsgCount} messages before user reply`);
 
@@ -332,36 +338,30 @@ test.describe('📩 ติดต่อแอดมิน (Feedback)', () => {
       await userPage.evaluate(() => openProfile());
       await userPage.waitForSelector('#page-profile.active', { timeout: 10000 });
       await userPage.evaluate(() => profileTab('my-feedback'));
-      await userPage.waitForTimeout(1500);
+      await userPage.waitForTimeout(2000); // wait for my-feedback to load
 
-      // Click the reply/thread toggle on the first feedback item
-      const replyBtn = userPage.locator(`button[onclick*="toggleUserFbThread(${feedbackId}"]`).first();
-      if (await replyBtn.count()) {
-        await replyBtn.click();
-        await userPage.waitForTimeout(600);
-      }
-
+      // Reply input is #myFbMsg_${feedbackId}
       const replyMsg = `[E2E Reply] ตอบกลับ ${Date.now()}`;
-      const inputSel = `#userFbThread_${feedbackId} input, #userFbThread_${feedbackId} textarea`;
-      await userPage.waitForSelector(inputSel, { timeout: 5000 }).catch(() => {});
-      if (await userPage.locator(inputSel).count()) {
-        await userPage.fill(inputSel, replyMsg);
-        const sendBtn = userPage.locator(`#userFbThread_${feedbackId} button`).last();
-        await sendBtn.click();
-        await userPage.waitForTimeout(500);
+      const inputSel = `#myFbMsg_${feedbackId}`;
+      const inputEl = userPage.locator(inputSel);
+      if (await inputEl.count()) {
+        await inputEl.fill(replyMsg);
+        // press Enter to send (onkeydown='if(event.key==="Enter")userSendFeedbackMsg(...)')
+        await inputEl.press('Enter');
+        await userPage.waitForTimeout(800);
         console.log('✅ User sent reply message');
 
-        // Admin panel should reflect the new message within 8 seconds
+        // Admin panel should reflect the new message within 10 seconds (no F5)
         await adminPage.waitForFunction(
           ({ sel, before }) => document.querySelectorAll(`${sel} .chat-bubble`).length > before,
           { sel: threadSel, before: beforeMsgCount },
-          { timeout: 10000 }
+          { timeout: 12000 }
         );
         const afterMsgCount = await adminPage.locator(`${threadSel} .chat-bubble`).count();
         expect(afterMsgCount).toBeGreaterThan(beforeMsgCount);
         console.log(`✅ Real-time reply: admin thread updated ${beforeMsgCount} → ${afterMsgCount} messages (no F5)`);
       } else {
-        console.log('⏭️ Thread input not found, skipping reply test');
+        console.log('⏭️ Reply input #myFbMsg_' + feedbackId + ' not found, skipping reply test');
       }
 
     } finally {

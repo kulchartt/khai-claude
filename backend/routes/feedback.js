@@ -41,6 +41,20 @@ db.query(`CREATE TABLE IF NOT EXISTS feedback_messages (
 const CATEGORIES = ['inquiry', 'bug', 'feature', 'complaint', 'review', 'keep', 'other'];
 const STATUS_LABEL = { new: 'ใหม่', reviewed: 'รับเรื่องแล้ว', resolved: 'แก้ไขแล้ว' };
 
+// Emit event to all online admin users
+async function notifyAdmins(io, onlineUsers, event, data) {
+  if (!io || !onlineUsers || onlineUsers.size === 0) return;
+  const ids = [...onlineUsers.keys()];
+  const { rows } = await db.query(
+    `SELECT id FROM users WHERE is_admin = 1 AND id = ANY($1)`,
+    [ids]
+  );
+  for (const { id } of rows) {
+    const sock = onlineUsers.get(id);
+    if (sock) io.to(sock).emit(event, data);
+  }
+}
+
 // POST /api/feedback — no auth required
 router.post('/', async (req, res) => {
   try {
@@ -51,6 +65,10 @@ router.post('/', async (req, res) => {
       'INSERT INTO feedback (category, message, sender_name, sender_email) VALUES ($1,$2,$3,$4)',
       [category, message.trim(), sender_name?.trim() || null, sender_email?.trim() || null]
     );
+    // Notify online admins in real-time
+    const io = req.app.get('io');
+    const onlineUsers = req.app.get('onlineUsers');
+    await notifyAdmins(io, onlineUsers, 'feedback:new', { sender_name: sender_name || 'ไม่ระบุชื่อ' }).catch(() => {});
     res.json({ message: 'ขอบคุณสำหรับ Feedback! 🙏 ทีมงานจะนำไปปรับปรุงครับ' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -194,6 +212,11 @@ router.post('/:id/messages', authMiddleware, async (req, res) => {
 
     const io          = req.app.get('io');
     const onlineUsers = req.app.get('onlineUsers');
+
+    // User replied → notify online admins
+    if (!isAdmin) {
+      await notifyAdmins(io, onlineUsers, 'feedback:new_message', { feedbackId: id, sender: fb.sender_name || fb.sender_email || 'user' }).catch(() => {});
+    }
 
     if (isAdmin && fb.sender_email) {
       // Admin replied → notify user via socket + notification
