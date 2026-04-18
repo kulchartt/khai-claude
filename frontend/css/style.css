@@ -150,6 +150,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .toast{position:fixed;bottom:24px;right:24px;background:#1a1a18;color:#fff;padding:12px 20px;border-radius:var(--radius-lg);font-size:14px;z-index:999;display:none;max-width:320px;box-shadow:0 4px 20px rgba(0,0,0,.3)}
 .toast.show{display:block;animation:slideup .25s ease}
 @keyframes slideup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 @media(max-width:640px){
   /* Other mobile fixes */

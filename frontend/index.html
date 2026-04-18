@@ -39,6 +39,7 @@
     <button class="icon-btn hide-sm" onclick="openFeedbackModal()" title="ติดต่อแอดมิน">📩</button>
     <!-- cart hidden — ใช้ในตลาดมือหนึ่ง -->
     <button class="icon-btn" onclick="openCart()" id="cartBtn" style="display:none" title="ตะกร้าสินค้า">🛒<span class="badge hidden" id="cartBadge">0</span></button>
+    <button class="icon-btn" onclick="refreshCurrentPage()" title="รีเฟรช">🔄</button>
     <button class="dark-toggle hide-sm" id="darkToggle" onclick="toggleDarkMode()" title="สลับธีม">🌙</button>
     <div id="navUser"></div>
   </nav>
@@ -1083,7 +1084,7 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js?v=20260418r12"></script>
-<script src="js/app.js?v=20260418r37"></script>
+<script src="js/app.js?v=20260418r38"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

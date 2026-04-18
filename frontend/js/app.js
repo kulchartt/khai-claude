@@ -534,10 +534,7 @@ async function openMyFeedbackTab(){
     c.innerHTML=`<div style="margin-top:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <span style="font-weight:600">ประวัติการติดต่อแอดมิน (${fbs.length})</span>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-sm" onclick="openMyFeedbackTab()" title="รีเฟรช">🔄</button>
-          <button class="btn btn-g btn-sm" onclick="openFeedbackModal()">📩 ส่งใหม่</button>
-        </div>
+        <button class="btn btn-g btn-sm" onclick="openFeedbackModal()">📩 ส่งใหม่</button>
       </div>
       ${fbs.map(f=>`
         <div style="border:1px solid var(--border);border-left:3px solid ${fbStatusColor[f.status||'new']};border-radius:var(--radius);padding:14px;margin-bottom:10px;background:var(--card-bg)">
@@ -1988,6 +1985,23 @@ async function loadAdminFeedbackBadge(){
       else{navBadge.style.display='none';}
     }
   }catch(e){/* silently ignore */}
+}
+async function refreshCurrentPage(){
+  const activePage=document.querySelector('.page.active')?.id;
+  const activeProfileTab=document.querySelector('.profile-tab.on')?.id?.replace('ptab-','');
+  const activeAdminTab=document.querySelector('.admin-tab.on')?.id?.replace('atab-','');
+  const btn=document.querySelector('button[onclick="refreshCurrentPage()"]');
+  if(btn){btn.style.animation='spin .5s linear';setTimeout(()=>btn.style.animation='',500);}
+  try{
+    if(activePage==='page-home'){await loadProducts();toast('รีเฟรชแล้ว ✅','#1D9E75',1500);}
+    else if(activePage==='page-profile'&&activeProfileTab){profileTab(activeProfileTab);toast('รีเฟรชแล้ว ✅','#1D9E75',1500);}
+    else if(activePage==='page-admin'&&activeAdminTab){adminTab(activeAdminTab);toast('รีเฟรชแล้ว ✅','#1D9E75',1500);}
+    else if(activePage==='page-notifications'){goPage('notifications');}
+    else if(activePage==='page-community'){loadCommunity();}
+    else if(activePage==='page-detail'&&window._openDetailId){openDetail(window._openDetailId);}
+    else{toast('รีเฟรชแล้ว ✅','#1D9E75',1500);}
+    await syncBadges();
+  }catch(e){toast('รีเฟรชไม่สำเร็จ: '+e.message);}
 }
 async function adminUpdateReport(id,status){try{await api.adminUpdateReport(id,status);toast('อัปเดตแล้ว ✅','#1D9E75');adminTab('reports');}catch(e){toast(e.message);}}
 function goToProduct(id){openDetail(id).catch(()=>toast('ไม่พบสินค้า'));}
