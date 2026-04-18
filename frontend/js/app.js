@@ -1958,12 +1958,21 @@ async function doBuyerReview(){
 }
 
 async function markFeedbackRead(id){try{await api.adminUpdateFeedback(id,{is_read:1});adminTab('feedback');}catch(e){toast(e.message);}}
-async function adminSetFeedbackStatus(id,status){try{await api.adminUpdateFeedback(id,{status,is_read:1});toast('อัปเดตสถานะแล้ว ✅','#1D9E75');adminTab('feedback');loadAdminFeedbackBadge();}catch(e){toast(e.message);}}
+async function _reloadFeedbackTab(){
+  const wrap=document.getElementById('adminTabContent');
+  const scrollY=wrap?.scrollTop??window.scrollY;
+  await adminTab('feedback');
+  loadAdminFeedbackBadge();
+  requestAnimationFrame(()=>{
+    if(wrap)wrap.scrollTop=scrollY;else window.scrollTo(0,scrollY);
+  });
+}
+async function adminSetFeedbackStatus(id,status){try{await api.adminUpdateFeedback(id,{status,is_read:1});toast('อัปเดตสถานะแล้ว ✅','#1D9E75');await _reloadFeedbackTab();}catch(e){toast(e.message);}}
 async function adminSendFeedbackReply(id){
   const el=document.getElementById('fbReply_'+id);
   const reply=(el?.value||'').trim();
   if(!reply){toast('กรุณาพิมพ์ข้อความตอบกลับ');return;}
-  try{await api.adminUpdateFeedback(id,{admin_reply:reply,is_read:1});toast('ส่งตอบกลับแล้ว ✅','#1D9E75');adminTab('feedback');loadAdminFeedbackBadge();}catch(e){toast(e.message);}
+  try{await api.adminUpdateFeedback(id,{admin_reply:reply,is_read:1});toast('ส่งตอบกลับแล้ว ✅','#1D9E75');await _reloadFeedbackTab();}catch(e){toast(e.message);}
 }
 async function loadAdminFeedbackBadge(){
   if(!state.user?.is_admin)return;
