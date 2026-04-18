@@ -34,8 +34,9 @@ function updateBadge(id,count){const el=document.getElementById(id);if(!el)retur
 function updateNav(){
   const n=document.getElementById('navUser');
   if(state.user){
-    const admin=state.user.is_admin?`<button class="btn btn-sm" style="margin-left:4px" onclick="openAdmin()">🛡️</button>`:'';
+    const admin=state.user.is_admin?`<button class="btn btn-sm" style="margin-left:4px;position:relative" id="adminNavBtn" onclick="openAdmin()">🛡️<span id="adminFbBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:99px;font-size:9px;font-weight:700;min-width:14px;height:14px;line-height:14px;text-align:center;padding:0 3px"></span></button>`:'';
     n.innerHTML=`<div style="display:flex;align-items:center;gap:6px"><div class="avatar" onclick="openProfile()">${state.user.name.slice(0,2).toUpperCase()}</div>${admin}</div>`;
+    if(state.user.is_admin)loadAdminFeedbackBadge();
   }else{n.innerHTML=`<button class="btn btn-sm" onclick="openOverlay('loginOverlay')">เข้าสู่ระบบ</button>`;}
 }
 
@@ -1961,13 +1962,21 @@ async function loadAdminFeedbackBadge(){
   if(!state.user?.is_admin)return;
   try{
     const{count}=await api.adminFeedbackUnreadCount();
+    // Badge on tab inside admin panel
     const tab=document.getElementById('atab-feedback');
-    if(!tab)return;
-    const existing=tab.querySelector('.fb-badge');
-    if(count>0){
-      if(existing)existing.textContent=count;
-      else{const b=document.createElement('span');b.className='fb-badge';b.style.cssText='display:inline-flex;align-items:center;justify-content:center;background:#ef4444;color:#fff;border-radius:99px;font-size:10px;font-weight:700;min-width:16px;height:16px;padding:0 4px;margin-left:6px';b.textContent=count;tab.appendChild(b);}
-    }else if(existing)existing.remove();
+    if(tab){
+      const existing=tab.querySelector('.fb-badge');
+      if(count>0){
+        if(existing)existing.textContent=count;
+        else{const b=document.createElement('span');b.className='fb-badge';b.style.cssText='display:inline-flex;align-items:center;justify-content:center;background:#ef4444;color:#fff;border-radius:99px;font-size:10px;font-weight:700;min-width:16px;height:16px;padding:0 4px;margin-left:6px';b.textContent=count;tab.appendChild(b);}
+      }else if(existing)existing.remove();
+    }
+    // Badge on 🛡️ navbar button
+    const navBadge=document.getElementById('adminFbBadge');
+    if(navBadge){
+      if(count>0){navBadge.textContent=count;navBadge.style.display='block';}
+      else{navBadge.style.display='none';}
+    }
   }catch(e){/* silently ignore */}
 }
 async function adminUpdateReport(id,status){try{await api.adminUpdateReport(id,status);toast('อัปเดตแล้ว ✅','#1D9E75');adminTab('reports');}catch(e){toast(e.message);}}
