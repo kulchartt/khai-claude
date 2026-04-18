@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDB } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
+const { cloudinary } = require('../cloudinary');
 
 const router = express.Router();
 
@@ -38,12 +39,13 @@ router.get('/', authMiddleware, adminOnly, async (req, res) => {
   }
 
   // Full env snapshot for restore purposes (admin-only endpoint)
+  const cfg = cloudinary.config();
   backup.env = {
     node_env: process.env.NODE_ENV,
     frontend_url: process.env.FRONTEND_URL,
-    cloudinary_cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    cloudinary_api_key: process.env.CLOUDINARY_API_KEY,
-    cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloudinary_cloud_name: cfg.cloud_name,
+    cloudinary_api_key: cfg.api_key,
+    cloudinary_api_secret: cfg.api_secret,
     jwt_secret: process.env.JWT_SECRET,
     database_url: process.env.DATABASE_URL,
   };
