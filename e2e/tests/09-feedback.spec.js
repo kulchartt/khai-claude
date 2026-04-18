@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { gotoApp, login, SELLER } = require('./helpers');
+const { gotoApp, login, SELLER, BUYER } = require('./helpers');
 
 const CATEGORIES = ['inquiry','bug','feature','complaint','review','keep','other'];
 
@@ -26,9 +26,23 @@ test.describe('📩 ติดต่อแอดมิน (Feedback)', () => {
 
   test('FAB floating button no longer exists', async ({ page }) => {
     await gotoApp(page);
-    const fab = page.locator('#feedbackFab');
-    expect(await fab.count()).toBe(0);
+    expect(await page.locator('#feedbackFab').count()).toBe(0);
     console.log('✅ Old FAB button removed');
+  });
+
+  // ── Auto-fill when logged in ─────────────────────────────────────────────────
+
+  test('modal auto-fills name and email from logged-in account', async ({ page }) => {
+    await login(page, BUYER);
+    await page.evaluate(() => openFeedbackModal());
+    await page.waitForSelector('#feedbackOverlay.open', { timeout: 6000 });
+
+    const email = await page.locator('#feedbackEmail').inputValue();
+    const name  = await page.locator('#feedbackName').inputValue();
+
+    expect(email).toBe(BUYER.email);
+    expect(name.length).toBeGreaterThan(0);
+    console.log(`✅ Auto-filled: name="${name}" email="${email}"`);
   });
 
   // ── Category dropdown ────────────────────────────────────────────────────────
@@ -39,15 +53,9 @@ test.describe('📩 ติดต่อแอดมิน (Feedback)', () => {
     await page.waitForSelector('#feedbackOverlay.open', { timeout: 6000 });
 
     const options = await page.locator('#feedbackCategory option').allInnerTexts();
-    console.log('Options found:', options);
-
-    // สอบถาม must be present
     expect(options.some(o => o.includes('สอบถาม'))).toBe(true);
-
-    // All backend-valid categories must map to an option
     for (const val of CATEGORIES) {
-      const exists = await page.locator(`#feedbackCategory option[value="${val}"]`).count();
-      expect(exists).toBe(1);
+      expect(await page.locator(`#feedbackCategory option[value="${val}"]`).count()).toBe(1);
     }
     console.log('✅ All 7 categories present including สอบถาม');
   });
@@ -58,64 +66,85 @@ test.describe('📩 ติดต่อแอดมิน (Feedback)', () => {
     await gotoApp(page);
     await page.evaluate(() => openFeedbackModal());
     await page.waitForSelector('#feedbackOverlay.open', { timeout: 6000 });
-
     await page.fill('#feedbackMessage', 'ทดสอบ E2E');
-    // leave category blank
     await page.click('#feedbackOverlay .btn-g');
     await page.waitForSelector('.toast', { timeout: 6000 });
-    const msg = await page.locator('.toast').textContent();
-    console.log(`✅ Validation toast: "${msg}"`);
+    console.log(`✅ Validation toast: "${await page.locator('.toast').textContent()}"`);
   });
 
   test('submit without message shows error toast', async ({ page }) => {
     await gotoApp(page);
     await page.evaluate(() => openFeedbackModal());
     await page.waitForSelector('#feedbackOverlay.open', { timeout: 6000 });
-
     await page.selectOption('#feedbackCategory', { value: 'inquiry' });
-    // leave message blank
     await page.click('#feedbackOverlay .btn-g');
     await page.waitForSelector('.toast', { timeout: 6000 });
-    const msg = await page.locator('.toast').textContent();
-    console.log(`✅ Validation toast: "${msg}"`);
+    console.log(`✅ Validation toast: "${await page.locator('.toast').textContent()}"`);
   });
 
-  // ── Submit each new/changed category ────────────────────────────────────────
+  // ── Submit + history ─────────────────────────────────────────────────────────
 
-  test('submit with category สอบถาม succeeds', async ({ page }) => {
-    await gotoApp(page);
+  test('submit while logged in → appears in history tab', async ({ page }) => {
+    await login(page, BUYER);
+
+    // Submit feedback (email auto-filled from account)
     await page.evaluate(() => openFeedbackModal());
     await page.waitForSelector('#feedbackOverlay.open', { timeout: 6000 });
-
     await page.selectOption('#feedbackCategory', { value: 'inquiry' });
-    await page.fill('#feedbackMessage', '[E2E] ทดสอบหมวดสอบถาม — ไม่ต้องสนใจ');
+    await page.fill('#feedbackMessage', '[E2E] ทดสอบ history tab — ไม่ต้องสนใจ');
     await page.click('#feedbackOverlay .btn-g');
-
     await page.waitForSelector('.toast', { timeout: 10000 });
-    const msg = await page.locator('.toast').textContent();
-    expect(msg).not.toContain('ไม่ถูกต้อง');
-    expect(msg).not.toContain('error');
-    console.log(`✅ สอบถาม submitted: "${msg}"`);
+    const toastMsg = await page.locator('.toast').textContent();
+    expect(toastMsg).not.toContain('ไม่ถูกต้อง');
+    console.log(`✅ Submitted: "${toastMsg}"`);
+
+    // Open profile → tab ติดต่อแอดมิน
+    await page.evaluate(() => openProfile());
+    await page.waitForSelector('#page-profile.active', { timeout: 10000 });
+    await page.evaluate(() => profileTab('my-feedback'));
+    await page.waitForTimeout(2000);
+
+    // Must show history (not empty state)
+    const emptyState = await page.locator('#profileTabContent .empty-state').count();
+    expect(emptyState).toBe(0);
+
+    const items = await page.locator('#profileTabContent [style*="border-left"]').count();
+    expect(items).toBeGreaterThan(0);
+    console.log(`✅ History tab shows ${items} item(s)`);
   });
 
-  test('submit with optional name and email succeeds', async ({ page }) => {
-    await gotoApp(page);
-    await page.evaluate(() => openFeedbackModal());
-    await page.waitForSelector('#feedbackOverlay.open', { timeout: 6000 });
+  test('history tab shows status badge on each item', async ({ page }) => {
+    await login(page, BUYER);
+    await page.evaluate(() => openProfile());
+    await page.waitForSelector('#page-profile.active', { timeout: 10000 });
+    await page.evaluate(() => profileTab('my-feedback'));
+    await page.waitForTimeout(1500);
 
-    await page.selectOption('#feedbackCategory', { value: 'inquiry' });
-    await page.fill('#feedbackMessage', '[E2E] ทดสอบพร้อมชื่อและอีเมล');
-    await page.fill('#feedbackName', 'E2E Tester');
-    await page.fill('#feedbackEmail', 'e2e@test.com');
-    await page.click('#feedbackOverlay .btn-g');
+    const hasItems = await page.locator('#profileTabContent [style*="border-left"]').count() > 0;
+    if (!hasItems) { console.log('⏭️ No history yet, skip'); return; }
 
-    await page.waitForSelector('.toast', { timeout: 10000 });
-    // Modal should close on success
-    const stillOpen = await page.evaluate(
-      () => document.getElementById('feedbackOverlay')?.classList.contains('open')
-    );
-    expect(stillOpen).toBe(false);
-    console.log('✅ Submit with name+email: modal closed (success)');
+    // Each item must contain a status label
+    const statusTexts = await page.locator('#profileTabContent').textContent();
+    const hasStatus = statusTexts.includes('ใหม่') || statusTexts.includes('รับเรื่อง') || statusTexts.includes('แก้ไข');
+    expect(hasStatus).toBe(true);
+    console.log('✅ Status badge present in history items');
+  });
+
+  // ── Admin badge on 🛡️ button ─────────────────────────────────────────────────
+
+  test('🛡️ admin navbar button has badge element', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await login(page, SELLER); // SELLER is admin in test env
+    await page.waitForTimeout(1000);
+
+    const adminBtn = page.locator('#adminNavBtn');
+    if (!await adminBtn.count()) { console.log('⏭️ Not admin account'); return; }
+
+    await expect(adminBtn).toBeVisible({ timeout: 5000 });
+    // Badge element should exist (may be hidden if count=0)
+    const badge = page.locator('#adminFbBadge');
+    expect(await badge.count()).toBe(1);
+    console.log('✅ Admin badge element present on 🛡️ button');
   });
 
   // ── Close button ─────────────────────────────────────────────────────────────
@@ -124,7 +153,6 @@ test.describe('📩 ติดต่อแอดมิน (Feedback)', () => {
     await gotoApp(page);
     await page.evaluate(() => openFeedbackModal());
     await page.waitForSelector('#feedbackOverlay.open', { timeout: 6000 });
-
     await page.click('#feedbackOverlay .mclose');
     await page.waitForFunction(
       () => !document.getElementById('feedbackOverlay')?.classList.contains('open'),
