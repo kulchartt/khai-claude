@@ -134,6 +134,8 @@ const api = {
   adminGetFeedback() { return this.get('/api/feedback/admin'); },
   adminFeedbackUnreadCount() { return this.get('/api/feedback/admin/unread-count'); },
   adminUpdateFeedback(id, data) { return this.patch('/api/feedback/admin/'+id, data); },
+  getFeedbackMessages(id) { return this.get('/api/feedback/'+id+'/messages'); },
+  sendFeedbackMessage(id, message) { return this.post('/api/feedback/'+id+'/messages', { message }); },
   getMyReports() { return this.get('/api/reports/me'); },
   adminGetReports() { return this.get('/api/reports'); },
   adminUpdateReport(id, status) { return this.patch('/api/reports/'+id+'/status', {status}); },
