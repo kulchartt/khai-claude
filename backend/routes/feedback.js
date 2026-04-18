@@ -27,6 +27,7 @@ db.query(`CREATE TABLE IF NOT EXISTS feedback (
 // Add columns if they don't exist yet (idempotent migration)
 db.query(`ALTER TABLE feedback ADD COLUMN IF NOT EXISTS admin_reply TEXT DEFAULT NULL`).catch(() => {});
 db.query(`ALTER TABLE feedback ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'new'`).catch(() => {});
+db.query(`ALTER TABLE feedback ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NULL`).catch(() => {});
 
 const CATEGORIES = ['inquiry', 'bug', 'feature', 'complaint', 'review', 'keep', 'other'];
 const STATUS_LABEL = { new: 'ใหม่', reviewed: 'รับเรื่องแล้ว', resolved: 'แก้ไขแล้ว' };
@@ -49,7 +50,7 @@ router.post('/', async (req, res) => {
 router.get('/my', authMiddleware, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT id, category, message, sender_name, status, admin_reply, created_at
+      `SELECT id, category, message, sender_name, status, admin_reply, created_at, updated_at
          FROM feedback
         WHERE LOWER(sender_email) = LOWER($1)
         ORDER BY created_at DESC`,
@@ -63,7 +64,7 @@ router.get('/my', authMiddleware, async (req, res) => {
 router.get('/admin', authMiddleware, adminOnly, async (req, res) => {
   try {
     const { rows } = await db.query(
-      `SELECT * FROM feedback ORDER BY is_read ASC, created_at DESC`
+      `SELECT * FROM feedback ORDER BY created_at DESC`
     );
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -87,14 +88,16 @@ router.patch('/admin/:id', authMiddleware, adminOnly, async (req, res) => {
     const { rows: [fb] } = await db.query('SELECT * FROM feedback WHERE id = $1', [id]);
     if (!fb) return res.status(404).json({ error: 'ไม่พบ Feedback' });
 
+    const hasChange = status || admin_reply || admin_note;
     await db.query(
       `UPDATE feedback SET
         is_read      = COALESCE($1, is_read),
         admin_note   = COALESCE($2, admin_note),
         admin_reply  = COALESCE($3, admin_reply),
-        status       = COALESCE($4, status)
-       WHERE id = $5`,
-      [is_read ?? null, admin_note ?? null, admin_reply ?? null, status ?? null, id]
+        status       = COALESCE($4, status),
+        updated_at   = CASE WHEN $5 THEN NOW() ELSE updated_at END
+       WHERE id = $6`,
+      [is_read ?? null, admin_note ?? null, admin_reply ?? null, status ?? null, !!hasChange, id]
     );
 
     // Notify user if status changed and sender_email matches a registered user
