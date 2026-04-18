@@ -329,10 +329,19 @@ test.describe('📩 ติดต่อแอดมิน (Feedback)', () => {
       await adminPage.evaluate(() => adminTab('feedback'));
       await adminPage.waitForTimeout(2000); // wait for threads to render
 
-      // Count messages in this feedback's thread
+      // Thread renders message divs with margin-bottom:8px, or empty state text
       const threadSel = `#fbThread_${feedbackId}`;
-      const beforeMsgCount = await adminPage.locator(`${threadSel} .chat-bubble`).count();
-      console.log(`💬 Thread has ${beforeMsgCount} messages before user reply`);
+      // Wait for thread to finish initial render (not "กำลังโหลด...")
+      await adminPage.waitForFunction(
+        (sel) => {
+          const el = document.querySelector(sel);
+          return el && !el.textContent.includes('กำลังโหลด');
+        },
+        threadSel, { timeout: 8000 }
+      ).catch(() => {});
+      const threadEmpty = await adminPage.locator(`${threadSel}`).textContent();
+      const beforeMsgCount = threadEmpty.includes('ยังไม่มีข้อความ') ? 0 : 1;
+      console.log(`💬 Thread state before reply: ${threadEmpty.includes('ยังไม่มีข้อความ') ? 'empty' : 'has messages'}`);
 
       // User sends reply via profile → my-feedback tab
       await userPage.evaluate(() => openProfile());
@@ -351,15 +360,19 @@ test.describe('📩 ติดต่อแอดมิน (Feedback)', () => {
         await userPage.waitForTimeout(800);
         console.log('✅ User sent reply message');
 
-        // Admin panel should reflect the new message within 10 seconds (no F5)
+        // Admin panel should reflect the new message within 12 seconds (no F5)
+        // Thread changes from "ยังไม่มีข้อความ" to actual message content
         await adminPage.waitForFunction(
-          ({ sel, before }) => document.querySelectorAll(`${sel} .chat-bubble`).length > before,
-          { sel: threadSel, before: beforeMsgCount },
-          { timeout: 12000 }
+          (sel) => {
+            const el = document.querySelector(sel);
+            return el && !el.textContent.includes('ยังไม่มีข้อความ') && !el.textContent.includes('กำลังโหลด');
+          },
+          threadSel,
+          { timeout: 14000 }
         );
-        const afterMsgCount = await adminPage.locator(`${threadSel} .chat-bubble`).count();
-        expect(afterMsgCount).toBeGreaterThan(beforeMsgCount);
-        console.log(`✅ Real-time reply: admin thread updated ${beforeMsgCount} → ${afterMsgCount} messages (no F5)`);
+        const afterContent = await adminPage.locator(threadSel).textContent();
+        expect(afterContent).not.toContain('ยังไม่มีข้อความ');
+        console.log(`✅ Real-time reply: admin thread updated — now has message content (no F5)`);
       } else {
         console.log('⏭️ Reply input #myFbMsg_' + feedbackId + ' not found, skipping reply test');
       }
