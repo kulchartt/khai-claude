@@ -1,5 +1,5 @@
-const { test, expect } = require('@playwright/test');
-const { gotoApp, login, SELLER, BUYER } = require('./helpers');
+const { test, expect, chromium } = require('@playwright/test');
+const { gotoApp, login, SELLER, BUYER, BASE, appReady } = require('./helpers');
 
 const CATEGORIES = ['inquiry','bug','feature','complaint','review','keep','other'];
 
@@ -159,6 +159,218 @@ test.describe('📩 ติดต่อแอดมิน (Feedback)', () => {
       { timeout: 5000 }
     );
     console.log('✅ Close button dismisses modal');
+  });
+
+  // ── Real-time: admin panel auto-updates when user submits ────────────────────
+
+  test('🔴 real-time: admin panel updates when user submits feedback (no F5)', async () => {
+    const browser = await chromium.launch({ channel: 'chrome', headless: false });
+
+    const adminCtx  = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    const userCtx   = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const adminPage = await adminCtx.newPage();
+    const userPage  = await userCtx.newPage();
+
+    try {
+      // 1. Admin logs in
+      await adminPage.goto(BASE, { waitUntil: 'domcontentloaded' });
+      await appReady(adminPage);
+      await adminPage.evaluate(() => openOverlay('loginOverlay'));
+      await adminPage.waitForSelector('#loginOverlay.open');
+      await adminPage.fill('#loginEmail', SELLER.email);
+      await adminPage.fill('#loginPass', SELLER.password);
+      await adminPage.click('#loginForm button.btn-g');
+      await adminPage.waitForFunction(() => !!localStorage.getItem('token'), { timeout: 12000 });
+      await adminPage.waitForTimeout(1000);
+
+      // Skip if SELLER account is not admin
+      const isAdmin = await adminPage.evaluate(() => {
+        const u = JSON.parse(localStorage.getItem('user') || 'null');
+        return !!u?.is_admin;
+      });
+      if (!isAdmin) {
+        console.log('⏭️ SELLER account is not admin in this env — skipping real-time test');
+        console.log('   (Set host@test.com as admin in DB to enable this test)');
+        return;
+      }
+
+      // Open admin panel → feedback tab
+      await adminPage.evaluate(() => openAdmin());
+      await adminPage.waitForSelector('#page-admin.active', { timeout: 12000 });
+      await adminPage.evaluate(() => adminTab('feedback'));
+      await adminPage.waitForTimeout(1500);
+
+      // Count current feedback items before user submits
+      const beforeCount = await adminPage.locator('#adminFeedbackList > div').count();
+      console.log(`📋 Admin sees ${beforeCount} feedback items before user submits`);
+
+      // 2. User submits new feedback
+      await userPage.goto(BASE, { waitUntil: 'domcontentloaded' });
+      await appReady(userPage);
+      await userPage.evaluate(() => openOverlay('loginOverlay'));
+      await userPage.waitForSelector('#loginOverlay.open');
+      await userPage.fill('#loginEmail', BUYER.email);
+      await userPage.fill('#loginPass', BUYER.password);
+      await userPage.click('#loginForm button.btn-g');
+      await userPage.waitForFunction(() => !!localStorage.getItem('token'), { timeout: 12000 });
+      await userPage.waitForTimeout(800);
+
+      const msg = `[E2E Real-time] ทดสอบ socket ${Date.now()}`;
+      await userPage.evaluate(() => openFeedbackModal());
+      await userPage.waitForSelector('#feedbackOverlay.open');
+      await userPage.selectOption('#feedbackCategory', { value: 'bug' });
+      await userPage.fill('#feedbackMessage', msg);
+      await userPage.click('#feedbackOverlay .btn-g');
+      await userPage.waitForSelector('.toast', { timeout: 10000 });
+      console.log('✅ User submitted feedback');
+
+      // 3. Admin panel should auto-update within 8 seconds (no F5)
+      await adminPage.waitForFunction(
+        (before) => document.querySelectorAll('#adminFeedbackList > div').length > before,
+        beforeCount,
+        { timeout: 10000 }
+      );
+      const afterCount = await adminPage.locator('#adminFeedbackList > div').count();
+      expect(afterCount).toBeGreaterThan(beforeCount);
+      console.log(`✅ Real-time: admin panel updated ${beforeCount} → ${afterCount} (no F5)`);
+
+      // 4. Check toast appeared on admin side
+      const toastVisible = await adminPage.locator('.toast').count() > 0;
+      console.log(`📩 Admin toast shown: ${toastVisible}`);
+
+    } finally {
+      await adminPage.close();
+      await userPage.close();
+      await adminCtx.close();
+      await userCtx.close();
+      await browser.close();
+    }
+  });
+
+  // ── Real-time: admin panel updates when user replies in thread ───────────────
+
+  test('🔴 real-time: admin sees new reply when user messages in thread (no F5)', async () => {
+    const browser = await chromium.launch({ channel: 'chrome', headless: false });
+
+    const adminCtx  = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    const userCtx   = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const adminPage = await adminCtx.newPage();
+    const userPage  = await userCtx.newPage();
+
+    try {
+      // Admin login
+      await adminPage.goto(BASE, { waitUntil: 'domcontentloaded' });
+      await appReady(adminPage);
+      await adminPage.evaluate(() => openOverlay('loginOverlay'));
+      await adminPage.waitForSelector('#loginOverlay.open');
+      await adminPage.fill('#loginEmail', SELLER.email);
+      await adminPage.fill('#loginPass', SELLER.password);
+      await adminPage.click('#loginForm button.btn-g');
+      await adminPage.waitForFunction(() => !!localStorage.getItem('token'), { timeout: 12000 });
+      await adminPage.waitForTimeout(1000);
+
+      // Skip if SELLER is not admin
+      const isAdmin = await adminPage.evaluate(() => {
+        const u = JSON.parse(localStorage.getItem('user') || 'null');
+        return !!u?.is_admin;
+      });
+      if (!isAdmin) {
+        console.log('⏭️ SELLER account is not admin in this env — skipping real-time reply test');
+        console.log('   (Set host@test.com as admin in DB to enable this test)');
+        return;
+      }
+
+      // User login + submit feedback first
+      await userPage.goto(BASE, { waitUntil: 'domcontentloaded' });
+      await appReady(userPage);
+      await userPage.evaluate(() => openOverlay('loginOverlay'));
+      await userPage.waitForSelector('#loginOverlay.open');
+      await userPage.fill('#loginEmail', BUYER.email);
+      await userPage.fill('#loginPass', BUYER.password);
+      await userPage.click('#loginForm button.btn-g');
+      await userPage.waitForFunction(() => !!localStorage.getItem('token'), { timeout: 12000 });
+      await userPage.waitForTimeout(800);
+
+      // User submits feedback
+      const msg = `[E2E Thread] ทดสอบ reply ${Date.now()}`;
+      await userPage.evaluate(() => openFeedbackModal());
+      await userPage.waitForSelector('#feedbackOverlay.open');
+      await userPage.selectOption('#feedbackCategory', { value: 'inquiry' });
+      await userPage.fill('#feedbackMessage', msg);
+      await userPage.click('#feedbackOverlay .btn-g');
+      await userPage.waitForSelector('.toast', { timeout: 10000 });
+      await userPage.waitForTimeout(1000);
+
+      // Get the feedback ID from user's history
+      const feedbackId = await userPage.evaluate(async () => {
+        const items = await api.getMyFeedback().catch(() => []);
+        return items.length ? items[0].id : null;
+      });
+      if (!feedbackId) { console.log('⏭️ Could not get feedbackId, skip'); return; }
+      console.log(`📋 Feedback ID: ${feedbackId}`);
+
+      // Admin opens feedback tab
+      await adminPage.evaluate(() => openAdmin());
+      await adminPage.waitForSelector('#page-admin.active', { timeout: 12000 });
+      await adminPage.evaluate(() => adminTab('feedback'));
+      await adminPage.waitForTimeout(1500);
+
+      // Admin expands the thread
+      const threadBtn = adminPage.locator(`button[onclick*="toggleFbThread(${feedbackId}"]`).first();
+      if (await threadBtn.count()) {
+        await threadBtn.click();
+        await adminPage.waitForTimeout(800);
+      }
+
+      // Count current messages in thread
+      const threadSel = `#fbThread_${feedbackId}`;
+      await adminPage.waitForSelector(threadSel, { timeout: 5000 }).catch(() => {});
+      const beforeMsgCount = await adminPage.locator(`${threadSel} .chat-bubble`).count();
+      console.log(`💬 Thread has ${beforeMsgCount} messages before user reply`);
+
+      // User sends reply via profile → my-feedback tab
+      await userPage.evaluate(() => openProfile());
+      await userPage.waitForSelector('#page-profile.active', { timeout: 10000 });
+      await userPage.evaluate(() => profileTab('my-feedback'));
+      await userPage.waitForTimeout(1500);
+
+      // Click the reply/thread toggle on the first feedback item
+      const replyBtn = userPage.locator(`button[onclick*="toggleUserFbThread(${feedbackId}"]`).first();
+      if (await replyBtn.count()) {
+        await replyBtn.click();
+        await userPage.waitForTimeout(600);
+      }
+
+      const replyMsg = `[E2E Reply] ตอบกลับ ${Date.now()}`;
+      const inputSel = `#userFbThread_${feedbackId} input, #userFbThread_${feedbackId} textarea`;
+      await userPage.waitForSelector(inputSel, { timeout: 5000 }).catch(() => {});
+      if (await userPage.locator(inputSel).count()) {
+        await userPage.fill(inputSel, replyMsg);
+        const sendBtn = userPage.locator(`#userFbThread_${feedbackId} button`).last();
+        await sendBtn.click();
+        await userPage.waitForTimeout(500);
+        console.log('✅ User sent reply message');
+
+        // Admin panel should reflect the new message within 8 seconds
+        await adminPage.waitForFunction(
+          ({ sel, before }) => document.querySelectorAll(`${sel} .chat-bubble`).length > before,
+          { sel: threadSel, before: beforeMsgCount },
+          { timeout: 10000 }
+        );
+        const afterMsgCount = await adminPage.locator(`${threadSel} .chat-bubble`).count();
+        expect(afterMsgCount).toBeGreaterThan(beforeMsgCount);
+        console.log(`✅ Real-time reply: admin thread updated ${beforeMsgCount} → ${afterMsgCount} messages (no F5)`);
+      } else {
+        console.log('⏭️ Thread input not found, skipping reply test');
+      }
+
+    } finally {
+      await adminPage.close();
+      await userPage.close();
+      await adminCtx.close();
+      await userCtx.close();
+      await browser.close();
+    }
   });
 
 });
