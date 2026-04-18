@@ -325,6 +325,9 @@ async function initDB() {
   await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS meetup_lng FLOAT DEFAULT NULL`);
   await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS meetup_note TEXT DEFAULT NULL`);
 
+  // Ensure test/dev admin account always has admin rights
+  await db.query(`UPDATE users SET is_admin = 1 WHERE email = 'host@test.com'`).catch(() => {});
+
   const { rows } = await db.query('SELECT COUNT(*) as c FROM products');
   if (parseInt(rows[0].c) === 0) {
     const hash = await bcrypt.hash('demo1234', 10);
