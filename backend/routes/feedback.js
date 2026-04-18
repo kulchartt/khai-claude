@@ -21,7 +21,7 @@ getDB().query(`CREATE TABLE IF NOT EXISTS feedback (
   created_at TIMESTAMP DEFAULT NOW()
 )`).catch(e => console.error('feedback table init error:', e.message));
 
-const CATEGORIES = ['bug','feature','complaint','review','keep','other'];
+const CATEGORIES = ['inquiry','bug','feature','complaint','review','keep','other'];
 
 // POST /api/feedback — no auth required
 router.post('/', async (req, res) => {
