@@ -534,7 +534,10 @@ async function openMyFeedbackTab(){
     c.innerHTML=`<div style="margin-top:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <span style="font-weight:600">ประวัติการติดต่อแอดมิน (${fbs.length})</span>
-        <button class="btn btn-g btn-sm" onclick="openFeedbackModal()">📩 ส่งใหม่</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="openMyFeedbackTab()" title="รีเฟรช">🔄</button>
+          <button class="btn btn-g btn-sm" onclick="openFeedbackModal()">📩 ส่งใหม่</button>
+        </div>
       </div>
       ${fbs.map(f=>`
         <div style="border:1px solid var(--border);border-left:3px solid ${fbStatusColor[f.status||'new']};border-radius:var(--radius);padding:14px;margin-bottom:10px;background:var(--card-bg)">
@@ -1030,7 +1033,14 @@ function connectSocket(){if(!state.token||socket)return;socket=window.io(CONFIG.
 socket.on('product:new',()=>{if(document.getElementById('page-home')?.classList.contains('active'))loadProducts();});
 socket.on('product:update',({id,status})=>{if(status==='sold'){document.querySelectorAll(`.card[data-id="${id}"]`).forEach(c=>c.remove());}else if(status==='reserved'){document.querySelectorAll(`.card[data-id="${id}"] .card-img`).forEach(img=>{img.querySelectorAll('.reserved-badge').forEach(b=>b.remove());const b=document.createElement('span');b.className='reserved-badge';b.textContent='กำลังถูกจอง';img.appendChild(b);});}else if(status==='available'){document.querySelectorAll(`.card[data-id="${id}"] .reserved-badge`).forEach(b=>b.remove());}if(window._openDetailId===id)openDetail(id);});
 socket.on('product:deleted',({id})=>{document.querySelectorAll(`.card[data-id="${id}"]`).forEach(c=>c.remove());});
-socket.on('order:update',({orderId,status})=>{const t=document.querySelector('.profile-tab.on')?.id;if(t==='ptab-orders')profileTab('orders');else if(t==='ptab-selling')profileTab('selling');const m={confirmed:'ผู้ขายยืนยันรับเงินแล้ว ✅',completed:'ออเดอร์เสร็จสิ้น ✅',shipped:'ผู้ขายส่งพัสดุแล้ว 🚚',cancelled:'ออเดอร์ถูกยกเลิก ❌'};if(m[status])toast(m[status],status==='cancelled'?'#dc2626':'#1D9E75');});}
+socket.on('order:update',({orderId,status})=>{const t=document.querySelector('.profile-tab.on')?.id;if(t==='ptab-orders')profileTab('orders');else if(t==='ptab-selling')profileTab('selling');const m={confirmed:'ผู้ขายยืนยันรับเงินแล้ว ✅',completed:'ออเดอร์เสร็จสิ้น ✅',shipped:'ผู้ขายส่งพัสดุแล้ว 🚚',cancelled:'ออเดอร์ถูกยกเลิก ❌'};if(m[status])toast(m[status],status==='cancelled'?'#dc2626':'#1D9E75');});
+socket.on('feedback:update',({status,reply})=>{
+  const statusLabel={reviewed:'🔵 รับเรื่องแล้ว',resolved:'✅ แก้ไขแล้ว'};
+  if(reply)toast('💬 แอดมินตอบกลับ Feedback แล้ว','#6366f1');
+  else if(statusLabel[status])toast(`📩 Feedback: ${statusLabel[status]}`,'#2563eb');
+  // Auto-reload history tab if it's currently open
+  if(document.querySelector('.profile-tab.on')?.id==='ptab-my-feedback')openMyFeedbackTab();
+});}
 
 async function syncBadges(){if(!state.user)return;try{const[cart,wl,notifs,chatUnread]=await Promise.all([api.getCart(),api.getWishlist(),api.getNotifications(),api.getChatUnread().catch(()=>({unread:0}))]);state.cartCount=cart.reduce((s,x)=>s+x.qty,0);state.wlCount=wl.length;state.wlIds=wl.map(x=>x.product_id);state.notifCount=notifs.unread;state.chatCount=chatUnread.unread||0;updateBadge('cartBadge',state.cartCount);updateBadge('wlBadge',state.wlCount);updateBadge('notifBadge',state.notifCount);updateBadge('chatBadge',state.chatCount);}catch{}}
 

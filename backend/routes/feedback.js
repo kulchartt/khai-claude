@@ -129,7 +129,10 @@ router.patch('/admin/:id', authMiddleware, adminOnly, async (req, res) => {
         const onlineUsers = req.app.get('onlineUsers'); // Map: userId → socketId
         if (io && onlineUsers) {
           const sock = onlineUsers.get(uid);
-          if (sock) io.to(sock).emit('notification', { title, body });
+          if (sock) {
+            io.to(sock).emit('notification', { title, body });
+            io.to(sock).emit('feedback:update', { status: status || fb.status, reply: admin_reply || null });
+          }
         }
       }
     }
