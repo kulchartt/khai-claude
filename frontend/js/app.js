@@ -74,7 +74,6 @@ async function openDetail(id){
             ${FEATURES.RESERVATION&&!isOwner&&p.status==='reserved'&&isReservedByMe?`<button class="btn btn-danger" onclick="doCancelReserve(${p.id})">✕ ยกเลิกจอง</button>`:''}
             ${FEATURES.RESERVATION&&!isOwner&&p.status==='reserved'&&!isReservedByMe?`<span style="font-size:13px;color:#d97706;font-weight:600;padding:8px 0;display:block">⏳ กำลังถูกจอง</span>`:''}
             ${!isOwner?`<button class="btn" onclick="startChat(${p.seller_id},${p.id})">💬 แชทผู้ขาย</button>`:''}
-            ${!isOwner&&p.status==='available'?`<button class="btn btn-available" onclick="askAvailable(${p.seller_id},${p.id},'${p.title.replace(/'/g,"\\'")}')">🙋 ยังมีอยู่ไหม?</button>`:''}
             <button class="btn wl-btn ${inWl?'liked':''}" id="wlBtn_${p.id}" onclick="toggleWl(${p.id})">${inWl?'❤️':'🤍'}</button>
             ${!isOwner&&p.status==='available'?`<button class="btn btn-offer" onclick="openOfferModal(${p.id},'${p.title.replace(/'/g,"\\'")}',${p.price})">💰 เสนอราคา</button>`:''}
             ${isOwner?`<button class="btn" onclick="openEditModal(${p.id})">✏️ แก้ไข</button><button class="btn btn-danger" onclick="confirmDeleteProduct(${p.id})">🗑️ ลบสินค้า</button>${p.status==='available'?`<button class="btn" style="background:#fef9c3;color:#854d0e;border-color:#fcd34d" onclick="openFlashModal(${p.id},${p.price})">⚡ Flash Sale</button>`:''}`:'' }
