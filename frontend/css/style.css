@@ -399,9 +399,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   /* Toast: above bottom nav */
   .toast{bottom:72px}
 
-  /* Feedback FAB: above bottom nav */
-  #feedbackFab{bottom:72px!important}
-
   /* Product grid: 2 cols at small size */
   .product-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr))}
 }

@@ -36,6 +36,7 @@
     <button class="icon-btn" onclick="openChatList()" title="ข้อความ">💬<span class="badge hidden" id="chatBadge">0</span></button>
     <button class="icon-btn hide-sm" onclick="openWishlist()" title="สินค้าที่ถูกใจ">❤️<span class="badge hidden" id="wlBadge">0</span></button>
     <button class="icon-btn hide-sm" onclick="openSwipeMode()" title="สุ่มสินค้า">🔀</button>
+    <button class="icon-btn hide-sm" onclick="openFeedbackModal()" title="ติดต่อแอดมิน">📩</button>
     <!-- cart hidden — ใช้ในตลาดมือหนึ่ง -->
     <button class="icon-btn" onclick="openCart()" id="cartBtn" style="display:none" title="ตะกร้าสินค้า">🛒<span class="badge hidden" id="cartBadge">0</span></button>
     <button class="dark-toggle hide-sm" id="darkToggle" onclick="toggleDarkMode()" title="สลับธีม">🌙</button>
@@ -1004,14 +1005,11 @@
   </div>
 </div>
 
-<!-- Feedback floating button -->
-<button id="feedbackFab" onclick="openFeedbackModal()" title="ติชม / แจ้งปัญหา" style="position:fixed;bottom:76px;left:16px;z-index:900;background:#6366f1;color:#fff;border:none;border-radius:99px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 12px rgba(99,102,241,.4);display:flex;align-items:center;gap:6px">💬 ติชม</button>
-
 <!-- Feedback Modal -->
 <div class="overlay" id="feedbackOverlay">
   <div class="modal">
     <button class="mclose" onclick="closeOverlay('feedbackOverlay')">×</button>
-    <h2>💬 ติชม / แจ้งปัญหา</h2>
+    <h2>📩 ติดต่อแอดมิน</h2>
     <p style="font-size:13px;color:var(--text-sec);margin:-8px 0 16px">ไม่ต้องล็อกอิน ทีมงานยินดีรับฟังทุก Feedback ครับ</p>
     <div class="field">
       <label>หมวดหมู่ <span style="color:#ef4444">*</span></label>
