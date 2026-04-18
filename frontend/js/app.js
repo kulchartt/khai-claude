@@ -69,9 +69,7 @@ async function openDetail(id){
           ${(()=>{const now=Date.now();const flashActive=p.flash_price&&p.flash_end&&new Date(p.flash_end)>now;if(flashActive)return `<div class="detail-price" style="color:#dc2626">฿${Number(p.flash_price).toLocaleString()} <span class="original-price" style="font-size:16px">฿${Number(p.price).toLocaleString()}</span> <span class="flash-badge">⚡ Flash Sale</span></div><div class="flash-timer" data-flash-end="${p.flash_end}" style="font-size:13px;color:#dc2626;margin:-8px 0 8px"></div>`;if(p.original_price)return `<div class="detail-price">฿${Number(p.price).toLocaleString()} <span class="original-price" style="font-size:16px">฿${Number(p.original_price).toLocaleString()}</span> <span class="price-drop-badge">ลดราคา</span></div>`;return `<div class="detail-price">฿${Number(p.price).toLocaleString()}</div>`;})()}
           ${p.seller_holiday_mode&&!isOwner?`<div class="holiday-notice">🏖️ ร้านปิดชั่วคราว — ไม่สามารถสั่งซื้อได้ในขณะนี้</div>`:''}
           <div class="detail-actions">
-            ${!isOwner&&p.status==='available'&&!p.seller_holiday_mode?`<button class="btn btn-g" style="font-size:16px;padding:14px 24px" onclick="buyNow(${p.id},'${p.delivery_method||'shipping'}')">⚡ ซื้อเลย</button>`:''}
             ${!isOwner&&p.status==='available'&&!p.seller_holiday_mode?`<button class="btn btn-reserve" onclick="doReserve(${p.id})">🔖 จอง</button>`:''}
-            ${!isOwner&&p.status==='reserved'&&isReservedByMe?`<button class="btn btn-g" style="font-size:16px;padding:14px 24px" onclick="buyNow(${p.id},'${p.delivery_method||'shipping'}')">⚡ ซื้อเลย</button>`:''}
             ${!isOwner&&p.status==='reserved'&&isReservedByMe?`<button class="btn btn-danger" onclick="doCancelReserve(${p.id})">✕ ยกเลิกจอง</button>`:''}
             ${!isOwner&&p.status==='reserved'&&!isReservedByMe?`<span style="font-size:13px;color:#d97706;font-weight:600;padding:8px 0;display:block">⏳ กำลังถูกจอง</span>`:''}
             ${!isOwner?`<button class="btn" onclick="startChat(${p.seller_id},${p.id})">💬 แชทผู้ขาย</button>`:''}
@@ -238,15 +236,14 @@ async function doCheckout(){
   }catch(e){toast(e.message);}
 }
 
-async function openProfile(){if(!state.user){openOverlay('loginOverlay');return;}try{const[me,myItems]=await Promise.all([api.getMe(),api.getMyProducts()]);const avatarHtml=me.avatar?`<img src="${imgSrc(me.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${me.name.slice(0,2).toUpperCase()}`;document.getElementById('profileContent').innerHTML=`${me.shop_banner?`<div style="width:100%;height:140px;border-radius:var(--radius);overflow:hidden;margin-bottom:12px;position:relative"><img src="${imgSrc(me.shop_banner)}" style="width:100%;height:100%;object-fit:cover"/><button onclick="openShopEdit()" style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.45);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">✏️ แก้แบนเนอร์</button></div>`:''}<div class="profile-header"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="p-avatar" onclick="document.getElementById('avatarInput').click()" style="cursor:pointer;overflow:hidden">${avatarHtml}</div><div style="font-size:11px;color:var(--text-hint)">กดเพื่อเปลี่ยน</div><input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="doUploadAvatar(this)"/></div><div style="flex:1"><div class="p-name"><span id="profileDisplayName">${me.name}</span><button onclick="openInlineNameEdit()" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;margin-left:2px;opacity:.5;line-height:1" title="แก้ไขชื่อ">✏️</button>${me.is_verified?'<span class="verified-badge" style="margin-left:6px">✅ Verified</span>':''} <span class="tier-badge tier-${me.shop_tier||'bronze'}">${{bronze:'🥉 Bronze',silver:'🥈 Silver',gold:'🥇 Gold',diamond:'💎 Diamond'}[me.shop_tier||'bronze']}</span></div><div style="font-size:12px;color:var(--text-sec);margin-top:2px">🏪 <span id="profileShopName">${me.shop_name||''}</span>${me.shop_name?`<button onclick="openInlineShopNameEdit()" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;margin-left:2px;opacity:.5;line-height:1" title="แก้ไขชื่อร้าน">✏️</button>`:`<button onclick="openInlineShopNameEdit()" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:.5;line-height:1;color:var(--green)" title="เพิ่มชื่อร้าน">+ เพิ่มชื่อร้าน</button>`}</div><div class="p-email">${me.email}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${myItems.length}</div><div class="stat-l">สินค้าลงขาย</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${state.wlCount}</div><div class="stat-l">รายการโปรด</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${me.rating||5.0}★</div><div class="stat-l">คะแนน</div></div></div></div></div><div class="profile-tabs"><div class="profile-tab on" id="ptab-products" onclick="profileTab('products')">สินค้าของฉัน</div><div class="profile-tab" id="ptab-orders" onclick="profileTab('orders')">🛍️ ซื้อ</div><div class="profile-tab" id="ptab-selling" onclick="profileTab('selling')">📦 ขาย</div><div class="profile-tab" id="ptab-reservations" onclick="profileTab('reservations')">🔖 จอง</div><div class="profile-tab" id="ptab-my-reports" onclick="profileTab('my-reports')">🚩 แจ้งปัญหา</div><div class="profile-tab" id="ptab-offers" onclick="profileTab('offers')">💰 ข้อเสนอ</div><div class="profile-tab" id="ptab-analytics" onclick="profileTab('analytics')">📊 สถิติ</div><button class="profile-tab" id="ptab-addresses" onclick="profileTab('addresses')">📍 ที่อยู่</button><button class="profile-tab" id="ptab-transactions" onclick="profileTab('transactions')">💰 ธุรกรรม</button><button class="profile-tab" id="ptab-promo" onclick="profileTab('promo')">🎁 โปร</button><button class="profile-tab" id="ptab-saved-searches" onclick="profileTab('saved-searches')">🔔 แจ้งเตือน</button><button class="profile-tab" id="ptab-verified-status" onclick="profileTab('verified-status')">✅ Verified</button><button class="profile-tab" id="ptab-points" onclick="profileTab('points')">⭐ แต้ม</button><button class="profile-tab" id="ptab-my-feedback" onclick="profileTab('my-feedback')">📩 ติดต่อแอดมิน</button></div><div id="profileTabContent"></div><div style="margin-top:24px;padding:0 4px;display:flex;flex-direction:column;gap:8px"><div id="ekycSection" style="background:var(--bg-sec);border-radius:var(--radius);padding:12px;display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:600">🪪 eKYC ยืนยันตัวตน</span><span id="ekycBadge" class="ekyc-badge ekyc-unverified">กำลังโหลด...</span></div><button class="btn btn-sm" disabled style="opacity:.45;cursor:not-allowed">ยืนยันตัวตน (ยังไม่เปิดใช้งาน)</button></div><div style="background:var(--bg-sec);border-radius:var(--radius);padding:12px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:14px;font-weight:600">🔑 Biometric Login</span><button class="btn btn-sm btn-g" onclick="registerBiometric()">+ เพิ่ม</button></div><div id="biometricCredsBox"><div style="font-size:13px;color:var(--text-sec)">กำลังโหลด...</div></div></div><button class="btn" onclick="openShopEdit()">✏️ แก้ไขร้านค้า</button><button class="btn" onclick="openBankModal()">🏦 บัญชีธนาคาร</button><button class="btn" onclick="profileTab('verified-status');document.getElementById('ptab-verified-status').scrollIntoView({behavior:'smooth',block:'nearest'})">✅ ขอ Verified Badge</button>${FEATURES.LIVE?'<button class="btn btn-g" onclick="startLive()">🔴 เริ่มไลฟ์</button>':''}${FEATURES.HOLIDAY_MODE?`<button class="btn" onclick="toggleHolidayMode()">${me.holiday_mode?'🏖️ ปิด Holiday Mode':'🏖️ เปิด Holiday Mode'}</button>`:''}<button class="btn btn-danger" onclick="doLogout()">ออกจากระบบ</button></div>`;window._myItems=myItems;profileTab('products');goPage('profile');loadEkycStatus();loadBiometricCredentials();}catch(e){toast(e.message);}}
+async function openProfile(){if(!state.user){openOverlay('loginOverlay');return;}try{const[me,myItems]=await Promise.all([api.getMe(),api.getMyProducts()]);const avatarHtml=me.avatar?`<img src="${imgSrc(me.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`:`${me.name.slice(0,2).toUpperCase()}`;document.getElementById('profileContent').innerHTML=`${me.shop_banner?`<div style="width:100%;height:140px;border-radius:var(--radius);overflow:hidden;margin-bottom:12px;position:relative"><img src="${imgSrc(me.shop_banner)}" style="width:100%;height:100%;object-fit:cover"/><button onclick="openShopEdit()" style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.45);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">✏️ แก้แบนเนอร์</button></div>`:''}<div class="profile-header"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="p-avatar" onclick="document.getElementById('avatarInput').click()" style="cursor:pointer;overflow:hidden">${avatarHtml}</div><div style="font-size:11px;color:var(--text-hint)">กดเพื่อเปลี่ยน</div><input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="doUploadAvatar(this)"/></div><div style="flex:1"><div class="p-name"><span id="profileDisplayName">${me.name}</span><button onclick="openInlineNameEdit()" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;margin-left:2px;opacity:.5;line-height:1" title="แก้ไขชื่อ">✏️</button>${me.is_verified?'<span class="verified-badge" style="margin-left:6px">✅ Verified</span>':''} <span class="tier-badge tier-${me.shop_tier||'bronze'}">${{bronze:'🥉 Bronze',silver:'🥈 Silver',gold:'🥇 Gold',diamond:'💎 Diamond'}[me.shop_tier||'bronze']}</span></div><div style="font-size:12px;color:var(--text-sec);margin-top:2px">🏪 <span id="profileShopName">${me.shop_name||''}</span>${me.shop_name?`<button onclick="openInlineShopNameEdit()" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;margin-left:2px;opacity:.5;line-height:1" title="แก้ไขชื่อร้าน">✏️</button>`:`<button onclick="openInlineShopNameEdit()" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:.5;line-height:1;color:var(--green)" title="เพิ่มชื่อร้าน">+ เพิ่มชื่อร้าน</button>`}</div><div class="p-email">${me.email}</div><div class="p-stats"><div class="stat"><div class="stat-n" style="font-size:20px">${myItems.length}</div><div class="stat-l">สินค้าลงขาย</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${state.wlCount}</div><div class="stat-l">รายการโปรด</div></div><div class="stat"><div class="stat-n" style="font-size:20px">${me.rating||5.0}★</div><div class="stat-l">คะแนน</div></div></div></div></div><div class="profile-tabs"><div class="profile-tab on" id="ptab-products" onclick="profileTab('products')">สินค้าของฉัน</div><div class="profile-tab" id="ptab-orders" onclick="profileTab('orders')">❤️ สนใจ</div><div class="profile-tab" id="ptab-selling" onclick="profileTab('selling')">📋 ลงขายของฉัน</div><div class="profile-tab" id="ptab-reservations" onclick="profileTab('reservations')">🔖 จอง</div><div class="profile-tab" id="ptab-my-reports" onclick="profileTab('my-reports')">🚩 แจ้งปัญหา</div><div class="profile-tab" id="ptab-offers" onclick="profileTab('offers')">💰 ข้อเสนอ</div><div class="profile-tab" id="ptab-analytics" onclick="profileTab('analytics')">📊 สถิติ</div><button class="profile-tab" id="ptab-addresses" onclick="profileTab('addresses')">📍 ที่อยู่</button><button class="profile-tab" id="ptab-transactions" onclick="profileTab('transactions')">💰 ธุรกรรม</button><button class="profile-tab" id="ptab-promo" onclick="profileTab('promo')">🎁 โปร</button><button class="profile-tab" id="ptab-saved-searches" onclick="profileTab('saved-searches')">🔔 แจ้งเตือน</button><button class="profile-tab" id="ptab-verified-status" onclick="profileTab('verified-status')">✅ Verified</button><button class="profile-tab" id="ptab-points" onclick="profileTab('points')">⭐ แต้ม</button><button class="profile-tab" id="ptab-my-feedback" onclick="profileTab('my-feedback')">📩 ติดต่อแอดมิน</button></div><div id="profileTabContent"></div><div style="margin-top:24px;padding:0 4px;display:flex;flex-direction:column;gap:8px"><div id="ekycSection" style="background:var(--bg-sec);border-radius:var(--radius);padding:12px;display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:600">🪪 eKYC ยืนยันตัวตน</span><span id="ekycBadge" class="ekyc-badge ekyc-unverified">กำลังโหลด...</span></div><button class="btn btn-sm" disabled style="opacity:.45;cursor:not-allowed">ยืนยันตัวตน (ยังไม่เปิดใช้งาน)</button></div><div style="background:var(--bg-sec);border-radius:var(--radius);padding:12px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:14px;font-weight:600">🔑 Biometric Login</span><button class="btn btn-sm btn-g" onclick="registerBiometric()">+ เพิ่ม</button></div><div id="biometricCredsBox"><div style="font-size:13px;color:var(--text-sec)">กำลังโหลด...</div></div></div><button class="btn" onclick="openShopEdit()">✏️ แก้ไขร้านค้า</button><button class="btn" onclick="openBankModal()">🏦 บัญชีธนาคาร</button><button class="btn" onclick="profileTab('verified-status');document.getElementById('ptab-verified-status').scrollIntoView({behavior:'smooth',block:'nearest'})">✅ ขอ Verified Badge</button>${FEATURES.LIVE?'<button class="btn btn-g" onclick="startLive()">🔴 เริ่มไลฟ์</button>':''}${FEATURES.HOLIDAY_MODE?`<button class="btn" onclick="toggleHolidayMode()">${me.holiday_mode?'🏖️ ปิด Holiday Mode':'🏖️ เปิด Holiday Mode'}</button>`:''}<button class="btn btn-danger" onclick="doLogout()">ออกจากระบบ</button></div>`;window._myItems=myItems;profileTab('products');goPage('profile');loadEkycStatus();loadBiometricCredentials();}catch(e){toast(e.message);}}
 
 function profileTab(tab){
   document.querySelectorAll('.profile-tab').forEach(t=>t.classList.toggle('on',t.id==='ptab-'+tab));
   const c=document.getElementById('profileTabContent');
   if(tab==='products'){
-    c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px"><span style="font-weight:600">สินค้าของฉัน</span><div style="display:flex;gap:8px"><button class="btn btn-sm btn-g" onclick="openSell()">+ ลงขายเพิ่ม</button></div></div><div class="product-grid" id="myProductsGrid"></div><div class="promptpay-settings" id="promptpaySettings"><div style="font-weight:600;margin-bottom:8px">💳 PromptPay ของฉัน <span style="font-size:12px;color:var(--text-hint);font-weight:400">(ผู้ซื้อจะเห็นเมื่อ checkout — ไม่แสดงในโปรไฟล์)</span></div><div style="display:flex;gap:8px"><input type="text" id="promptpayInput" placeholder="เบอร์มือถือ หรือ เลขบัตรประชาชน" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-sec);color:var(--text);font-size:14px"/><button class="btn btn-g btn-sm" onclick="savePromptpay()">บันทึก</button></div></div>`;
+    c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 12px"><span style="font-weight:600">สินค้าของฉัน</span><div style="display:flex;gap:8px"><button class="btn btn-sm btn-g" onclick="openSell()">+ ลงขายเพิ่ม</button></div></div><div class="product-grid" id="myProductsGrid"></div>`;
     renderMyCards(window._myItems||[],'myProductsGrid');
-    api.getPromptpay().then(r=>{if(r.promptpay)document.getElementById('promptpayInput').value=r.promptpay;}).catch(()=>{});
     // Show pending reservations for seller
     api.getMyReservations().then(reservations=>{
       if(!reservations.length)return;
@@ -257,85 +254,72 @@ function profileTab(tab){
     }).catch(()=>{});
   } else if(tab==='selling'){
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
-    api.getSellerOrders().then(orders=>{
-      if(!orders.length){c.innerHTML='<div class="empty-msg">ยังไม่มีออเดอร์</div>';return;}
-      const statusLabel={awaiting_payment:'⏳ รอ slip',awaiting_confirmation:'🔍 รอยืนยัน',confirmed:'✅ ยืนยันรับเงินแล้ว',completed:'🎉 เสร็จสิ้น',cancelled:'❌ ยกเลิกแล้ว',pending:'🤝 รอนัดรับ'};
-      const shipLabel={pending:'ยังไม่จัดส่ง',preparing:'📦 กำลังเตรียมของ',shipped:'🚚 ส่งพัสดุแล้ว',received:'✅ ผู้ซื้อรับแล้ว'};
-      c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`
-        <div class="order-item">
-          <div class="order-top">
-            ${o.image_url?`<img src="${imgSrc(o.image_url)}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0;margin-right:4px" loading="lazy"/>`:''}
-            <div style="flex:1">
-              <div class="order-id">ออเดอร์ #${String(o.id).padStart(4,'0')}</div>
-              <div class="order-date">ผู้ซื้อ: <b>${o.buyer_name}</b></div>
-              <div class="order-date">${new Date(o.created_at).toLocaleDateString('th',{year:'numeric',month:'long',day:'numeric'})}</div>
-            </div>
-            <div class="order-total">฿${Number(o.total).toLocaleString()}</div>
-          </div>
-          <div class="order-items-list">${o.items}</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:8px;flex-wrap:wrap">
-            <div style="display:flex;flex-direction:column;gap:4px">
-              <div class="order-status ${['awaiting_payment','awaiting_confirmation','pending'].includes(o.status)?'status-pending':'status-done'}">${statusLabel[o.status]||o.status}</div>
-              ${o.status==='confirmed'||o.status==='completed'?`<div style="font-size:12px;color:var(--text-sec)">${shipLabel[o.shipping_status]||'ยังไม่จัดส่ง'}</div>`:''}
-              ${o.tracking_number?`<a class="tracking-link" href="${_trackingUrl(o.tracking_carrier,o.tracking_number)}" target="_blank" rel="noopener">📮 ${o.tracking_carrier||'Tracking'}: ${o.tracking_number} ↗</a>`:''}
-            </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-              ${o.delivery_type==='meetup'?`<span style="font-size:11px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:99px;padding:2px 8px;font-weight:600">🤝 นัดรับ</span>`:''}
-              ${o.delivery_type==='meetup'&&o.meetup_lat?`<a href="https://www.google.com/maps?q=${o.meetup_lat},${o.meetup_lng}" target="_blank" class="btn btn-sm">📍 ดูจุดนัดรับ</a>`:''}
-              ${o.slip_url?`<a href="${o.slip_url}" target="_blank" class="btn btn-sm">🖼️ slip</a>`:''}
-              ${o.status==='awaiting_confirmation'?`<button class="btn btn-sm btn-g" onclick="doConfirmPayment(${o.id})">✅ ยืนยันรับเงิน</button>`:''}
-              ${o.status==='pending'&&o.delivery_type==='meetup'?`<button class="btn btn-sm btn-g" onclick="doConfirmPayment(${o.id})">✅ นัดรับเสร็จสิ้น</button>`:''}
-              ${o.status==='confirmed'&&o.delivery_type!=='meetup'&&(!o.shipping_status||o.shipping_status==='pending')?`<button class="btn btn-sm" onclick="doShipOrder(${o.id},'preparing')">📦 กำลังเตรียมของ</button>`:''}
-              ${o.status==='confirmed'&&o.delivery_type!=='meetup'&&o.shipping_status==='preparing'?`<button class="btn btn-sm btn-g" onclick="doShipOrder(${o.id},'shipped')">🚚 ส่งพัสดุแล้ว</button>`:''}
-              ${o.status==='confirmed'&&o.delivery_type!=='meetup'&&o.shipping_status==='shipped'?`<span style="font-size:12px;color:#16a34a;font-weight:600">🚚 รอผู้ซื้อยืนยันรับ</span><button class="btn btn-sm" style="margin-left:4px" onclick="doShipOrder(${o.id},'shipped')">✏️ แก้ Tracking</button>`:''}
-              ${o.status!=='completed'&&o.status!=='cancelled'?`<button class="btn btn-sm btn-danger" onclick="doSellerCancel(${o.id})">❌ ยกเลิก</button>`:''}
-              ${o.status==='completed'?`<button class="btn btn-sm" onclick="openBuyerReviewModal(${o.id})">⭐ รีวิวผู้ซื้อ</button>`:''}
+    Promise.all([api.getMyProducts(), api.getIncomingOffers()]).then(([products, offers])=>{
+      const offersByProduct={};
+      offers.filter(o=>o.status==='pending').forEach(o=>{
+        if(!offersByProduct[o.product_id])offersByProduct[o.product_id]=[];
+        offersByProduct[o.product_id].push(o);
+      });
+      const available=products.filter(p=>p.status==='available');
+      const reserved=products.filter(p=>p.status==='reserved');
+      const sold=products.filter(p=>p.status==='sold');
+      if(!products.length){
+        c.innerHTML=`<div class="empty-state" style="margin-top:32px"><span class="empty-state-icon">📋</span><h3>ยังไม่มีสินค้าที่ลงขาย</h3><p>เริ่มลงขายสินค้าชิ้นแรกได้เลย!</p><button class="btn btn-g" style="margin-top:12px" onclick="openSell()">+ ลงขายสินค้า</button></div>`;
+        return;
+      }
+      const renderItem=(p)=>{
+        const pOffers=offersByProduct[p.id]||[];
+        return `<div style="display:flex;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;background:var(--card-bg);align-items:flex-start">
+          <img src="${imgSrc(p.image_url||'')}" onclick="openDetail(${p.id})" style="width:72px;height:72px;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;background:var(--bg-sec)" loading="lazy"/>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:14px;cursor:pointer;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="openDetail(${p.id})">${p.title}</div>
+            <div style="color:var(--green);font-weight:700;font-size:16px;margin-bottom:4px">฿${Number(p.price).toLocaleString()}</div>
+            <div style="font-size:12px;color:var(--text-sec);margin-bottom:6px">👁️ ${p.view_count||0} ครั้ง${pOffers.length?` · 💰 ${pOffers.length} ข้อเสนอ`:''}</div>
+            ${pOffers.length?`<div style="background:#fef9c3;border:1px solid #fcd34d;border-radius:var(--radius);padding:8px;margin-bottom:8px;font-size:13px">
+              💰 ข้อเสนอรอตอบ: ${pOffers.map(o=>`<b>${o.buyer_name}</b> เสนอ ฿${Number(o.offer_price).toLocaleString()} <button class="btn btn-sm btn-g" onclick="respondOffer(${o.id},'accepted');profileTab('selling')">✅</button> <button class="btn btn-sm btn-danger" onclick="respondOffer(${o.id},'declined');profileTab('selling')">❌</button>`).join(' · ')}
+            </div>`:''}
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn btn-sm" onclick="openEditModal(${p.id})">✏️ แก้ไข</button>
+              ${p.status==='available'?`<button class="btn btn-sm" style="background:#f0fdf4;color:#16a34a;border-color:#bbf7d0" onclick="doCloseSaleFromSelling(${p.id})">✅ ขายแล้ว</button>`:''}
+              ${p.status==='sold'?`<button class="btn btn-sm" style="background:#eef2ff;color:#6366f1;border-color:#c7d2fe" onclick="doReopenSale(${p.id})">🔄 เปิดขายอีกครั้ง</button>`:''}
+              ${p.status==='available'?`<button class="btn btn-sm" onclick="doBump(${p.id})">⬆️ Bump</button>`:''}
+              <button class="btn btn-sm btn-danger" onclick="confirmDeleteProduct(${p.id})">🗑️ ลบ</button>
             </div>
           </div>
-        </div>`).join('')+'</div>';
-    }).catch(e=>toast(e.message));
+        </div>`;
+      };
+      let html=`<div style="margin-top:16px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><span style="font-weight:600;font-size:15px">📋 สินค้าของฉัน</span><button class="btn btn-sm btn-g" onclick="openSell()">+ ลงขายเพิ่ม</button></div>`;
+      if(available.length){html+=`<div style="font-size:13px;font-weight:600;color:var(--text-sec);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">🟢 กำลังขายอยู่ (${available.length})</div>${available.map(renderItem).join('')}`;}
+      if(reserved.length){html+=`<div style="font-size:13px;font-weight:600;color:#b45309;margin:${available.length?'16px':'0px'} 0 8px;text-transform:uppercase;letter-spacing:.5px">🟡 กำลังถูกจอง (${reserved.length})</div>${reserved.map(renderItem).join('')}`;}
+      if(sold.length){html+=`<div style="font-size:13px;font-weight:600;color:var(--text-hint);margin:${available.length||reserved.length?'16px':'0px'} 0 8px;text-transform:uppercase;letter-spacing:.5px">⚫ ขายแล้ว (${sold.length})</div>${sold.map(renderItem).join('')}`;}
+      html+='</div>';
+      c.innerHTML=html;
+    }).catch(e=>{c.innerHTML=`<div style="color:#dc2626;padding:16px">${e.message}</div>`;});
   } else if(tab==='orders'){
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
-    api.getOrders().then(orders=>{
-      if(!orders.length){c.innerHTML='<div class="empty-msg">ยังไม่มีประวัติการสั่งซื้อ</div>';return;}
-      window._payOrders={};orders.forEach(o=>window._payOrders[o.id]=o);
-      const statusLabel={'awaiting_payment':'⏳ รอชำระเงิน','awaiting_confirmation':'🔍 รอผู้ขายยืนยัน','confirmed':'✅ ผู้ขายยืนยันแล้ว','completed':'🎉 รับสินค้าแล้ว','cancelled':'❌ ยกเลิกแล้ว','pending':'🤝 รอนัดรับ'};
-      const shipLabel={preparing:'📦 กำลังเตรียมของ',shipped:'🚚 ส่งพัสดุแล้ว — รอรับสินค้า',received:'✅ รับสินค้าแล้ว'};
-      c.innerHTML='<div style="margin-top:16px">'+orders.map(o=>`
-        <div class="order-item">
-          <div class="order-top">
-            ${o.image_url?`<img src="${imgSrc(o.image_url)}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0;margin-right:4px" loading="lazy"/>`:''}
-            <div style="flex:1">
-              <div class="order-id">คำสั่งซื้อ #${String(o.id).padStart(4,'0')}</div>
-              <div class="order-date">${new Date(o.created_at).toLocaleDateString('th',{year:'numeric',month:'long',day:'numeric'})}</div>
-              <div class="order-date" style="color:var(--text-sec)">ผู้ขาย: ${o.seller_name||'—'}</div>
+    api.getWishlist().then(wl=>{
+      if(!wl.length){
+        c.innerHTML=`<div class="empty-state" style="margin-top:32px"><span class="empty-state-icon">❤️</span><h3>ยังไม่มีสินค้าที่สนใจ</h3><p>กดหัวใจบนสินค้าที่อยากติดตาม</p></div>`;
+        return;
+      }
+      c.innerHTML=`<div style="margin-top:16px">
+        <div style="font-weight:600;margin-bottom:12px;font-size:15px">❤️ สินค้าที่สนใจ (${wl.length})</div>
+        ${wl.map(item=>`
+          <div style="display:flex;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;background:var(--card-bg);align-items:flex-start">
+            <img src="${imgSrc(item.image_url||'')}" onclick="openDetail(${item.product_id})" style="width:72px;height:72px;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;background:var(--bg-sec)" loading="lazy"/>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;font-size:14px;cursor:pointer;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="openDetail(${item.product_id})">${item.title}</div>
+              <div style="color:var(--green);font-weight:700;font-size:16px;margin-bottom:4px">฿${Number(item.price).toLocaleString()}</div>
+              <div style="font-size:12px;color:var(--text-sec);margin-bottom:6px">🏪 ${item.seller_name||'ไม่ระบุ'}${item.location?' · 📍'+item.location:''}</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                <span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600;background:${item.status==='available'?'#f0fdf4':item.status==='reserved'?'#fefce8':'#fee2e2'};color:${item.status==='available'?'#16a34a':item.status==='reserved'?'#b45309':'#dc2626'}">${item.status==='available'?'🟢 มีขาย':item.status==='reserved'?'🟡 กำลังถูกจอง':'🔴 ขายแล้ว'}</span>
+                ${item.status==='available'?`<button class="btn btn-sm" onclick="startChat(${item.seller_id},${item.product_id})">💬 แชท</button><button class="btn btn-sm" style="background:#fff8e7;color:#b45309;border-color:#fcd34d" onclick="openOfferModal(${item.product_id},'${(item.title||'').replace(/'/g,"\\'")}',${item.price})">💰 เสนอราคา</button>`:''}
+                <button class="btn btn-sm" onclick="toggleWl(${item.product_id});profileTab('orders')" style="font-size:11px;background:#fee2e2;color:#dc2626;border-color:#fca5a5">❌ เอาออก</button>
+              </div>
             </div>
-            <div class="order-total">฿${Number(o.total).toLocaleString()}</div>
-          </div>
-          <div class="order-items-list">${o.items}</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px;flex-wrap:wrap">
-            <div style="display:flex;flex-direction:column;gap:4px">
-              <div class="order-status ${o.status==='completed'?'status-done':o.status==='cancelled'?'status-cancel':'status-pending'}">${statusLabel[o.status]||o.status}</div>
-              ${o.status==='awaiting_payment'?(()=>{const exp=new Date(new Date(o.created_at).getTime()+24*60*60*1000);const hoursLeft=Math.max(0,Math.ceil((exp-Date.now())/3600000));return hoursLeft>0?`<div style="font-size:11px;color:#c2410c;font-weight:500">⏰ หมดอายุใน ${hoursLeft} ชม. (${exp.toLocaleString('th',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})})</div>`:`<div style="font-size:11px;color:#dc2626;font-weight:600">⚠️ เกินเวลาแล้ว จะถูกยกเลิกเร็วๆ นี้</div>`;})():''}
-              ${o.status==='confirmed'&&o.shipping_status&&o.shipping_status!=='pending'?`<div style="font-size:12px;color:#2563eb;font-weight:500">${shipLabel[o.shipping_status]||''}</div>`:''}
-              ${o.tracking_number?`<a class="tracking-link" href="${_trackingUrl(o.tracking_carrier,o.tracking_number)}" target="_blank" rel="noopener">📮 ${o.tracking_carrier||'Tracking'}: ${o.tracking_number} ↗</a>`:''}
-            </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-              ${o.delivery_type==='meetup'?`<span style="font-size:11px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:99px;padding:2px 8px;font-weight:600">🤝 นัดรับ</span>`:''}
-              ${o.delivery_type==='meetup'&&o.meetup_lat?`<a href="https://www.google.com/maps?q=${o.meetup_lat},${o.meetup_lng}" target="_blank" class="btn btn-sm">📍 ดูจุดนัดรับ</a>`:''}
-              ${o.status==='awaiting_payment'?`<button class="btn btn-sm btn-g" onclick="showPaymentFromOrder(${o.id})">💳 ช่องทางชำระเงิน</button>`:''}
-              ${o.seller_id&&o.status!=='cancelled'?`<button class="btn btn-sm" onclick="startChat(${o.seller_id},${o.product_id||'null'})">💬 คุยกับผู้ขาย</button>`:''}
-              ${o.status==='confirmed'&&o.shipping_status==='shipped'?`<button class="btn btn-sm btn-g" onclick="markOrderReceived(${o.id})">✅ ยืนยันรับสินค้า</button>`:''}
-              ${o.status==='completed'&&o.product_id?`<button class="btn btn-sm btn-g" onclick="openReviewModal(${o.product_id})">⭐ รีวิวผู้ขาย</button>`:''}
-              ${o.status==='completed'?`<button class="btn-invoice" onclick="downloadInvoice(window._payOrders&&window._payOrders[${o.id}]||{id:${o.id},total_price:${o.total||0},created_at:'${o.created_at}'})">🧾 Invoice</button>`:''}
-              ${(o.status==='confirmed'||o.status==='completed')?`<button class="btn btn-sm btn-danger" onclick="openDisputeModal(${o.id})">🚨 แจ้งปัญหา</button>`:''}
-              ${['awaiting_payment','pending'].includes(o.status)?`<button class="btn btn-sm btn-danger" onclick="doCancelOrder(${o.id})">❌ ยกเลิก</button>`:''}
-              ${o.status==='awaiting_confirmation'?`<span style="font-size:11px;color:#d97706;font-weight:500">⚠️ ส่ง slip แล้ว — ติดต่อผู้ขายหากต้องการยกเลิก</span>`:''}
-              ${o.status==='pending'&&o.delivery_type==='meetup'?`<span style="font-size:11px;color:#d97706;font-weight:500">🤝 รอนัดหมาย — ชำระเงินสดเมื่อรับของ</span>`:''}
-            </div>
-          </div>
-        </div>`).join('')+'</div>';
-    }).catch(e=>toast(e.message));
+          </div>`).join('')}
+      </div>`;
+    }).catch(e=>{c.innerHTML=`<div style="color:#dc2626;padding:16px">${e.message}</div>`;});
   } else if(tab==='offers'){
     c.innerHTML='<div class="loading">กำลังโหลด...</div>';
     Promise.all([api.getIncomingOffers(),api.getOutgoingOffers()]).then(([incoming,outgoing])=>{
@@ -405,7 +389,6 @@ function profileTab(tab){
               </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:10px">
-              <button class="btn btn-g" style="flex:1" onclick="buyNow(${p.id},'${p.delivery_method||'shipping'}')">⚡ ซื้อเลย</button>
               <button class="btn" onclick="startChat(${p.seller_id},${p.id})">💬 แชท</button>
               <button class="btn btn-danger" onclick="doCancelReserve(${p.id})">✕ ยกเลิก</button>
             </div>
@@ -917,6 +900,8 @@ async function doCloseSale(productId){
     loadProducts();
   }catch(e){toast(e.message);}
 }
+async function doCloseSaleFromSelling(id){if(!confirm('ยืนยันว่าขายสินค้าชิ้นนี้แล้ว?'))return;try{await api.closeSale(id);toast('อัปเดตแล้ว ✅','#1D9E75');profileTab('selling');}catch(e){toast(e.message);}}
+async function doReopenSale(id){if(!confirm('เปิดขายสินค้าชิ้นนี้อีกครั้ง?'))return;try{await api.patch('/api/products/'+id+'/close',{});profileTab('selling');}catch(e){toast(e.message);}}
 function sendMsg(){const input=document.getElementById('msgInput');if(!input||!socket)return;const text=(input.value!==undefined?input.value:input.textContent||'').trim();if(!text)return;socket.emit('send_message',{room_id:currentRoomId,content:text});if(input.value!==undefined)input.value='';else{input.textContent='';input.innerHTML='';}}
 function renderMsg(m, myId){const out=m.sender_id===myId;const isImg=m.content&&m.content.startsWith('__img__:');const isVoice=m.content&&m.content.startsWith('__voice__:');let msgBody;if(isImg){msgBody=`<img src="${m.content.slice(8)}" style="max-width:200px;border-radius:8px;cursor:pointer;display:block" onclick="window.open(this.src)" loading="lazy"/>`;}else if(isVoice){msgBody=`<div class="voice-msg"><audio controls src="${m.content.slice(10)}" preload="none"></audio></div>`;}else{msgBody=m.content;}return `<div style="display:flex;flex-direction:column;align-items:${out?'flex-end':'flex-start'}">${!out?`<div class="msg-name">${m.sender_name}</div>`:''}<div class="msg ${out?'msg-out':'msg-in'}">${msgBody}<div class="msg-time">${new Date(m.created_at).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'})}</div></div></div>`;}
 async function sendChatImage(input){if(!input.files[0]||!currentRoomId)return;const fd=new FormData();fd.append('image',input.files[0]);try{toast('กำลังส่งรูป...');await api.sendChatImage(currentRoomId,fd);const msgs=await api.getMessages(currentRoomId);const ml=document.getElementById('msgList');if(!ml)return;ml.innerHTML=msgs.map(m=>renderMsg(m,state.user.id)).join('');ml.scrollTop=ml.scrollHeight;input.value='';}catch(e){toast(e.message);}}
