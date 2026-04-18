@@ -274,7 +274,7 @@ function profileTab(tab){
           <div style="flex:1;min-width:0">
             <div style="font-weight:600;font-size:14px;cursor:pointer;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="openDetail(${p.id})">${p.title}</div>
             <div style="color:var(--green);font-weight:700;font-size:16px;margin-bottom:4px">฿${Number(p.price).toLocaleString()}</div>
-            <div style="font-size:12px;color:var(--text-sec);margin-bottom:6px">👁️ ${p.view_count||0} ครั้ง${pOffers.length?` · 💰 ${pOffers.length} ข้อเสนอ`:''}</div>
+            <div style="font-size:12px;color:var(--text-sec);margin-bottom:6px">👁️ ${p.view_count||0} ครั้ง · 🕐 ${(d=>{const diff=Math.floor((Date.now()-new Date(d).getTime())/86400000);return diff===0?'วันนี้':diff===1?'เมื่อวาน':`${diff} วันที่แล้ว`})(p.created_at)}${pOffers.length?` · 💰 ${pOffers.length} ข้อเสนอ`:''}</div>
             ${pOffers.length?`<div style="background:#fef9c3;border:1px solid #fcd34d;border-radius:var(--radius);padding:8px;margin-bottom:8px;font-size:13px">
               💰 ข้อเสนอรอตอบ: ${pOffers.map(o=>`<b>${o.buyer_name}</b> เสนอ ฿${Number(o.offer_price).toLocaleString()} <button class="btn btn-sm btn-g" onclick="respondOffer(${o.id},'accepted');profileTab('selling')">✅</button> <button class="btn btn-sm btn-danger" onclick="respondOffer(${o.id},'declined');profileTab('selling')">❌</button>`).join(' · ')}
             </div>`:''}
