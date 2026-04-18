@@ -245,6 +245,16 @@
       <h3 style="font-size:16px;font-weight:600;margin-bottom:12px;color:var(--text-sec)">👀 ดูล่าสุด</h3>
       <div class="rv-scroll" id="recentlyViewedGrid"></div>
     </section>
+    <footer style="padding:24px 24px 40px;text-align:center;border-top:1px solid var(--border);margin-top:8px">
+      <div style="font-size:13px;font-weight:600;color:var(--text-sec);margin-bottom:6px">PloiKhong with AI</div>
+      <div style="font-size:12px;color:var(--text-hint);margin-bottom:10px">ตลาดซื้อขายออนไลน์ — ปลอดภัย โปร่งใส</div>
+      <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+        <a onclick="openOverlay('tosOverlay')" style="font-size:12px;color:var(--text-sec);cursor:pointer;text-decoration:underline">ข้อกำหนดการใช้งาน</a>
+        <a onclick="openOverlay('privacyOverlay')" style="font-size:12px;color:var(--text-sec);cursor:pointer;text-decoration:underline">นโยบายความเป็นส่วนตัว</a>
+        <a onclick="openOverlay('feedbackOverlay')" style="font-size:12px;color:var(--text-sec);cursor:pointer;text-decoration:underline">ติดต่อเรา</a>
+      </div>
+      <div style="font-size:11px;color:var(--text-hint);margin-top:10px">© 2026 PloiKhong. สงวนลิขสิทธิ์</div>
+    </footer>
   </div>
 
   <div id="page-detail" class="page">
@@ -431,6 +441,92 @@
   <div class="modal">
     <button class="mclose" onclick="closeOverlay('bundleOverlay')">×</button>
     <div id="bundleOverlayContent"></div>
+  </div>
+</div>
+
+<!-- Terms of Service Modal -->
+<div class="overlay" id="tosOverlay">
+  <div class="modal" style="max-height:85vh;overflow-y:auto">
+    <button class="mclose" onclick="closeOverlay('tosOverlay')">×</button>
+    <h2 style="margin-bottom:4px">📋 ข้อกำหนดการใช้งาน</h2>
+    <p style="font-size:12px;color:var(--text-hint);margin-bottom:20px">มีผลบังคับใช้ตั้งแต่ 1 มกราคม 2568</p>
+
+    <div style="font-size:14px;line-height:1.7;color:var(--text);display:flex;flex-direction:column;gap:16px">
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">1. การยอมรับข้อกำหนด</div>
+        <div style="color:var(--text-sec)">การใช้งานแพลตฟอร์ม PloiKhong ถือว่าคุณยอมรับข้อกำหนดและเงื่อนไขทั้งหมดที่ระบุไว้ในเอกสารนี้ หากไม่ยอมรับ กรุณางดใช้งาน</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">2. บัญชีผู้ใช้</div>
+        <div style="color:var(--text-sec)">คุณต้องมีอายุอย่างน้อย 13 ปีในการสมัครสมาชิก และต้องให้ข้อมูลที่ถูกต้องตามความเป็นจริง คุณมีหน้าที่รับผิดชอบต่อกิจกรรมทั้งหมดที่เกิดขึ้นภายใต้บัญชีของคุณ</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">3. การซื้อขาย</div>
+        <div style="color:var(--text-sec)">PloiKhong เป็นเพียงตัวกลางในการเชื่อมผู้ซื้อและผู้ขาย ไม่ได้เป็นคู่สัญญาในการซื้อขาย ผู้ซื้อและผู้ขายต้องตกลงกันเองในเรื่องราคา การชำระเงิน และการส่งมอบสินค้า</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">4. สินค้าต้องห้าม</div>
+        <div style="color:var(--text-sec)">ห้ามลงขายสินค้าผิดกฎหมาย สินค้าปลอม วัตถุอันตราย หรือสินค้าที่ละเมิดทรัพย์สินทางปัญญา บัญชีที่ฝ่าฝืนจะถูกระงับทันที</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">5. การระงับบัญชี</div>
+        <div style="color:var(--text-sec)">ทีมงานสงวนสิทธิ์ระงับหรือลบบัญชีที่ละเมิดข้อกำหนด ฉ้อโกง หรือก่อให้เกิดความเสียหายแก่ผู้ใช้รายอื่น โดยไม่ต้องแจ้งล่วงหน้า</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">6. ข้อจำกัดความรับผิด</div>
+        <div style="color:var(--text-sec)">PloiKhong ไม่รับผิดชอบต่อความเสียหายที่เกิดจากการทำธุรกรรมระหว่างผู้ใช้ การสูญหายของข้อมูล หรือเหตุการณ์ที่อยู่นอกเหนือการควบคุม</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">7. การเปลี่ยนแปลงข้อกำหนด</div>
+        <div style="color:var(--text-sec)">ทีมงานอาจปรับปรุงข้อกำหนดเหล่านี้ได้ตลอดเวลา การใช้งานต่อเนื่องหลังจากมีการเปลี่ยนแปลงถือว่ายอมรับข้อกำหนดใหม่</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">8. ติดต่อเรา</div>
+        <div style="color:var(--text-sec)">หากมีข้อสงสัยเกี่ยวกับข้อกำหนดเหล่านี้ กรุณาติดต่อผ่านหน้า <a onclick="closeOverlay('tosOverlay');openOverlay('feedbackOverlay')" style="color:var(--green);cursor:pointer">ติดต่อเรา</a></div>
+      </div>
+    </div>
+    <button class="btn btn-g full" style="margin-top:20px" onclick="closeOverlay('tosOverlay')">รับทราบแล้ว</button>
+  </div>
+</div>
+
+<!-- Privacy Policy Modal -->
+<div class="overlay" id="privacyOverlay">
+  <div class="modal" style="max-height:85vh;overflow-y:auto">
+    <button class="mclose" onclick="closeOverlay('privacyOverlay')">×</button>
+    <h2 style="margin-bottom:4px">🔒 นโยบายความเป็นส่วนตัว</h2>
+    <p style="font-size:12px;color:var(--text-hint);margin-bottom:20px">มีผลบังคับใช้ตั้งแต่ 1 มกราคม 2568 · สอดคล้องกับ PDPA (พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562)</p>
+
+    <div style="font-size:14px;line-height:1.7;color:var(--text);display:flex;flex-direction:column;gap:16px">
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">1. ข้อมูลที่เราเก็บรวบรวม</div>
+        <div style="color:var(--text-sec)">เราเก็บข้อมูลที่คุณให้โดยตรง ได้แก่ ชื่อ อีเมล รหัสผ่าน (เข้ารหัส) รูปโปรไฟล์ ที่อยู่จัดส่ง และสินค้าที่ลงขาย รวมถึงข้อมูลการใช้งานเช่น ประวัติการซื้อขาย ประวัติแชท และ IP address</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">2. วัตถุประสงค์การใช้ข้อมูล</div>
+        <div style="color:var(--text-sec)">ข้อมูลของคุณถูกใช้เพื่อ: ให้บริการแพลตฟอร์มซื้อขาย, ยืนยันตัวตน, แจ้งเตือนกิจกรรมในบัญชี, ปรับปรุงประสบการณ์การใช้งาน และป้องกันการฉ้อโกง</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">3. การเปิดเผยข้อมูลต่อบุคคลที่สาม</div>
+        <div style="color:var(--text-sec)">เราไม่ขายข้อมูลส่วนตัวของคุณ ข้อมูลจะถูกเปิดเผยเฉพาะกับผู้ให้บริการที่จำเป็น (Cloudinary สำหรับรูปภาพ, Railway สำหรับเซิร์ฟเวอร์) ภายใต้ข้อตกลงรักษาความลับ หรือตามที่กฎหมายกำหนด</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">4. การเก็บรักษาข้อมูล</div>
+        <div style="color:var(--text-sec)">ข้อมูลของคุณถูกเก็บบนเซิร์ฟเวอร์ที่ปลอดภัย รหัสผ่านถูกเข้ารหัสด้วย bcrypt เราเก็บข้อมูลตลอดระยะเวลาที่คุณมีบัญชี และอาจเก็บบางส่วนเพิ่มเติม 90 วันหลังลบบัญชีเพื่อวัตถุประสงค์ทางกฎหมาย</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">5. สิทธิ์ของคุณ (PDPA)</div>
+        <div style="color:var(--text-sec)">คุณมีสิทธิ์: ขอดูข้อมูลของตัวเอง, ขอแก้ไขข้อมูลที่ไม่ถูกต้อง, ขอลบข้อมูล, ขอให้หยุดประมวลผลข้อมูล และขอรับข้อมูลในรูปแบบที่โอนย้ายได้ ติดต่อผ่านหน้า <a onclick="closeOverlay('privacyOverlay');openOverlay('feedbackOverlay')" style="color:var(--green);cursor:pointer">ติดต่อเรา</a> เพื่อใช้สิทธิ์เหล่านี้</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">6. คุกกี้และ Local Storage</div>
+        <div style="color:var(--text-sec)">เราใช้ localStorage (ไม่ใช่คุกกี้) เพื่อบันทึก token การเข้าสู่ระบบและการตั้งค่าของคุณบนอุปกรณ์ ข้อมูลนี้ไม่ถูกส่งไปยังบุคคลที่สามและถูกลบเมื่อออกจากระบบ</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">7. การเปลี่ยนแปลงนโยบาย</div>
+        <div style="color:var(--text-sec)">หากมีการเปลี่ยนแปลงนโยบายอย่างมีนัยสำคัญ เราจะแจ้งผ่านการแจ้งเตือนในแอป วันที่มีผลบังคับใช้จะระบุไว้ที่ด้านบนของเอกสารนี้</div>
+      </div>
+    </div>
+    <button class="btn btn-g full" style="margin-top:20px" onclick="closeOverlay('privacyOverlay')">รับทราบแล้ว</button>
   </div>
 </div>
 
@@ -1084,7 +1180,7 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js?v=20260418r13"></script>
-<script src="js/app.js?v=20260418r46"></script>
+<script src="js/app.js?v=20260418r47"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
