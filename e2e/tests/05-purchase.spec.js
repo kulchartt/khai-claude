@@ -123,20 +123,9 @@ test.describe('🛒 Purchase Flow', () => {
     console.log('✅ Seller selling tab loaded');
   });
 
-  test('seller can set PromptPay number', async ({ page }) => {
-    await login(page, SELLER);
-    await page.evaluate(() => openProfile());
-    await page.waitForSelector('#page-profile.active', { timeout: 12000 });
-
-    await page.waitForFunction(() => document.getElementById('promptpayInput') !== null, { timeout: 8000 });
-
-    const input = page.locator('#promptpayInput');
-    await input.fill('0812345678');
-    await page.locator('button[onclick="savePromptpay()"]').click();
-
-    await page.waitForSelector('.toast', { timeout: 6000 });
-    const toast = await page.locator('.toast').textContent();
-    console.log(`✅ PromptPay saved: "${toast}"`);
+  test.skip('seller can set PromptPay number', async ({ page }) => {
+    // PromptPay section removed from profile tab in FB Marketplace redesign
+    // Payment now handled outside the app (COD / bank transfer arranged via chat)
   });
 
 });
