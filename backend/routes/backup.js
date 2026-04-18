@@ -1,0 +1,49 @@
+const express = require('express');
+const { getDB } = require('../db');
+const { authMiddleware } = require('../middleware/auth');
+
+const router = express.Router();
+
+function adminOnly(req, res, next) {
+  if (!req.user?.is_admin) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+  next();
+}
+
+// GET /api/backup — admin only, dumps all tables
+router.get('/', authMiddleware, adminOnly, async (req, res) => {
+  const db = getDB();
+  const tables = [
+    'users', 'products', 'product_images', 'orders', 'order_items',
+    'cart_items', 'wishlist_items', 'messages', 'chat_rooms',
+    'reviews', 'buyer_reviews', 'notifications', 'offers', 'follows',
+    'addresses', 'saved_searches', 'disputes', 'promo_codes',
+    'verify_requests', 'reports', 'feedback', 'feedback_messages',
+    'bundles', 'posts', 'post_comments', 'post_likes', 'stories',
+    'points_log', 'referrals', 'response_logs', 'blocks',
+  ];
+
+  const backup = {
+    exported_at: new Date().toISOString(),
+    tables: {}
+  };
+
+  for (const table of tables) {
+    try {
+      const { rows } = await db.query(`SELECT * FROM ${table} ORDER BY id`);
+      backup.tables[table] = rows;
+    } catch (e) {
+      backup.tables[table] = { error: e.message };
+    }
+  }
+
+  // Also backup env info (non-sensitive)
+  backup.env = {
+    node_env: process.env.NODE_ENV,
+    cloudinary_cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    frontend_url: process.env.FRONTEND_URL,
+  };
+
+  res.json(backup);
+});
+
+module.exports = router;
