@@ -24,6 +24,24 @@ function uploadMiddleware(req, res, next) {
   });
 }
 
+// ─── Single image upload ─────────────────────────────────────────────────────
+router.post('/upload', authMiddleware, (req, res, next) => {
+  upload.single('image')(req, res, err => {
+    if (err instanceof multer.MulterError) return res.status(400).json({ error: err.message });
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}, async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'ไม่พบไฟล์รูปภาพ' });
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: 'ploikhong/products',
+      transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }],
+    });
+    res.json({ url: result.secure_url });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/', async (req, res) => {
   try {
     const db = getDB();
