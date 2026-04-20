@@ -133,11 +133,11 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', authMiddleware, uploadMiddleware, async (req, res) => {
   try {
-    const { title, price, category, condition, description, location, delivery_method, is_draft, publish_at, meetup_lat, meetup_lng, meetup_note } = req.body;
+    const { title, price, category, condition, description, location, delivery_method, delivery, is_draft, publish_at, meetup_lat, meetup_lng, meetup_note } = req.body;
     if (!title || !price || !category) return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     const db = getDB();
 
-    // Upload all images to Cloudinary
+    // Upload all images to Cloudinary (multipart upload)
     let firstImageUrl = '';
     const uploadedUrls = [];
     if (req.files && req.files.length > 0) {
@@ -153,11 +153,24 @@ router.post('/', authMiddleware, uploadMiddleware, async (req, res) => {
         uploadedUrls.push(result.secure_url);
       }
       firstImageUrl = uploadedUrls[0];
+    } else {
+      // Pre-uploaded images: frontend uploads first then POSTs URLs as JSON
+      const jsonImages = req.body.images;
+      if (Array.isArray(jsonImages) && jsonImages.length > 0) {
+        uploadedUrls.push(...jsonImages);
+        firstImageUrl = jsonImages[0];
+      } else if (req.body.image_url) {
+        firstImageUrl = req.body.image_url;
+        uploadedUrls.push(firstImageUrl);
+      }
     }
+
+    // Support both delivery_method (old) and delivery (new ListingFlow field name)
+    const deliveryMethod = delivery_method || delivery || 'both';
 
     const { rows } = await db.query(
       'INSERT INTO products (title,price,category,condition,description,location,image_url,seller_id,delivery_method,is_draft,publish_at,meetup_lat,meetup_lng,meetup_note,watermark) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id',
-      [title, Number(price), category, condition || 'สภาพดี', description || '', location || '', firstImageUrl, req.user.id, delivery_method || 'both', is_draft ? 1 : 0, publish_at || null, meetup_lat || null, meetup_lng || null, meetup_note || null, req.body.watermark === '1' ? 1 : 0]
+      [title, Number(price), category, condition || 'สภาพดี', description || '', location || '', firstImageUrl, req.user.id, deliveryMethod, is_draft ? 1 : 0, publish_at || null, meetup_lat || null, meetup_lng || null, meetup_note || null, req.body.watermark === '1' ? 1 : 0]
     );
     const productId = rows[0].id;
 
