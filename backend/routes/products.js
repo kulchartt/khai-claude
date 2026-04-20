@@ -85,6 +85,19 @@ router.get('/trending', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// My listings
+router.get('/my', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await getDB().query(
+      `SELECT p.*, COALESCE(u.shop_name, u.name) as seller_name
+       FROM products p JOIN users u ON p.seller_id = u.id
+       WHERE p.seller_id = $1 ORDER BY p.created_at DESC`,
+      [req.user.id]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Seller view: products that others reserved from me
 router.get('/my/reservations', authMiddleware, async (req, res) => {
   try {
