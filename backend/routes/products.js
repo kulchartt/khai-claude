@@ -45,11 +45,12 @@ router.post('/upload', authMiddleware, (req, res, next) => {
 router.get('/', async (req, res) => {
   try {
     const db = getDB();
-    const { cat, q, minPrice, maxPrice, sort, condition, location, page = 1, limit = 20 } = req.query;
+    const { cat, q, minPrice, maxPrice, sort, condition, location, seller_id, page = 1, limit = 20 } = req.query;
     let sql = `SELECT p.*, COALESCE(u.shop_name, u.name) as seller_name, u.rating as seller_rating FROM products p JOIN users u ON p.seller_id = u.id WHERE p.status IN ('available','reserved') AND p.is_draft = 0 AND (p.publish_at IS NULL OR p.publish_at <= NOW())`;
     const params = [];
     let n = 0;
     const p = () => `$${++n}`;
+    if (seller_id) { sql += ` AND p.seller_id = ${p()}`; params.push(Number(seller_id)); }
     if (cat && cat !== 'ทั้งหมด') { sql += ` AND p.category = ${p()}`; params.push(cat); }
     if (q) { sql += ` AND (p.title ILIKE ${p()} OR p.description ILIKE ${p()})`; params.push(`%${q}%`, `%${q}%`); }
     if (minPrice) { sql += ` AND p.price >= ${p()}`; params.push(Number(minPrice)); }
