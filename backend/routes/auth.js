@@ -54,6 +54,32 @@ router.post('/login', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Social login (Google / Facebook) — upsert user by email
+router.post('/social', async (req, res) => {
+  try {
+    const { provider, email, name, avatar } = req.body;
+    if (!email) return res.status(400).json({ error: 'email required' });
+    const db = getDB();
+    // Check existing user
+    const { rows: ex } = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    let user = ex[0];
+    if (!user) {
+      // Auto-register social user (no password)
+      const { rows } = await db.query(
+        'INSERT INTO users (name, email, avatar, password) VALUES ($1,$2,$3,$4) RETURNING *',
+        [name || email.split('@')[0], email, avatar || null, '']
+      );
+      user = rows[0];
+    } else if (avatar && !user.avatar) {
+      await db.query('UPDATE users SET avatar = $1 WHERE id = $2', [avatar, user.id]);
+      user.avatar = avatar;
+    }
+    if (user.is_banned) return res.status(403).json({ error: 'บัญชีนี้ถูกระงับการใช้งาน' });
+    const token = jwt.sign({ id: user.id, name: user.name, email: user.email }, SECRET, { expiresIn: '7d' });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, is_admin: user.is_admin } });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const db = getDB();
