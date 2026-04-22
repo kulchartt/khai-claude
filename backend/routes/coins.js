@@ -174,6 +174,115 @@ router.get('/active-features', async (req, res) => {
 
 // ─── Admin routes ─────────────────────────────────────────────────────────────
 
+// GET /api/coins/admin/stats — full premium analytics for admin
+router.get('/admin/stats', async (req, res) => {
+  // inline admin check (authMiddleware already ran)
+  if (!req.user?.is_admin) return res.status(403).json({ error: 'Admin only' });
+  try {
+    const db = getDB();
+    const [
+      revenueTotal,
+      revenueByPackage,
+      featureUsage,
+      activeNow,
+      pendingPayments,
+      monthlyRevenue,
+      topBuyers,
+      coinIssuedTotal,
+    ] = await Promise.all([
+      // Total confirmed revenue
+      db.query(`SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as count
+                FROM payment_requests WHERE status='confirmed'`),
+
+      // Revenue per package
+      db.query(`SELECT package_key, COUNT(*) as count, COALESCE(SUM(amount),0) as revenue
+                FROM payment_requests WHERE status='confirmed'
+                GROUP BY package_key ORDER BY revenue DESC`),
+
+      // Feature activations count (all time)
+      db.query(`SELECT feature_key, COUNT(*) as total, COALESCE(SUM(coins_spent),0) as coins_spent
+                FROM feature_activations
+                GROUP BY feature_key ORDER BY total DESC`),
+
+      // Currently active features (not expired)
+      db.query(`SELECT feature_key, COUNT(*) as active_count
+                FROM feature_activations WHERE expires_at > NOW()
+                GROUP BY feature_key ORDER BY active_count DESC`),
+
+      // Pending payment requests
+      db.query(`SELECT COUNT(*) as count, COALESCE(SUM(amount),0) as total
+                FROM payment_requests WHERE status='pending'`),
+
+      // Monthly revenue — last 6 months
+      db.query(`SELECT TO_CHAR(DATE_TRUNC('month', created_at),'YYYY-MM') as month,
+                       COUNT(*) as transactions,
+                       COALESCE(SUM(amount),0) as revenue,
+                       COALESCE(SUM(coins),0) as coins_issued
+                FROM payment_requests WHERE status='confirmed'
+                  AND created_at >= NOW() - INTERVAL '6 months'
+                GROUP BY DATE_TRUNC('month', created_at)
+                ORDER BY month`),
+
+      // Top 5 buyers by coins purchased
+      db.query(`SELECT u.name, u.email, u.coin_balance,
+                       COUNT(pr.id) as purchases, COALESCE(SUM(pr.amount),0) as total_spent
+                FROM payment_requests pr JOIN users u ON u.id = pr.user_id
+                WHERE pr.status='confirmed'
+                GROUP BY u.id, u.name, u.email, u.coin_balance
+                ORDER BY total_spent DESC LIMIT 5`),
+
+      // Total coins ever issued vs spent
+      db.query(`SELECT
+                  COALESCE(SUM(CASE WHEN delta>0 THEN delta ELSE 0 END),0) as issued,
+                  COALESCE(SUM(CASE WHEN delta<0 THEN ABS(delta) ELSE 0 END),0) as spent
+                FROM coin_transactions`),
+    ]);
+
+    res.json({
+      revenue: {
+        total: parseFloat(revenueTotal.rows[0].total),
+        count: parseInt(revenueTotal.rows[0].count),
+      },
+      revenue_by_package: revenueByPackage.rows.map(r => ({
+        package_key: r.package_key,
+        count: parseInt(r.count),
+        revenue: parseFloat(r.revenue),
+      })),
+      feature_usage: featureUsage.rows.map(r => ({
+        feature_key: r.feature_key,
+        total: parseInt(r.total),
+        coins_spent: parseInt(r.coins_spent),
+      })),
+      active_now: activeNow.rows.map(r => ({
+        feature_key: r.feature_key,
+        active_count: parseInt(r.active_count),
+      })),
+      pending: {
+        count: parseInt(pendingPayments.rows[0].count),
+        total: parseFloat(pendingPayments.rows[0].total),
+      },
+      monthly_revenue: monthlyRevenue.rows.map(r => ({
+        month: r.month,
+        transactions: parseInt(r.transactions),
+        revenue: parseFloat(r.revenue),
+        coins_issued: parseInt(r.coins_issued),
+      })),
+      top_buyers: topBuyers.rows.map(r => ({
+        name: r.name,
+        email: r.email,
+        coin_balance: parseInt(r.coin_balance),
+        purchases: parseInt(r.purchases),
+        total_spent: parseFloat(r.total_spent),
+      })),
+      coins: {
+        issued: parseInt(coinIssuedTotal.rows[0].issued),
+        spent: parseInt(coinIssuedTotal.rows[0].spent),
+        outstanding: parseInt(coinIssuedTotal.rows[0].issued) - parseInt(coinIssuedTotal.rows[0].spent),
+      },
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 function adminOnly(req, res, next) {
   if (!req.user?.is_admin) return res.status(403).json({ error: 'Admin only' });
   next();
