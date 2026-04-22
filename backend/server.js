@@ -37,6 +37,7 @@ const webauthnRoutes = require('./routes/webauthn');
 const liveRoutes = require('./routes/live');
 const blockRoutes = require('./routes/blocks');
 const analyticsRoutes = require('./routes/analytics');
+const coinRoutes = require('./routes/coins');
 
 const { initDB, getDB } = require('./db');
 
@@ -84,6 +85,7 @@ app.use('/api/webauthn', webauthnRoutes);
 app.use('/api/live', liveRoutes);
 app.use('/api/blocks', blockRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/coins', coinRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/health/cloudinary', async (req, res) => {

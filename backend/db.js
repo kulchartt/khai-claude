@@ -337,6 +337,42 @@ async function initDB() {
   await db.query(`CREATE INDEX IF NOT EXISTS idx_product_events_type ON product_events(event_type)`);
   await db.query(`CREATE INDEX IF NOT EXISTS idx_product_events_created ON product_events(created_at)`);
 
+  // ─── Premium / Coin system ───────────────────────────────────────────────────
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS coin_balance INTEGER DEFAULT 0`);
+  await db.query(`CREATE TABLE IF NOT EXISTS coin_transactions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    delta INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    description TEXT NOT NULL,
+    ref_id INTEGER DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+  await db.query(`CREATE TABLE IF NOT EXISTS payment_requests (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    package_key TEXT NOT NULL,
+    coins INTEGER NOT NULL,
+    amount REAL NOT NULL,
+    slip_url TEXT DEFAULT NULL,
+    sender_name TEXT DEFAULT NULL,
+    status TEXT DEFAULT 'pending',
+    admin_note TEXT DEFAULT NULL,
+    confirmed_by INTEGER DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+  await db.query(`CREATE TABLE IF NOT EXISTS feature_activations (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    feature_key TEXT NOT NULL,
+    product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+    coins_spent INTEGER NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_feature_act_user ON feature_activations(user_id)`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_feature_act_product ON feature_activations(product_id)`);
+
   // Ensure test/dev admin account always has admin rights
   await db.query(`UPDATE users SET is_admin = 1 WHERE email = 'host@test.com'`).catch(() => {});
 
