@@ -337,6 +337,9 @@ async function initDB() {
   await db.query(`CREATE INDEX IF NOT EXISTS idx_product_events_type ON product_events(event_type)`);
   await db.query(`CREATE INDEX IF NOT EXISTS idx_product_events_created ON product_events(created_at)`);
 
+  // ─── User Preferences ────────────────────────────────────────────────────────
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bg_color VARCHAR(20) DEFAULT NULL`);
+
   // ─── Premium / Coin system ───────────────────────────────────────────────────
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS coin_balance INTEGER DEFAULT 0`);
   await db.query(`CREATE TABLE IF NOT EXISTS coin_transactions (
