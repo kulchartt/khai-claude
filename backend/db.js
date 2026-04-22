@@ -325,6 +325,18 @@ async function initDB() {
   await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS meetup_lng FLOAT DEFAULT NULL`);
   await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS meetup_note TEXT DEFAULT NULL`);
 
+  // Product analytics events
+  await db.query(`CREATE TABLE IF NOT EXISTS product_events (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+    event_type VARCHAR(20) NOT NULL,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_product_events_product ON product_events(product_id)`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_product_events_type ON product_events(event_type)`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_product_events_created ON product_events(created_at)`);
+
   // Ensure test/dev admin account always has admin rights
   await db.query(`UPDATE users SET is_admin = 1 WHERE email = 'host@test.com'`).catch(() => {});
 
