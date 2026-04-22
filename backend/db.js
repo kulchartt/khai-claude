@@ -339,6 +339,8 @@ async function initDB() {
 
   // ─── User Preferences ────────────────────────────────────────────────────────
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bg_color VARCHAR(20) DEFAULT NULL`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS dark_mode INTEGER DEFAULT 0`);
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS remember_prefs INTEGER DEFAULT 1`);
 
   // ─── Premium / Coin system ───────────────────────────────────────────────────
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS coin_balance INTEGER DEFAULT 0`);

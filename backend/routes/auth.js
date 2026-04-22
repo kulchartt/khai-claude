@@ -80,18 +80,23 @@ router.post('/social', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// PATCH /api/auth/preferences — save user preferences (bg_color, etc.)
+// PATCH /api/auth/preferences — save user preferences (bg_color, dark_mode, remember_prefs)
 router.patch('/preferences', authMiddleware, async (req, res) => {
   try {
-    const { bg_color } = req.body;
-    const allowed = /^#[0-9a-fA-F]{3,8}$|^[a-z]+$/; // hex or named color
-    if (bg_color !== undefined && bg_color !== null && !allowed.test(bg_color)) {
+    const { bg_color, dark_mode, remember_prefs } = req.body;
+    const hexOk = /^#[0-9a-fA-F]{3,8}$/;
+    if (bg_color !== undefined && bg_color !== null && bg_color !== '' && !hexOk.test(bg_color)) {
       return res.status(400).json({ error: 'รูปแบบสีไม่ถูกต้อง' });
     }
-    await getDB().query(
-      'UPDATE users SET bg_color = $1 WHERE id = $2',
-      [bg_color || null, req.user.id]
-    );
+    const fields = [];
+    const vals = [];
+    let i = 1;
+    if (bg_color !== undefined)       { fields.push(`bg_color = $${i++}`);       vals.push(bg_color || null); }
+    if (dark_mode !== undefined)      { fields.push(`dark_mode = $${i++}`);      vals.push(dark_mode ? 1 : 0); }
+    if (remember_prefs !== undefined) { fields.push(`remember_prefs = $${i++}`); vals.push(remember_prefs ? 1 : 0); }
+    if (!fields.length) return res.json({ ok: true });
+    vals.push(req.user.id);
+    await getDB().query(`UPDATE users SET ${fields.join(', ')} WHERE id = $${i}`, vals);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -100,7 +105,7 @@ router.get('/me', authMiddleware, async (req, res) => {
   try {
     const db = getDB();
     const { rows } = await db.query(
-      'SELECT id, name, email, avatar, rating, review_count, created_at, is_verified, is_admin, points, referral_code, holiday_mode, shop_name, shop_bio, shop_banner, bg_color FROM users WHERE id = $1',
+      'SELECT id, name, email, avatar, rating, review_count, created_at, is_verified, is_admin, points, referral_code, holiday_mode, shop_name, shop_bio, shop_banner, bg_color, dark_mode, remember_prefs FROM users WHERE id = $1',
       [req.user.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'ไม่พบผู้ใช้' });
