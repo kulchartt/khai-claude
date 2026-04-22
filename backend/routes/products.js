@@ -46,7 +46,13 @@ router.get('/', async (req, res) => {
   try {
     const db = getDB();
     const { cat, q, minPrice, maxPrice, sort, condition, location, seller_id, page = 1, limit = 20 } = req.query;
-    let sql = `SELECT p.*, COALESCE(u.shop_name, u.name) as seller_name, u.rating as seller_rating FROM products p JOIN users u ON p.seller_id = u.id WHERE p.status IN ('available','reserved') AND p.is_draft = 0 AND (p.publish_at IS NULL OR p.publish_at <= NOW())`;
+    let sql = `SELECT p.*, COALESCE(u.shop_name, u.name) as seller_name, u.rating as seller_rating,
+  EXISTS(
+    SELECT 1 FROM feature_activations fa
+    WHERE fa.product_id = p.id AND fa.feature_key = 'featured' AND fa.expires_at > NOW()
+  ) as is_featured
+  FROM products p JOIN users u ON p.seller_id = u.id
+  WHERE p.status IN ('available','reserved') AND p.is_draft = 0 AND (p.publish_at IS NULL OR p.publish_at <= NOW())`;
     const params = [];
     let n = 0;
     const p = () => `$${++n}`;
@@ -132,7 +138,11 @@ router.get('/:id', async (req, res) => {
     const { rows: pr } = await db.query(`
       SELECT p.*, COALESCE(u.shop_name, u.name) as seller_name, u.name as seller_real_name, u.email as seller_email,
              u.rating as seller_rating, u.review_count as seller_reviews, u.avatar as seller_avatar,
-             u.holiday_mode as seller_holiday_mode
+             u.holiday_mode as seller_holiday_mode,
+             EXISTS(
+               SELECT 1 FROM feature_activations fa
+               WHERE fa.product_id = p.id AND fa.feature_key = 'featured' AND fa.expires_at > NOW()
+             ) as is_featured
       FROM products p JOIN users u ON p.seller_id = u.id WHERE p.id = $1
     `, [req.params.id]);
     const product = pr[0];
@@ -272,9 +282,11 @@ router.put('/:id', authMiddleware, uploadMiddleware, async (req, res) => {
 
     // Price drop alert: notify wishlist users
     if (price && Number(price) < product.price) {
+      let wishers = [];
       try {
         const newP = Number(price), oldP = product.price;
-        const { rows: wishers } = await db.query('SELECT user_id FROM wishlist_items WHERE product_id = $1', [req.params.id]);
+        const { rows: wisherRows } = await db.query('SELECT user_id FROM wishlist_items WHERE product_id = $1', [req.params.id]);
+        wishers = wisherRows;
         const io = req.app.get('io'); const onlineUsers = req.app.get('onlineUsers');
         for (const { user_id } of wishers) {
           if (user_id === req.user.id) continue;
@@ -286,6 +298,29 @@ router.put('/:id', authMiddleware, uploadMiddleware, async (req, res) => {
           if (sock) io?.to(sock).emit('notification', { type: 'system' });
         }
       } catch (notifErr) { console.error('price drop notify:', notifErr); }
+
+      // Price Alert premium: also notify followers if seller has price_alert active
+      try {
+        const { rows: pa } = await db.query(
+          `SELECT 1 FROM feature_activations WHERE user_id=$1 AND feature_key='price_alert' AND expires_at > NOW() LIMIT 1`,
+          [req.user.id]
+        );
+        if (pa.length > 0) {
+          const { rows: followers } = await db.query('SELECT follower_id FROM follows WHERE seller_id=$1', [req.user.id]);
+          const io = req.app.get('io'); const onlineUsers = req.app.get('onlineUsers');
+          for (const { follower_id } of followers) {
+            // skip if already notified as wishlist user
+            const alreadyNotified = wishers.some((w) => w.user_id === follower_id);
+            if (alreadyNotified || follower_id === req.user.id) continue;
+            await db.query(
+              "INSERT INTO notifications (user_id, type, title, body) VALUES ($1,'system','💰 ราคาลดจากร้านที่คุณติดตาม',$2)",
+              [follower_id, `${title||product.title} ลดจาก ฿${Number(product.price).toLocaleString()} เป็น ฿${Number(price).toLocaleString()}`]
+            );
+            const sock = onlineUsers?.get(follower_id);
+            if (sock) io?.to(sock).emit('notification', { type: 'system' });
+          }
+        }
+      } catch (paErr) { console.error('price_alert notify followers:', paErr); }
     }
 
     res.json({ message: 'อัปเดตสินค้าแล้ว' });

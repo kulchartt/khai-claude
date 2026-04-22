@@ -273,6 +273,26 @@ initDB().then(() => {
           [prod.seller_id, `การจอง "${prod.title}" หมดอายุแล้ว สินค้ากลับสู่การขายปกติอัตโนมัติ`]);
         console.log(`[cron] Auto-released reservation for product #${prod.id}`);
       }
+
+      // 3. Auto-Relist: bump products every 7 days for users with active auto_relist feature
+      const { rows: autoRelists } = await db.query(`
+        SELECT fa.user_id, fa.product_id, p.title, p.status
+        FROM feature_activations fa
+        JOIN products p ON p.id = fa.product_id
+        WHERE fa.feature_key = 'auto_relist'
+          AND fa.expires_at > NOW()
+          AND p.status = 'available'
+          AND (p.bumped_at IS NULL OR p.bumped_at < NOW() - INTERVAL '7 days')
+          AND (p.created_at < NOW() - INTERVAL '7 days')
+      `);
+      for (const row of autoRelists) {
+        await db.query('UPDATE products SET bumped_at = NOW() WHERE id=$1', [row.product_id]);
+        await db.query(
+          `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'system','🔄 ลงประกาศอัตโนมัติแล้ว',$2)`,
+          [row.user_id, `"${row.title}" ถูกดันขึ้นมาบนสุดอัตโนมัติแล้ว`]
+        );
+        console.log(`[cron] Auto-relisted product #${row.product_id}`);
+      }
     } catch (e) {
       console.error('[cron] auto-cancel/release error:', e.message);
     }
