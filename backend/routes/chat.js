@@ -43,10 +43,11 @@ router.get('/rooms', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/room', authMiddleware, async (req, res) => {
+// Create or find existing chat room (support both /room and /rooms for compatibility)
+async function handleCreateRoom(req, res) {
   try {
     const { seller_id, product_id } = req.body;
-    if (seller_id === req.user.id) return res.status(400).json({ error: 'ไม่สามารถแชทกับตัวเองได้' });
+    if (Number(seller_id) === Number(req.user.id)) return res.status(400).json({ error: 'ไม่สามารถแชทกับตัวเองได้' });
     const db = getDB();
     const { rows: blk } = await db.query(
       'SELECT 1 FROM blocked_users WHERE (blocker_id=$1 AND blocked_id=$2) OR (blocker_id=$2 AND blocked_id=$1)',
@@ -63,6 +64,46 @@ router.post('/room', authMiddleware, async (req, res) => {
       [req.user.id, seller_id, product_id || null]
     );
     res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+}
+router.post('/room', authMiddleware, handleCreateRoom);   // legacy
+router.post('/rooms', authMiddleware, handleCreateRoom);  // new (plural)
+
+// POST /api/chat/rooms/:roomId/messages — ส่งข้อความในแชท
+router.post('/rooms/:roomId/messages', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows: rr } = await db.query('SELECT * FROM chat_rooms WHERE id = $1', [req.params.roomId]);
+    const room = rr[0];
+    if (!room || (room.buyer_id !== req.user.id && room.seller_id !== req.user.id)) {
+      return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึง' });
+    }
+    const { content } = req.body;
+    if (!content?.trim()) return res.status(400).json({ error: 'กรุณากรอกข้อความ' });
+    const { rows: mr } = await db.query(
+      'INSERT INTO messages (room_id, sender_id, content) VALUES ($1,$2,$3) RETURNING id',
+      [req.params.roomId, req.user.id, content.trim()]
+    );
+    const { rows: fm } = await db.query(
+      'SELECT m.*, u.name as sender_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.id = $1',
+      [mr[0].id]
+    );
+    const fullMsg = fm[0];
+    // Broadcast via Socket.IO if available
+    const io = req.app.get('io');
+    if (io) io.to(parseInt(req.params.roomId)).emit('new_message', fullMsg);
+    // Push notification to the other user
+    const otherId = room.buyer_id === req.user.id ? room.seller_id : room.buyer_id;
+    await db.query(
+      "INSERT INTO notifications (user_id, type, title, body, link) VALUES ($1,'chat',$2,$3,$4)",
+      [otherId, `ข้อความจาก ${req.user.name}`, content.trim().slice(0, 80), `/chat/${req.params.roomId}`]
+    );
+    const onlineUsers = req.app.get('onlineUsers');
+    if (onlineUsers && io) {
+      const otherSocket = onlineUsers.get(otherId);
+      if (otherSocket) io.to(otherSocket).emit('notification', { type: 'chat' });
+    }
+    res.json(fullMsg);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
