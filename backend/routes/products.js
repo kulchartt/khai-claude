@@ -42,6 +42,22 @@ router.post('/upload', authMiddleware, (req, res, next) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /api/products/categories — real counts per category
+router.get('/categories', async (req, res) => {
+  try {
+    const { rows } = await getDB().query(`
+      SELECT category, COUNT(*) as count
+      FROM products
+      WHERE status IN ('available','reserved') AND is_draft = 0
+        AND (publish_at IS NULL OR publish_at <= NOW())
+      GROUP BY category
+      ORDER BY count DESC
+    `);
+    const total = rows.reduce((s, r) => s + parseInt(r.count), 0);
+    res.json({ total, categories: rows.map(r => ({ name: r.category, count: parseInt(r.count) })) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/', async (req, res) => {
   try {
     const db = getDB();
