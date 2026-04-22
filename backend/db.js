@@ -373,7 +373,12 @@ async function initDB() {
   await db.query(`CREATE INDEX IF NOT EXISTS idx_feature_act_user ON feature_activations(user_id)`);
   await db.query(`CREATE INDEX IF NOT EXISTS idx_feature_act_product ON feature_activations(product_id)`);
 
-  // Ensure test/dev admin account always has admin rights
+  // Ensure admin account exists
+  const adminHash = await bcrypt.hash('admin1234', 10);
+  await db.query(
+    `INSERT INTO users (name, email, password, is_admin) VALUES ('Admin','admin@ploikhong.com',$1,1) ON CONFLICT (email) DO UPDATE SET is_admin=1`,
+    [adminHash]
+  ).catch(() => {});
   await db.query(`UPDATE users SET is_admin = 1 WHERE email = 'host@test.com'`).catch(() => {});
 
   const { rows } = await db.query('SELECT COUNT(*) as c FROM products');
