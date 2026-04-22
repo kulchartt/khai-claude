@@ -238,11 +238,32 @@ router.get('/admin/stats', async (req, res) => {
                 FROM coin_transactions`),
     ]);
 
+    const totalRevenueBaht = parseFloat(revenueTotal.rows[0].total);
+    const totalCoinsIssued = parseInt(coinIssuedTotal.rows[0].issued);
+    const totalCoinsSpent = parseInt(coinIssuedTotal.rows[0].spent);
+    // avg baht value per coin (for estimating per-feature revenue)
+    const avgCoinValue = totalCoinsIssued > 0 ? totalRevenueBaht / totalCoinsIssued : 0;
+
     res.json({
       revenue: {
-        total: parseFloat(revenueTotal.rows[0].total),
+        total: totalRevenueBaht,
         count: parseInt(revenueTotal.rows[0].count),
       },
+      // Revenue sources — extensible for future streams (transaction fees, ads, etc.)
+      revenue_sources: [
+        {
+          source: 'coin_purchases',
+          label: 'ขายเหรียญ Premium',
+          total: totalRevenueBaht,
+          count: parseInt(revenueTotal.rows[0].count),
+        },
+        {
+          source: 'transaction_fees',
+          label: 'ค่าธรรมเนียมการขาย (3%)',
+          total: 0,
+          count: 0,
+        },
+      ],
       revenue_by_package: revenueByPackage.rows.map(r => ({
         package_key: r.package_key,
         count: parseInt(r.count),
@@ -252,6 +273,8 @@ router.get('/admin/stats', async (req, res) => {
         feature_key: r.feature_key,
         total: parseInt(r.total),
         coins_spent: parseInt(r.coins_spent),
+        // estimated baht = coins_spent × avg_baht_per_coin
+        estimated_baht: Math.round(parseInt(r.coins_spent) * avgCoinValue),
       })),
       active_now: activeNow.rows.map(r => ({
         feature_key: r.feature_key,
@@ -275,9 +298,9 @@ router.get('/admin/stats', async (req, res) => {
         total_spent: parseFloat(r.total_spent),
       })),
       coins: {
-        issued: parseInt(coinIssuedTotal.rows[0].issued),
-        spent: parseInt(coinIssuedTotal.rows[0].spent),
-        outstanding: parseInt(coinIssuedTotal.rows[0].issued) - parseInt(coinIssuedTotal.rows[0].spent),
+        issued: totalCoinsIssued,
+        spent: totalCoinsSpent,
+        outstanding: totalCoinsIssued - totalCoinsSpent,
       },
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
