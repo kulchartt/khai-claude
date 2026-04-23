@@ -124,4 +124,14 @@ router.get('/me', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Facebook Data Deletion Callback — required by Meta for app review
+// POST /api/auth/facebook-data-deletion
+router.post('/facebook-data-deletion', (req, res) => {
+  const confirmationCode = 'PLOI_' + Date.now();
+  res.json({
+    url: `${process.env.FRONTEND_URL || 'https://frondend-ploikhong-next.vercel.app'}/privacy`,
+    confirmation_code: confirmationCode,
+  });
+});
+
 module.exports = router;
