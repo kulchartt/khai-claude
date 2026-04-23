@@ -342,6 +342,17 @@ async function initDB() {
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS dark_mode INTEGER DEFAULT 0`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS remember_prefs INTEGER DEFAULT 1`);
 
+  // ─── Complaints ───────────────────────────────────────────────────────────────
+  await db.query(`CREATE TABLE IF NOT EXISTS complaints (
+    id SERIAL PRIMARY KEY,
+    type VARCHAR(100) NOT NULL,
+    detail TEXT NOT NULL,
+    contact VARCHAR(255),
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+
   // ─── Premium / Coin system ───────────────────────────────────────────────────
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS coin_balance INTEGER DEFAULT 0`);
   await db.query(`CREATE TABLE IF NOT EXISTS coin_transactions (
