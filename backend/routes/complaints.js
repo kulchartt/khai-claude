@@ -17,6 +17,17 @@ router.post('/', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /api/complaints/my — user's own complaints
+router.get('/my', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await getDB().query(
+      `SELECT id, type, detail, contact, status, created_at FROM complaints WHERE user_id = $1 ORDER BY created_at DESC`,
+      [req.user.id]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // GET /api/complaints — admin only
 router.get('/', authMiddleware, async (req, res) => {
   try {
