@@ -21,7 +21,7 @@ router.post('/', async (req, res) => {
 router.get('/my', authMiddleware, async (req, res) => {
   try {
     const { rows } = await getDB().query(
-      `SELECT id, type, detail, contact, status, created_at FROM complaints WHERE user_id = $1 ORDER BY created_at DESC`,
+      `SELECT id, type, detail, contact, status, admin_reply, replied_at, created_at FROM complaints WHERE user_id = $1 ORDER BY created_at DESC`,
       [req.user.id]
     );
     res.json(rows);
@@ -48,14 +48,40 @@ router.get('/', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// PATCH /api/complaints/:id — update status (admin only)
+// PATCH /api/complaints/:id — update status + optional admin_reply (admin only)
 router.patch('/:id', authMiddleware, async (req, res) => {
   try {
     const db = getDB();
     const { rows: adminCheck } = await db.query('SELECT is_admin FROM users WHERE id=$1', [req.user.id]);
     if (!adminCheck[0]?.is_admin) return res.status(403).json({ error: 'Admin only' });
-    const { status } = req.body;
-    await db.query(`UPDATE complaints SET status=$1 WHERE id=$2`, [status, req.params.id]);
+    const { status, admin_reply } = req.body;
+
+    if (admin_reply !== undefined) {
+      // Update reply (and optionally status)
+      if (status) {
+        await db.query(
+          `UPDATE complaints SET status=$1, admin_reply=$2, replied_at=NOW() WHERE id=$3`,
+          [status, admin_reply, req.params.id]
+        );
+      } else {
+        await db.query(
+          `UPDATE complaints SET admin_reply=$1, replied_at=NOW() WHERE id=$2`,
+          [admin_reply, req.params.id]
+        );
+      }
+    } else {
+      await db.query(`UPDATE complaints SET status=$1 WHERE id=$2`, [status, req.params.id]);
+    }
+
+    // Notify user if they have an account
+    const { rows: complaint } = await db.query('SELECT user_id FROM complaints WHERE id=$1', [req.params.id]);
+    if (complaint[0]?.user_id && admin_reply) {
+      await db.query(
+        `INSERT INTO notifications (user_id, type, title, body, link) VALUES ($1,'system','ทีมงานตอบกลับเรื่องร้องเรียนของคุณ',$2,'/complaints')`,
+        [complaint[0].user_id, admin_reply.slice(0, 80)]
+      );
+    }
+
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

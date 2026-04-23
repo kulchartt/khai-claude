@@ -350,8 +350,13 @@ async function initDB() {
     contact VARCHAR(255),
     user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     status VARCHAR(20) DEFAULT 'pending',
+    admin_reply TEXT DEFAULT NULL,
+    replied_at TIMESTAMP DEFAULT NULL,
     created_at TIMESTAMP DEFAULT NOW()
   )`);
+  // migrate existing table — add columns if not present
+  await db.query(`ALTER TABLE complaints ADD COLUMN IF NOT EXISTS admin_reply TEXT DEFAULT NULL`);
+  await db.query(`ALTER TABLE complaints ADD COLUMN IF NOT EXISTS replied_at TIMESTAMP DEFAULT NULL`);
 
   // ─── Premium / Coin system ───────────────────────────────────────────────────
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS coin_balance INTEGER DEFAULT 0`);
