@@ -358,6 +358,14 @@ async function initDB() {
   await db.query(`ALTER TABLE complaints ADD COLUMN IF NOT EXISTS admin_reply TEXT DEFAULT NULL`);
   await db.query(`ALTER TABLE complaints ADD COLUMN IF NOT EXISTS replied_at TIMESTAMP DEFAULT NULL`);
 
+  await db.query(`CREATE TABLE IF NOT EXISTS complaint_messages (
+    id SERIAL PRIMARY KEY,
+    complaint_id INTEGER NOT NULL REFERENCES complaints(id) ON DELETE CASCADE,
+    sender_type VARCHAR(10) NOT NULL CHECK (sender_type IN ('user','admin')),
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+
   // ─── Premium / Coin system ───────────────────────────────────────────────────
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS coin_balance INTEGER DEFAULT 0`);
   await db.query(`CREATE TABLE IF NOT EXISTS coin_transactions (

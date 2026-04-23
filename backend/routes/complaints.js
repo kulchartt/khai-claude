@@ -86,4 +86,58 @@ router.patch('/:id', authMiddleware, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /api/complaints/:id/messages — get chat messages for a complaint
+router.get('/:id/messages', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows: adminCheck } = await db.query('SELECT is_admin FROM users WHERE id=$1', [req.user.id]);
+    const isAdmin = !!adminCheck[0]?.is_admin;
+
+    // Check ownership (user must own the complaint, or be admin)
+    const { rows: comp } = await db.query('SELECT user_id FROM complaints WHERE id=$1', [req.params.id]);
+    if (!comp[0]) return res.status(404).json({ error: 'ไม่พบเรื่องร้องเรียน' });
+    if (!isAdmin && comp[0].user_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+
+    const { rows } = await db.query(
+      `SELECT * FROM complaint_messages WHERE complaint_id=$1 ORDER BY created_at ASC`,
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/complaints/:id/messages — send a message (user or admin)
+router.post('/:id/messages', authMiddleware, async (req, res) => {
+  try {
+    const db = getDB();
+    const { content } = req.body;
+    if (!content?.trim()) return res.status(400).json({ error: 'กรุณากรอกข้อความ' });
+
+    const { rows: adminCheck } = await db.query('SELECT is_admin FROM users WHERE id=$1', [req.user.id]);
+    const isAdmin = !!adminCheck[0]?.is_admin;
+
+    const { rows: comp } = await db.query('SELECT user_id FROM complaints WHERE id=$1', [req.params.id]);
+    if (!comp[0]) return res.status(404).json({ error: 'ไม่พบเรื่องร้องเรียน' });
+    if (!isAdmin && comp[0].user_id !== req.user.id) return res.status(403).json({ error: 'ไม่มีสิทธิ์' });
+
+    const senderType = isAdmin ? 'admin' : 'user';
+    const { rows } = await db.query(
+      `INSERT INTO complaint_messages (complaint_id, sender_type, content) VALUES ($1,$2,$3) RETURNING *`,
+      [req.params.id, senderType, content.trim()]
+    );
+
+    // Notify the other party
+    if (isAdmin && comp[0].user_id) {
+      await db.query(
+        `INSERT INTO notifications (user_id,type,title,body,link) VALUES ($1,'system','ทีมงานตอบกลับเรื่องร้องเรียน',$2,'/complaints')`,
+        [comp[0].user_id, content.trim().slice(0, 80)]
+      );
+      // Also update admin_reply for backward compat
+      await db.query(`UPDATE complaints SET admin_reply=$1, replied_at=NOW() WHERE id=$2`, [content.trim(), req.params.id]);
+    }
+
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;
