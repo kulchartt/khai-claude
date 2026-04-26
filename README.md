@@ -8,9 +8,10 @@
 
 | Service | URL |
 |---------|-----|
-| Frontend | https://frondend-ploikhong-next.vercel.app |
+| Frontend | https://frontend-next-pied.vercel.app |
 | Backend API | https://khai-claude-production.up.railway.app |
-| Admin Panel | https://frondend-ploikhong-next.vercel.app/admin |
+| Admin Panel | https://frontend-next-pied.vercel.app/admin |
+| Coins & Premium | https://frontend-next-pied.vercel.app/coins |
 
 ---
 
@@ -91,13 +92,15 @@ frondend-ploikhong-next/   ← Frontend repo (Next.js 14)
 | Feature | เหรียญ | ระยะเวลา |
 |---------|--------|----------|
 | สินค้าเด่น (Featured) | 80 | 7 วัน |
-| ดันสินค้าขึ้นบนสุด | 30 | 7 วัน |
+| ดันสินค้าขึ้นบนสุด (Boost) | 30 | 7 วัน |
 | แจ้งเตือนผู้ติดตาม | 25 | 30 วัน |
 | ลงประกาศอัตโนมัติ | 20 | 30 วัน |
 | Analytics Pro | 50 | 30 วัน |
 
-- ซื้อเหรียญด้วย PromptPay
-- Admin ยืนยัน/ปฏิเสธ payment
+**ช่องทางชำระเงิน (OPN / Omise):**
+- 💳 บัตรเครดิต/เดบิต — ผ่าน OmiseCard.js popup → เหรียญเข้าทันที
+- 📲 PromptPay QR — สร้าง QR อัตโนมัติ → webhook ยืนยัน → เหรียญเข้าทันที
+- ไม่ต้องรอ Admin อนุมัติ
 - Auto-relist cron job ทุกวัน
 
 ### 🎨 Appearance Preferences
@@ -115,7 +118,18 @@ frondend-ploikhong-next/   ← Frontend repo (Next.js 14)
 - จัดการผู้ใช้: ban/unban, toggle admin
 - จัดการสินค้า: search + delete
 - Premium: revenue sources breakdown ต่อ feature + estimated baht
-- ค่าอนุมัติเหรียญ: confirm/reject payment requests
+- ค่าอนุมัติเหรียญ: confirm/reject payment requests (manual PromptPay)
+- **📒 บัญชี (Accounting):** บันทึกรายจ่ายก่อนดำเนินกิจการ, แนบใบเสร็จ/Invoice, แก้ไขรายการ, สรุปรายเดือน/รายปี
+
+### 🗂️ หมวดหมู่รายจ่าย (Accounting Categories)
+| หมวด | ตัวอย่าง |
+|------|---------|
+| software | Claude Code, domain, hosting |
+| platform | Apple Developer Program |
+| legal | ค่าทนาย, ค่านักบัญชี |
+| marketing | โฆษณา |
+| equipment | อุปกรณ์ |
+| other | อื่นๆ |
 
 ### 📄 Legal Pages
 - `/terms` — เงื่อนไขการใช้งาน
@@ -152,10 +166,28 @@ frondend-ploikhong-next/   ← Frontend repo (Next.js 14)
 |--------|------|-----------|
 | GET | `/api/coins/packages` | แพ็กเกจเหรียญ + PromptPay |
 | GET | `/api/coins/balance` | ยอดเหรียญ |
-| POST | `/api/coins/request-payment` | ขอซื้อเหรียญ |
+| GET | `/api/coins/transactions` | ประวัติธุรกรรม |
+| POST | `/api/coins/charge` | ชำระด้วยบัตร OPN (instant) |
+| POST | `/api/coins/charge-promptpay` | สร้าง PromptPay QR (OPN) |
+| POST | `/api/coins/webhook/opn` | OPN webhook auto-confirm |
+| POST | `/api/coins/request-payment` | ขอซื้อเหรียญ (manual fallback) |
 | POST | `/api/coins/activate-feature` | เปิดใช้ฟีเจอร์ premium |
+| GET | `/api/coins/active-features` | ฟีเจอร์ที่กำลังใช้งาน |
 | GET | `/api/coins/admin/stats` | สถิติ premium สำหรับ admin |
+| GET | `/api/coins/payment-requests` | รายการ payment (admin) |
 | POST | `/api/coins/payment-requests/:id/confirm` | อนุมัติ payment (admin) |
+| POST | `/api/coins/payment-requests/:id/reject` | ปฏิเสธ payment (admin) |
+
+### Accounting (Admin only)
+| Method | Path | คำอธิบาย |
+|--------|------|-----------|
+| GET | `/api/accounting/summary` | สรุปรายเดือน |
+| GET | `/api/accounting/income` | รายได้รายเดือน |
+| GET | `/api/accounting/expenses` | รายจ่ายรายเดือน |
+| POST | `/api/accounting/expenses` | บันทึกรายจ่าย + แนบใบเสร็จ |
+| PATCH | `/api/accounting/expenses/:id` | แก้ไขรายจ่าย |
+| DELETE | `/api/accounting/expenses/:id` | ลบรายจ่าย |
+| GET | `/api/accounting/yearly` | สรุปรายปี |
 
 ---
 
@@ -164,11 +196,12 @@ frondend-ploikhong-next/   ← Frontend repo (Next.js 14)
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Next.js 14 App Router, TypeScript, inline styles |
-| Auth | NextAuth.js v5 (JWT) |
+| Auth | NextAuth.js v5 (JWT + Google OAuth) |
 | Backend | Node.js, Express.js |
 | Database | PostgreSQL (Railway) |
 | Real-time | Socket.io |
 | Images | Cloudinary |
+| Payment | OPN (Omise) — บัตรเครดิต + PromptPay QR |
 | Deploy FE | Vercel (auto deploy จาก GitHub push) |
 | Deploy BE | Railway (auto deploy จาก GitHub push) |
 
@@ -211,14 +244,26 @@ CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
 PROMPTPAY_NUMBER=...
-FRONTEND_URL=https://frondend-ploikhong-next.vercel.app
+PROMPTPAY_NAME=...
+FRONTEND_URL=https://frontend-next-pied.vercel.app
+OPN_PUBLIC_KEY=pkey_...
+OPN_SECRET_KEY=skey_...
 ```
 
 ### Frontend (.env.local)
 ```
 NEXT_PUBLIC_API_URL=https://khai-claude-production.up.railway.app
-NEXTAUTH_SECRET=...
-NEXTAUTH_URL=https://frondend-ploikhong-next.vercel.app
+NEXT_PUBLIC_OPN_PUBLIC_KEY=pkey_...
+AUTH_SECRET=...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
+FACEBOOK_CLIENT_ID=...
+FACEBOOK_CLIENT_SECRET=...
+```
+
+### OPN Webhook
+ตั้งค่าใน OPN Dashboard → Webhooks:
+```
+URL: https://khai-claude-production.up.railway.app/api/coins/webhook/opn
+Events: charge.complete
 ```
