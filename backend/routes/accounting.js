@@ -180,6 +180,53 @@ router.post('/expenses', adminOnly, (req, res, next) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ─── PATCH /api/accounting/expenses/:id ──────────────────────────────────────
+router.patch('/expenses/:id', adminOnly, (req, res, next) => {
+  upload.single('receipt')(req, res, err => {
+    if (err instanceof multer.MulterError) return res.status(400).json({ error: err.message });
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}, async (req, res) => {
+  try {
+    const db = getDB();
+    const { category, description, amount, expense_date } = req.body;
+
+    // Build dynamic SET clause
+    const fields = [];
+    const values = [];
+    let idx = 1;
+
+    if (category)     { fields.push(`category = $${idx++}`);     values.push(category); }
+    if (description)  { fields.push(`description = $${idx++}`);  values.push(description); }
+    if (amount !== undefined && amount !== null && amount !== '') {
+      if (parseFloat(amount) < 0) return res.status(400).json({ error: 'จำนวนเงินต้องไม่ติดลบ' });
+      fields.push(`amount = $${idx++}`); values.push(parseFloat(amount));
+    }
+    if (expense_date) { fields.push(`expense_date = $${idx++}`); values.push(expense_date); }
+
+    // อัปโหลดเอกสารใหม่ (ถ้ามี)
+    if (req.file) {
+      const result = await uploadDocument(req.file.buffer, {
+        public_id: `expense_${Date.now()}`,
+        format: req.file.mimetype === 'application/pdf' ? 'pdf' : undefined,
+      });
+      fields.push(`receipt_url = $${idx++}`);
+      values.push(result.secure_url);
+    }
+
+    if (fields.length === 0) return res.status(400).json({ error: 'ไม่มีข้อมูลให้อัปเดต' });
+
+    values.push(req.params.id);
+    const { rows, rowCount } = await db.query(
+      `UPDATE accounting_expenses SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
+      values
+    );
+    if (rowCount === 0) return res.status(404).json({ error: 'ไม่พบรายการ' });
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ─── DELETE /api/accounting/expenses/:id ─────────────────────────────────────
 router.delete('/expenses/:id', adminOnly, async (req, res) => {
   try {
