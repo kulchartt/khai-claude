@@ -39,6 +39,7 @@ const liveRoutes = require('./routes/live');
 const blockRoutes = require('./routes/blocks');
 const analyticsRoutes = require('./routes/analytics');
 const coinRoutes = require('./routes/coins');
+const accountingRoutes = require('./routes/accounting');
 
 const { initDB, getDB } = require('./db');
 
@@ -88,6 +89,7 @@ app.use('/api/live', liveRoutes);
 app.use('/api/blocks', blockRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/coins', coinRoutes);
+app.use('/api/accounting', accountingRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/health/cloudinary', async (req, res) => {

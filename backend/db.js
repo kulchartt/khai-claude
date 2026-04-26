@@ -402,6 +402,18 @@ async function initDB() {
   await db.query(`CREATE INDEX IF NOT EXISTS idx_feature_act_user ON feature_activations(user_id)`);
   await db.query(`CREATE INDEX IF NOT EXISTS idx_feature_act_product ON feature_activations(product_id)`);
 
+  // ─── Accounting expenses (manual รายจ่าย) ─────────────────────────────────
+  await db.query(`CREATE TABLE IF NOT EXISTS accounting_expenses (
+    id SERIAL PRIMARY KEY,
+    category TEXT NOT NULL,
+    description TEXT NOT NULL,
+    amount REAL NOT NULL,
+    expense_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  )`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_acc_exp_date ON accounting_expenses(expense_date)`);
+
   // Ensure admin account exists
   const adminHash = await bcrypt.hash('admin1234', 10);
   await db.query(
