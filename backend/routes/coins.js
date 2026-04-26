@@ -3,6 +3,13 @@ const { getDB } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
 const router = express.Router();
 
+// ─── OPN (Omise) ──────────────────────────────────────────────────────────────
+const Omise = require('omise')({
+  publicKey:  process.env.OPN_PUBLIC_KEY  || '',
+  secretKey:  process.env.OPN_SECRET_KEY  || '',
+  omiseVersion: '2019-05-29',
+});
+
 // ─── Coin packages ────────────────────────────────────────────────────────────
 
 const PACKAGES = [
@@ -374,6 +381,122 @@ router.post('/payment-requests/:id/reject', adminOnly, async (req, res) => {
     );
     res.json({ message: 'ปฏิเสธคำขอแล้ว' });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── POST /api/coins/charge — OPN card charge (token from OPN.js) ─────────────
+router.post('/charge', authMiddleware, async (req, res) => {
+  try {
+    const db  = getDB();
+    const { package_key, token } = req.body;
+    const pkg = PACKAGES.find(p => p.key === package_key);
+    if (!pkg)   return res.status(400).json({ error: 'แพ็กเกจไม่ถูกต้อง' });
+    if (!token) return res.status(400).json({ error: 'ไม่พบ payment token' });
+
+    const charge = await Omise.charges.create({
+      amount:      pkg.price * 100,       // สตางค์
+      currency:    'thb',
+      card:        token,
+      description: `PloiKhong — ${pkg.label} (${pkg.coins} เหรียญ)`,
+      capture:     true,
+      metadata:    { user_id: req.user.id, package_key },
+    });
+
+    if (charge.status !== 'successful') {
+      return res.status(402).json({ error: charge.failure_message || 'ชำระเงินไม่สำเร็จ' });
+    }
+
+    // เติมเหรียญทันที
+    await addCoins(db, req.user.id, pkg.coins, 'purchase', `ซื้อ ${pkg.label} (OPN ${charge.id})`, charge.id);
+
+    // บันทึก payment_request เพื่อ audit
+    await db.query(
+      `INSERT INTO payment_requests (user_id, package_key, coins, amount, sender_name, slip_url, status, confirmed_by, confirmed_at)
+       VALUES ($1,$2,$3,$4,'OPN Card',$5,'confirmed',0,NOW())`,
+      [req.user.id, pkg.key, pkg.coins, pkg.price, charge.id]
+    );
+
+    res.json({ success: true, charge_id: charge.id, coins: pkg.coins });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── POST /api/coins/charge-promptpay — OPN PromptPay QR ─────────────────────
+router.post('/charge-promptpay', authMiddleware, async (req, res) => {
+  try {
+    const db  = getDB();
+    const { package_key } = req.body;
+    const pkg = PACKAGES.find(p => p.key === package_key);
+    if (!pkg) return res.status(400).json({ error: 'แพ็กเกจไม่ถูกต้อง' });
+
+    // สร้าง PromptPay source
+    const source = await Omise.sources.create({
+      type:     'promptpay',
+      amount:   pkg.price * 100,
+      currency: 'thb',
+    });
+
+    // สร้าง charge
+    const charge = await Omise.charges.create({
+      amount:      pkg.price * 100,
+      currency:    'thb',
+      source:      source.id,
+      description: `PloiKhong — ${pkg.label} (${pkg.coins} เหรียญ)`,
+      metadata:    { user_id: req.user.id, package_key },
+      return_uri:  `${process.env.FRONTEND_URL || 'https://ploikhong.vercel.app'}/coins?payment=success`,
+    });
+
+    // เก็บ charge_id ไว้รอ webhook
+    await db.query(
+      `INSERT INTO payment_requests (user_id, package_key, coins, amount, sender_name, slip_url, status)
+       VALUES ($1,$2,$3,$4,'OPN PromptPay',$5,'pending')`,
+      [req.user.id, pkg.key, pkg.coins, pkg.price, charge.id]
+    );
+
+    res.json({
+      charge_id:   charge.id,
+      qr_code_url: charge.source?.scannable_code?.image?.download_uri || charge.authorize_uri,
+      amount:      pkg.price,
+      expires_at:  charge.expires_at,
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── POST /api/coins/webhook/opn — OPN webhook (auto confirm PromptPay) ───────
+router.post('/webhook/opn', express.raw({ type: '*/*' }), async (req, res) => {
+  try {
+    const db   = getDB();
+    const body = JSON.parse(req.body.toString());
+    if (body.key !== 'charge.complete') return res.sendStatus(200);
+
+    const charge = body.data;
+    if (charge.status !== 'successful') return res.sendStatus(200);
+
+    // หา payment_request จาก charge_id
+    const { rows } = await db.query(
+      `SELECT * FROM payment_requests WHERE slip_url = $1 AND status = 'pending' LIMIT 1`,
+      [charge.id]
+    );
+    if (!rows.length) return res.sendStatus(200);
+
+    const pr = rows[0];
+
+    // เติมเหรียญ
+    await addCoins(db, pr.user_id, pr.coins, 'purchase',
+      `ซื้อ ${pr.package_key} — PromptPay (${charge.id})`, charge.id);
+
+    // อัปเดตสถานะ
+    await db.query(
+      `UPDATE payment_requests SET status='confirmed', confirmed_at=NOW() WHERE id=$1`,
+      [pr.id]
+    );
+
+    // แจ้งเตือน user
+    await db.query(
+      `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'coin','เติมเหรียญสำเร็จ! 🪙',$2)`,
+      [pr.user_id, `ได้รับ ${pr.coins.toLocaleString()} เหรียญจากการชำระเงิน PromptPay`]
+    );
+
+    res.sendStatus(200);
+  } catch (e) { console.error('OPN webhook error:', e); res.sendStatus(500); }
 });
 
 module.exports = router;
