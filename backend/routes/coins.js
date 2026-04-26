@@ -410,8 +410,8 @@ router.post('/charge', authMiddleware, async (req, res) => {
 
     // บันทึก payment_request เพื่อ audit
     await db.query(
-      `INSERT INTO payment_requests (user_id, package_key, coins, amount, sender_name, slip_url, status, confirmed_at)
-       VALUES ($1,$2,$3,$4,'OPN Card',$5,'confirmed',NOW())`,
+      `INSERT INTO payment_requests (user_id, package_key, coins, amount, sender_name, slip_url, status)
+       VALUES ($1,$2,$3,$4,'OPN Card',$5,'confirmed')`,
       [req.user.id, pkg.key, pkg.coins, pkg.price, charge.id]
     );
 
