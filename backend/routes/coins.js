@@ -441,7 +441,7 @@ router.post('/charge-promptpay', authMiddleware, async (req, res) => {
       source:      source.id,
       description: `PloiKhong — ${pkg.label} (${pkg.coins} เหรียญ)`,
       metadata:    { user_id: req.user.id, package_key },
-      return_uri:  `${process.env.FRONTEND_URL || 'https://ploikhong.vercel.app'}/coins?payment=success`,
+      return_uri:  `${process.env.FRONTEND_URL || 'https://frontend-next-pied.vercel.app'}/coins?payment=success`,
     });
 
     // เก็บ charge_id ไว้รอ webhook
