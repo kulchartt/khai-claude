@@ -406,12 +406,12 @@ router.post('/charge', authMiddleware, async (req, res) => {
     }
 
     // เติมเหรียญทันที
-    await addCoins(db, req.user.id, pkg.coins, 'purchase', `ซื้อ ${pkg.label} (OPN ${charge.id})`, charge.id);
+    await addCoins(db, req.user.id, pkg.coins, 'purchase', `ซื้อ ${pkg.label} (OPN ${charge.id})`);
 
     // บันทึก payment_request เพื่อ audit
     await db.query(
-      `INSERT INTO payment_requests (user_id, package_key, coins, amount, sender_name, slip_url, status, confirmed_by, confirmed_at)
-       VALUES ($1,$2,$3,$4,'OPN Card',$5,'confirmed',0,NOW())`,
+      `INSERT INTO payment_requests (user_id, package_key, coins, amount, sender_name, slip_url, status, confirmed_at)
+       VALUES ($1,$2,$3,$4,'OPN Card',$5,'confirmed',NOW())`,
       [req.user.id, pkg.key, pkg.coins, pkg.price, charge.id]
     );
 
@@ -481,7 +481,7 @@ router.post('/webhook/opn', express.raw({ type: '*/*' }), async (req, res) => {
 
     // เติมเหรียญ
     await addCoins(db, pr.user_id, pr.coins, 'purchase',
-      `ซื้อ ${pr.package_key} — PromptPay (${charge.id})`, charge.id);
+      `ซื้อ ${pr.package_key} — PromptPay (${charge.id})`);
 
     // อัปเดตสถานะ
     await db.query(
