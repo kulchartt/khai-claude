@@ -147,11 +147,11 @@ router.post('/expenses', adminOnly, (req, res, next) => {
   try {
     const db = getDB();
     const { category, description, amount, expense_date } = req.body;
-    if (!category || !description || !amount) {
+    if (!category || !description || amount === undefined || amount === null || amount === '') {
       return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
     }
-    if (parseFloat(amount) <= 0) {
-      return res.status(400).json({ error: 'จำนวนเงินต้องมากกว่า 0' });
+    if (parseFloat(amount) < 0) {
+      return res.status(400).json({ error: 'จำนวนเงินต้องไม่ติดลบ' });
     }
 
     // อัปโหลดเอกสาร (ถ้ามี)
