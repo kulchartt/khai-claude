@@ -409,9 +409,11 @@ async function initDB() {
     description TEXT NOT NULL,
     amount REAL NOT NULL,
     expense_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    receipt_url TEXT DEFAULT NULL,
     created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT NOW()
   )`);
+  await db.query(`ALTER TABLE accounting_expenses ADD COLUMN IF NOT EXISTS receipt_url TEXT DEFAULT NULL`);
   await db.query(`CREATE INDEX IF NOT EXISTS idx_acc_exp_date ON accounting_expenses(expense_date)`);
 
   // Ensure admin account exists

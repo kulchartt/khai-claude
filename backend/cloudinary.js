@@ -18,4 +18,17 @@ function uploadToCloudinary(buffer, options = {}) {
   });
 }
 
-module.exports = { cloudinary, uploadToCloudinary };
+// รองรับ PDF + image สำหรับเอกสารบัญชี
+function uploadDocument(buffer, options = {}) {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      { folder: 'mueasong/accounting', resource_type: 'auto', ...options },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    ).end(buffer);
+  });
+}
+
+module.exports = { cloudinary, uploadToCloudinary, uploadDocument };

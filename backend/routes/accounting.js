@@ -1,7 +1,19 @@
 const express = require('express');
+const multer  = require('multer');
 const { getDB } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
+const { uploadDocument } = require('../cloudinary');
 const router = express.Router();
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    const ok = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
+    if (ok) cb(null, true);
+    else cb(new Error('รองรับเฉพาะรูปภาพและ PDF เท่านั้น'));
+  },
+});
 
 router.use(authMiddleware);
 
@@ -125,7 +137,13 @@ router.get('/expenses', adminOnly, async (req, res) => {
 });
 
 // ─── POST /api/accounting/expenses ───────────────────────────────────────────
-router.post('/expenses', adminOnly, async (req, res) => {
+router.post('/expenses', adminOnly, (req, res, next) => {
+  upload.single('receipt')(req, res, err => {
+    if (err instanceof multer.MulterError) return res.status(400).json({ error: err.message });
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}, async (req, res) => {
   try {
     const db = getDB();
     const { category, description, amount, expense_date } = req.body;
@@ -135,15 +153,27 @@ router.post('/expenses', adminOnly, async (req, res) => {
     if (parseFloat(amount) <= 0) {
       return res.status(400).json({ error: 'จำนวนเงินต้องมากกว่า 0' });
     }
+
+    // อัปโหลดเอกสาร (ถ้ามี)
+    let receipt_url = null;
+    if (req.file) {
+      const result = await uploadDocument(req.file.buffer, {
+        public_id: `expense_${Date.now()}`,
+        format: req.file.mimetype === 'application/pdf' ? 'pdf' : undefined,
+      });
+      receipt_url = result.secure_url;
+    }
+
     const { rows } = await db.query(`
-      INSERT INTO accounting_expenses (category, description, amount, expense_date, created_by)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO accounting_expenses (category, description, amount, expense_date, receipt_url, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `, [
       category,
       description,
       parseFloat(amount),
       expense_date || new Date().toISOString().split('T')[0],
+      receipt_url,
       req.user.id,
     ]);
     res.json(rows[0]);
