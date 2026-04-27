@@ -505,4 +505,38 @@ router.post('/webhook/opn', express.raw({ type: '*/*' }), async (req, res) => {
   } catch (e) { console.error('OPN webhook error:', e); res.sendStatus(500); }
 });
 
+// ─── POST /api/coins/test/simulate-payment — TEST MODE ONLY ──────────────────
+// จำลองการชำระเงิน PromptPay สำหรับทดสอบ (ใช้ได้เฉพาะ OPN test key)
+router.post('/test/simulate-payment', authMiddleware, async (req, res) => {
+  const isTestMode = (process.env.OPN_SECRET_KEY || '').startsWith('skey_test_');
+  if (!isTestMode) return res.status(403).json({ error: 'ใช้ได้เฉพาะ test mode เท่านั้น' });
+
+  try {
+    const db = getDB();
+    const { charge_id } = req.body;
+    if (!charge_id) return res.status(400).json({ error: 'กรุณาระบุ charge_id' });
+
+    const { rows } = await db.query(
+      `SELECT * FROM payment_requests WHERE slip_url = $1 AND status = 'pending' LIMIT 1`,
+      [charge_id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'ไม่พบรายการ หรือยืนยันไปแล้ว' });
+
+    const pr = rows[0];
+    // ตรวจว่าเป็นของ user ที่ request เอง
+    if (pr.user_id !== req.user.id) return res.status(403).json({ error: 'ไม่ใช่รายการของคุณ' });
+
+    await addCoins(db, pr.user_id, pr.coins, 'purchase',
+      `ซื้อ ${pr.package_key} — PromptPay TEST (${charge_id})`);
+    await db.query(`UPDATE payment_requests SET status='confirmed' WHERE id=$1`, [pr.id]);
+    await db.query(
+      `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'coin','เติมเหรียญสำเร็จ! 🪙',$2)`,
+      [pr.user_id, `[TEST] ได้รับ ${pr.coins} เหรียญ`]
+    );
+
+    const { rows: ur } = await db.query('SELECT coin_balance FROM users WHERE id=$1', [pr.user_id]);
+    res.json({ success: true, coins: pr.coins, new_balance: ur[0]?.coin_balance || 0 });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;
