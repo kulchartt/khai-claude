@@ -169,7 +169,7 @@ router.get('/active-features', async (req, res) => {
   try {
     const { rows } = await getDB().query(
       `SELECT fa.*, p.title as product_title, p.price as product_price,
-              (p.images)[1] as product_image
+              p.image_url as product_image
        FROM feature_activations fa
        LEFT JOIN products p ON p.id = fa.product_id
        WHERE fa.user_id=$1 AND fa.expires_at > NOW()
