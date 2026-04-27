@@ -406,15 +406,8 @@ router.post('/charge', authMiddleware, async (req, res) => {
       return res.status(402).json({ error: charge.failure_message || 'ชำระเงินไม่สำเร็จ' });
     }
 
-    // เติมเหรียญทันที
-    await addCoins(db, req.user.id, pkg.coins, 'purchase', `ซื้อ ${pkg.label} (OPN ${charge.id})`);
-
-    // บันทึก payment_request เพื่อ audit
-    await db.query(
-      `INSERT INTO payment_requests (user_id, package_key, coins, amount, sender_name, slip_url, status)
-       VALUES ($1,$2,$3,$4,'OPN Card',$5,'confirmed')`,
-      [req.user.id, pkg.key, pkg.coins, pkg.price, charge.id]
-    );
+    // เติมเหรียญทันที (บันทึกใน coin_transactions โดยอัตโนมัติ ไม่ต้องใส่ใน payment_requests)
+    await addCoins(db, req.user.id, pkg.coins, 'purchase', `ซื้อ ${pkg.label} (OPN Card ${charge.id})`);
 
     res.json({ success: true, charge_id: charge.id, coins: pkg.coins });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -486,7 +479,7 @@ router.post('/webhook/opn', express.raw({ type: '*/*' }), async (req, res) => {
 
     // อัปเดตสถานะ
     await db.query(
-      `UPDATE payment_requests SET status='confirmed', confirmed_at=NOW() WHERE id=$1`,
+      `UPDATE payment_requests SET status='confirmed' WHERE id=$1`,
       [pr.id]
     );
 
