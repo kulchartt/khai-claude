@@ -384,6 +384,18 @@ router.post('/payment-requests/:id/reject', adminOnly, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// DELETE /api/coins/payment-requests/:id — admin deletes OPN pending record
+router.delete('/payment-requests/:id', adminOnly, async (req, res) => {
+  try {
+    const db = getDB();
+    const { rows } = await db.query('SELECT * FROM payment_requests WHERE id=$1', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'ไม่พบรายการ' });
+    if (rows[0].status !== 'pending') return res.status(400).json({ error: 'ลบได้เฉพาะรายการที่ยังรออยู่เท่านั้น' });
+    await db.query('DELETE FROM payment_requests WHERE id=$1', [req.params.id]);
+    res.json({ message: 'ลบรายการแล้ว' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ─── POST /api/coins/charge — OPN card charge (token from OPN.js) ─────────────
 router.post('/charge', authMiddleware, async (req, res) => {
   try {
