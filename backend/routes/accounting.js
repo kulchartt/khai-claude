@@ -279,4 +279,34 @@ router.get('/yearly', adminOnly, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ─── GET /api/accounting/user-history?userId=X ───────────────────────────────
+// ประวัติทั้งหมดของ user: payment requests + coin transactions
+router.get('/user-history', adminOnly, async (req, res) => {
+  try {
+    const db = getDB();
+    const userId = parseInt(req.query.userId);
+    if (!userId) return res.status(400).json({ error: 'กรุณาระบุ userId' });
+
+    const [userRes, paymentsRes, txRes] = await Promise.all([
+      db.query(`SELECT id, name, email, coin_balance, created_at FROM users WHERE id=$1`, [userId]),
+      db.query(`
+        SELECT id, package_key, coins, amount, sender_name, slip_url, status, admin_note, created_at
+        FROM payment_requests WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100
+      `, [userId]),
+      db.query(`
+        SELECT id, delta, type, description, created_at
+        FROM coin_transactions WHERE user_id=$1 ORDER BY created_at DESC LIMIT 200
+      `, [userId]),
+    ]);
+
+    if (!userRes.rows.length) return res.status(404).json({ error: 'ไม่พบผู้ใช้' });
+
+    res.json({
+      user:     userRes.rows[0],
+      payments: paymentsRes.rows,
+      transactions: txRes.rows,
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;
