@@ -99,30 +99,9 @@ router.get('/transactions', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST /api/coins/request-payment — submit PromptPay slip
-router.post('/request-payment', async (req, res) => {
-  try {
-    const { package_key, sender_name, slip_url } = req.body;
-    const pkg = PACKAGES.find(p => p.key === package_key);
-    if (!pkg) return res.status(400).json({ error: 'แพ็กเกจไม่ถูกต้อง' });
-    if (!sender_name) return res.status(400).json({ error: 'กรุณาระบุชื่อผู้โอน' });
-
-    const db = getDB();
-    const { rows } = await db.query(
-      `INSERT INTO payment_requests (user_id, package_key, coins, amount, sender_name, slip_url)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
-      [req.user.id, package_key, pkg.coins, pkg.price, sender_name, slip_url || null]
-    );
-    // Notify admin via notification
-    const { rows: admins } = await db.query('SELECT id FROM users WHERE is_admin=1');
-    for (const admin of admins) {
-      await db.query(
-        `INSERT INTO notifications (user_id,type,title,body,link) VALUES ($1,'system','คำขอเติมเหรียญใหม่',$2,'/admin')`,
-        [admin.id, `${req.user.name} ขอเติม ${pkg.coins} เหรียญ (฿${pkg.price})`]
-      );
-    }
-    res.json({ id: rows[0].id, message: 'ส่งคำขอเรียบร้อย รอ Admin ยืนยัน (ปกติภายใน 15 นาที)' });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+// POST /api/coins/request-payment — DISABLED: manual slip upload ปิดแล้ว ใช้ OPN แทน
+router.post('/request-payment', (req, res) => {
+  res.status(410).json({ error: 'การอัปโหลดสลิปด้วยตนเองถูกปิดแล้ว กรุณาชำระเงินผ่าน PromptPay QR หรือบัตรเครดิต/เดบิต' });
 });
 
 // GET /api/coins/payment-requests — my own pending requests
