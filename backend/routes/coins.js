@@ -444,6 +444,12 @@ router.post('/charge', authMiddleware, async (req, res) => {
 
     // เติมเหรียญทันที
     await addCoins(db, req.user.id, pkg.coins, 'purchase', `ซื้อ ${pkg.label} (OPN Card ${charge.id})`);
+    // บันทึกรายรับลงระบบบัญชี (payment_requests confirmed ทันที — card จ่ายแล้วเสร็จเลย)
+    await db.query(
+      `INSERT INTO payment_requests (user_id, package_key, coins, amount, sender_name, slip_url, status)
+       VALUES ($1,$2,$3,$4,'OPN Card',$5,'confirmed')`,
+      [req.user.id, pkg.key, pkg.coins, pkg.price, charge.id]
+    );
     // บันทึกค่าธรรมเนียมบัตรเครดิต 3.65% ลงระบบบัญชี
     await recordPaymentFee(db, { chargeId: charge.id, packageKey: pkg.key, amount: pkg.price, method: 'card' });
 
