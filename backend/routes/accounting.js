@@ -103,7 +103,7 @@ router.get('/income', adminOnly, async (req, res) => {
 
     const { rows } = await db.query(`
       SELECT pr.id, pr.amount, pr.package_key, pr.coins, pr.sender_name,
-             pr.created_at, u.name AS user_name, u.email AS user_email
+             pr.slip_url, pr.created_at, u.name AS user_name, u.email AS user_email
       FROM payment_requests pr
       LEFT JOIN users u ON u.id = pr.user_id
       WHERE pr.status = 'confirmed'
