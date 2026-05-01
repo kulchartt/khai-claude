@@ -54,26 +54,40 @@ router.post('/login', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Social login (Google / Facebook) — upsert user by email
+// Social login (Google / Apple / Facebook) — upsert user by email or apple_id
 router.post('/social', async (req, res) => {
   try {
-    const { provider, email, name, avatar } = req.body;
-    if (!email) return res.status(400).json({ error: 'email required' });
+    const { provider, email, name, avatar, provider_account_id } = req.body;
     const db = getDB();
-    // Check existing user
-    const { rows: ex } = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-    let user = ex[0];
-    if (!user) {
-      // Auto-register social user (no password)
-      const { rows } = await db.query(
-        'INSERT INTO users (name, email, avatar, password) VALUES ($1,$2,$3,$4) RETURNING *',
-        [name || email.split('@')[0], email, avatar || null, '']
-      );
+    let user;
+
+    // Apple: on subsequent logins Apple doesn't resend email — look up by apple_id
+    if (!email && provider === 'apple' && provider_account_id) {
+      const { rows } = await db.query('SELECT * FROM users WHERE apple_id = $1', [provider_account_id]);
+      if (!rows[0]) return res.status(400).json({ error: 'ไม่พบบัญชี กรุณาลงชื่อเข้าใช้ด้วย Apple อีกครั้ง' });
       user = rows[0];
-    } else if (avatar && !user.avatar) {
-      await db.query('UPDATE users SET avatar = $1 WHERE id = $2', [avatar, user.id]);
-      user.avatar = avatar;
+    } else {
+      if (!email) return res.status(400).json({ error: 'email required' });
+      // Check existing user by email
+      const { rows: ex } = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+      user = ex[0];
+      if (!user) {
+        // Auto-register social user (no password)
+        const { rows } = await db.query(
+          'INSERT INTO users (name, email, avatar, password) VALUES ($1,$2,$3,$4) RETURNING *',
+          [name || email.split('@')[0], email, avatar || null, '']
+        );
+        user = rows[0];
+      } else if (avatar && !user.avatar) {
+        await db.query('UPDATE users SET avatar = $1 WHERE id = $2', [avatar, user.id]);
+        user.avatar = avatar;
+      }
+      // Store Apple ID on first Apple login so future logins (no email) still work
+      if (provider === 'apple' && provider_account_id && !user.apple_id) {
+        await db.query('UPDATE users SET apple_id = $1 WHERE id = $2', [provider_account_id, user.id]);
+      }
     }
+
     if (user.is_banned) return res.status(403).json({ error: 'บัญชีนี้ถูกระงับการใช้งาน' });
     const token = jwt.sign({ id: user.id, name: user.name, email: user.email }, SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, name: user.name, email: user.email, is_admin: user.is_admin } });

@@ -337,6 +337,10 @@ async function initDB() {
   await db.query(`CREATE INDEX IF NOT EXISTS idx_product_events_type ON product_events(event_type)`);
   await db.query(`CREATE INDEX IF NOT EXISTS idx_product_events_created ON product_events(created_at)`);
 
+  // ─── Apple Sign In — store provider account ID for subsequent logins (no email sent) ───
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS apple_id TEXT DEFAULT NULL`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_users_apple_id ON users(apple_id) WHERE apple_id IS NOT NULL`);
+
   // ─── User Preferences ────────────────────────────────────────────────────────
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bg_color VARCHAR(20) DEFAULT NULL`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS dark_mode INTEGER DEFAULT 0`);
