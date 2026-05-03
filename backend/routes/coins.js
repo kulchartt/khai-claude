@@ -31,7 +31,7 @@ const FEATURES = {
 
 // PromptPay number (configurable via env)
 const PROMPTPAY_NUMBER = process.env.PROMPTPAY_NUMBER || '0812345678';
-const PROMPTPAY_NAME   = process.env.PROMPTPAY_NAME   || 'ขายคล่อง';
+const PROMPTPAY_NAME   = process.env.PROMPTPAY_NAME   || 'ปล่อยของ';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
