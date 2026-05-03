@@ -66,13 +66,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .filter-controls input{width:110px}
 
 .products-section{padding:20px 24px}
-.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
 .loading,.empty-msg{padding:40px;text-align:center;color:var(--text-sec);font-size:14px;grid-column:1/-1}
 .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:.15s;display:flex;flex-direction:column}
 .card:hover{border-color:var(--border-hover);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
 .card-actions{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--border);background:var(--bg-sec)}
 .card-actions .btn{flex:1;padding:5px 8px;font-size:12px;text-align:center}
-.card-img{height:150px;display:flex;align-items:center;justify-content:center;background:var(--bg-sec);overflow:hidden}
+.card-img{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:var(--bg-sec);overflow:hidden}
 .card-img.loaded{background:var(--bg-sec)}
 .card-img img{width:100%;height:100%;object-fit:cover;display:block}
 .card-img .emoji{font-size:52px}
@@ -280,7 +280,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .skeleton-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
 .skeleton{background:linear-gradient(90deg,var(--bg-sec) 25%,var(--border-hover) 50%,var(--bg-sec) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.skeleton-img{height:150px;width:100%}
+.skeleton-img{aspect-ratio:1/1;width:100%}
 .skeleton-body{padding:12px;display:flex;flex-direction:column;gap:8px}
 .skeleton-line{height:14px;border-radius:4px}
 .skeleton-line.short{width:55%}
@@ -314,8 +314,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   .filter-controls{margin-left:0;width:100%;justify-content:flex-start}
   .filter-controls input{width:90px}
   .products-section{padding:12px}
-  .product-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px}
-  .card-img{height:130px}
+  .product-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
   .detail-hero{flex-direction:column;gap:0;padding:0}
   .detail-main-img{border-radius:0;height:240px}
   .detail-gallery{margin-bottom:0}
@@ -401,7 +400,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   .toast{bottom:72px}
 
   /* Product grid: 2 cols at small size */
-  .product-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr))}
+  .product-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
 }
 
 /* ===== Price Drop Badge ===== */

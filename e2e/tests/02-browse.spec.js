@@ -91,6 +91,22 @@ test.describe('🏪 Browse & Search', () => {
     console.log(`✅ Wishlist toggled: "${msg}"`);
   });
 
+  test('card image is square (FB Marketplace style)', async ({ page }) => {
+    await gotoApp(page);
+    await page.waitForFunction(() => document.querySelectorAll('.card-img').length > 0, { timeout: 15000 });
+
+    const dims = await page.locator('.card-img').first().evaluate(el => {
+      const r = el.getBoundingClientRect();
+      return { w: r.width, h: r.height };
+    });
+
+    // Square aspect ratio (allow 2px tolerance for sub-pixel rounding)
+    expect(Math.abs(dims.w - dims.h)).toBeLessThanOrEqual(2);
+    // Image must be reasonably large — old fixed 150px height is gone
+    expect(dims.h).toBeGreaterThanOrEqual(150);
+    console.log(`✅ Card image is ${dims.w.toFixed(0)}×${dims.h.toFixed(0)} (square)`);
+  });
+
   test('seller profile page opens from product detail', async ({ page }) => {
     await gotoApp(page);
     await page.waitForFunction(() => document.querySelectorAll('.card').length > 0, { timeout: 15000 });
